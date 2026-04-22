@@ -1,13 +1,16 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { computeCovariance } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Loader2, Download, HelpCircle } from "lucide-react";
 
 export default function Covariance() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -26,8 +29,11 @@ export default function Covariance() {
     try {
       const res = await computeCovariance(aligned, groups, pooled && !!groups);
       setCovariance(res);
+      toast.success("Covariance matrix computed", { description: `${res.n_variables}×${res.n_variables} · ${res.type}` });
     } catch (e) {
-      setError("covariance", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("covariance", msg);
+      toast.error("Covariance failed", { description: msg });
     } finally {
       setLoading("covariance", false);
     }
@@ -51,7 +57,25 @@ export default function Covariance() {
     <PanelLayout
       title="Covariance Matrix"
       description="Variance-covariance matrix of Procrustes shape coordinates"
-      actions={<Button size="sm" onClick={run} disabled={loading["covariance"]}><Play size={14} /> Compute</Button>}
+      actions={
+        <>
+          {covariance && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const n = covariance.covariance.length;
+              const headers = ["", ...Array.from({ length: n }, (_, i) => `var_${i + 1}`)];
+              const rows = covariance.covariance.map((row, i) => [`var_${i + 1}`, ...row]);
+              downloadCSV("covariance_matrix", headers, rows);
+              toast.success("Covariance matrix exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <Button size="sm" onClick={run} disabled={loading["covariance"]}>
+            {loading["covariance"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["covariance"] ? "Computing…" : "Compute"}
+          </Button>
+        </>
+      }
     >
       <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
         <div className="space-y-3">
@@ -59,7 +83,19 @@ export default function Covariance() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">Options</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <Label>Pooled within-group</Label>
+                <span className="flex items-center gap-1">
+                  <Label>Pooled within-group</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle size={12} className="text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-56 text-xs">
+                        Removes between-group differences before computing the covariance matrix. Equivalent to the within-group scatter in MANOVA.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
                 <Switch checked={pooled} onCheckedChange={setPooled} />
               </div>
               {pooled && (

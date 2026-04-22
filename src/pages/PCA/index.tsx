@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +10,8 @@ import { ShapeGrid } from "@/components/plots/ShapeGrid";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Loader2, Download } from "lucide-react";
 
 export default function PCA() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -31,8 +33,11 @@ export default function PCA() {
     try {
       const res = await runPCA(aligned);
       setPCA(res);
+      toast.success("PCA complete", { description: `PC1 explains ${res.pct_variance[0]?.toFixed(1)}% of variance` });
     } catch (e) {
-      setError("pca", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("pca", msg);
+      toast.error("PCA failed", { description: msg });
     } finally {
       setLoading("pca", false);
     }
@@ -54,7 +59,25 @@ export default function PCA() {
     <PanelLayout
       title="Principal Component Analysis"
       description="PCA of Procrustes shape coordinates"
-      actions={<Button size="sm" onClick={run} disabled={loading["pca"]}><Play size={14} /> {loading["pca"] ? "Running…" : "Run PCA"}</Button>}
+      actions={
+        <>
+          {pca && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const nPCs = Math.min(pca.scores[0]?.length ?? 0, 10);
+              const headers = ["ID", ...Array.from({ length: nPCs }, (_, i) => `PC${i + 1}`)];
+              const rows = pca.scores.map((row, i) => [ids[i], ...row.slice(0, nPCs)]);
+              downloadCSV("pca_scores", headers, rows);
+              toast.success("PC scores exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <Button size="sm" onClick={run} disabled={loading["pca"]}>
+            {loading["pca"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["pca"] ? "Running…" : "Run PCA"}
+          </Button>
+        </>
+      }
     >
       {!pca ? (
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">

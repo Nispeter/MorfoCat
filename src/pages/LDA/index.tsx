@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runLDA } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Loader2, Download } from "lucide-react";
 
 export default function LDA() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -27,8 +29,11 @@ export default function LDA() {
     try {
       const res = await runLDA(aligned, groups);
       setLDA(res);
+      toast.success("LDA complete", { description: `LOO accuracy: ${(res.loo_accuracy * 100).toFixed(1)}%` });
     } catch (e) {
-      setError("lda", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("lda", msg);
+      toast.error("LDA failed", { description: msg });
     } finally {
       setLoading("lda", false);
     }
@@ -41,9 +46,26 @@ export default function LDA() {
       title="Linear Discriminant Analysis"
       description="LDA with leave-one-out cross-validation"
       actions={
-        <Button size="sm" onClick={run} disabled={loading["lda"] || !hasGroups}>
-          <Play size={14} /> {loading["lda"] ? "Running…" : "Run LDA"}
-        </Button>
+        <>
+          {lda && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const headers = ["ID", "TrueGroup", ...lda.groups.map((g) => `LOO_pred_${g}`)];
+              const rows = ids.map((id, i) => [
+                id,
+                groups[i],
+                ...lda.groups.map((g) => lda.loo_confusion_matrix[lda.groups.indexOf(groups[i])]?.[lda.groups.indexOf(g)] ?? ""),
+              ]);
+              downloadCSV("lda_loo_predictions", headers, rows);
+              toast.success("LDA LOO predictions exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <Button size="sm" onClick={run} disabled={loading["lda"] || !hasGroups}>
+            {loading["lda"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["lda"] ? "Running…" : "Run LDA"}
+          </Button>
+        </>
       }
     >
       {!hasGroups && <p className="mb-3 text-sm text-amber-600">Assign groups in Data Manager first.</p>}

@@ -1,14 +1,16 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { twoBlockPLS } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { Play, Loader2, HelpCircle } from "lucide-react";
 
 export default function TwoBlockPLS() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -30,8 +32,11 @@ export default function TwoBlockPLS() {
       const block2 = aligned.map((sp) => sp.slice(split));
       const res = await twoBlockPLS(block1, block2, permutations);
       setPLS(res);
+      toast.success("PLS complete", { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_sv1 < 0.001 ? "< 0.001" : res.p_value_sv1.toFixed(3)}` });
     } catch (e) {
-      setError("pls", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("pls", msg);
+      toast.error("PLS failed", { description: msg });
     } finally {
       setLoading("pls", false);
     }
@@ -56,11 +61,22 @@ export default function TwoBlockPLS() {
         <div className="flex items-center gap-2">
           <label className="text-xs text-muted-foreground">Block split at LM:</label>
           <input type="number" min={1} max={n_lm - 1} value={split} onChange={(e) => setSplitIdx(+e.target.value)} className="w-16 text-xs border rounded px-2 py-1" />
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={13} className="text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-56 text-xs">
+                Number of random permutations to test significance of the first singular value (Rohlf & Corti 2000).
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <Button size="sm" onClick={run} disabled={loading["pls"]}>
-            <Play size={14} /> {loading["pls"] ? "Running…" : "Run PLS"}
+            {loading["pls"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["pls"] ? "Running…" : "Run PLS"}
           </Button>
         </div>
       }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runGMatrix, runSelectionGradient } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 
 export default function QuantGenetics() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -30,8 +31,11 @@ export default function QuantGenetics() {
     try {
       const res = await runGMatrix(aligned, sireIds, damIds);
       setGMatrix(res);
+      toast.success("G matrix estimated", { description: `${res.n_sires} sires · top eigenvalue = ${res.eigenvalues[0]?.toExponential(3)}` });
     } catch (e) {
-      setError("gMatrix", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("gMatrix", msg);
+      toast.error("G matrix estimation failed", { description: msg });
     } finally {
       setLoading("gMatrix", false);
     }
@@ -46,8 +50,11 @@ export default function QuantGenetics() {
     try {
       const res = await runSelectionGradient(aligned, fitness);
       setSelectionGradient(res);
+      toast.success("Selection gradient computed", { description: `Mean fitness: ${res.mean_fitness.toFixed(4)}` });
     } catch (e) {
-      setError("selection", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("selection", msg);
+      toast.error("Selection gradient failed", { description: msg });
     } finally {
       setLoading("selection", false);
     }
@@ -86,7 +93,8 @@ export default function QuantGenetics() {
                   </div>
                   <p className="text-xs text-muted-foreground">Requires family structure data. At least 2 sires needed.</p>
                   <Button size="sm" className="w-full" onClick={runG} disabled={loading["gMatrix"]}>
-                    <Play size={12} /> {loading["gMatrix"] ? "Running…" : "Estimate G"}
+                    {loading["gMatrix"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+                    {loading["gMatrix"] ? "Running…" : "Estimate G"}
                   </Button>
                   {errors["gMatrix"] && <p className="text-xs text-destructive">{errors["gMatrix"]}</p>}
                 </CardContent>
@@ -145,7 +153,8 @@ export default function QuantGenetics() {
                     <p className="text-xs text-muted-foreground mt-1">Need {aligned.length} values (space or comma separated)</p>
                   </div>
                   <Button size="sm" className="w-full" onClick={runSel} disabled={loading["selection"] || !fitnessStr.trim()}>
-                    <Play size={12} /> {loading["selection"] ? "Running…" : "Compute β"}
+                    {loading["selection"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+                    {loading["selection"] ? "Running…" : "Compute β"}
                   </Button>
                   {errors["selection"] && <p className="text-xs text-destructive">{errors["selection"]}</p>}
                 </CardContent>

@@ -1,17 +1,19 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShapeGrid } from "@/components/plots/ShapeGrid";
 import { LandmarkViewer2D } from "@/components/landmark/LandmarkViewer2D";
 import { LandmarkViewer3D } from "@/components/landmark/LandmarkViewer3D";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { procrustesFit } from "@/lib/ipc";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Play } from "lucide-react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
+import { Play, Loader2, HelpCircle } from "lucide-react";
 
 export default function ProcrustesFit() {
   const { dataset, setAligned } = useDatasetStore();
@@ -34,8 +36,11 @@ export default function ProcrustesFit() {
       const lms = included.map((s) => s.landmarks);
       const res = await procrustesFit(lms, symmetry);
       setAligned(res.aligned, res.consensus, res.centroid_sizes, res.procrustes_distances);
+      toast.success("GPA complete", { description: `${included.length} specimens aligned` });
     } catch (e) {
-      setError("procrustes", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("procrustes", msg);
+      toast.error("GPA failed", { description: msg });
     } finally {
       setLoading("procrustes", false);
     }
@@ -51,7 +56,8 @@ export default function ProcrustesFit() {
       description="Generalized Procrustes Analysis — align all specimens to a common mean shape"
       actions={
         <Button size="sm" onClick={run} disabled={loading["procrustes"]}>
-          <Play size={14} /> {loading["procrustes"] ? "Running…" : "Run GPA"}
+          {loading["procrustes"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+          {loading["procrustes"] ? "Running…" : "Run GPA"}
         </Button>
       }
     >
@@ -62,7 +68,19 @@ export default function ProcrustesFit() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">Options</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <Label htmlFor="sym">Object symmetry</Label>
+                <span className="flex items-center gap-1">
+                  <Label htmlFor="sym">Object symmetry</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle size={12} className="text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-56 text-xs">
+                        Enforces bilateral symmetry by averaging each specimen with its mirror image (Mardia et al. 2000). Requires symmetric landmark pairs.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
                 <Switch id="sym" checked={symmetry} onCheckedChange={setSymmetry} />
               </div>
               <p className="text-xs text-muted-foreground">{included.length} specimens included</p>
@@ -119,7 +137,7 @@ export default function ProcrustesFit() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="id" tick={false} />
                       <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
+                      <RechartTooltip />
                       <Bar dataKey="d" name="Procr. dist." fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { detectOutliers } from "@/lib/ipc";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell } from "recharts";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 
 export default function Outliers() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -25,8 +26,12 @@ export default function Outliers() {
     try {
       const res = await detectOutliers(aligned);
       setOutliers(res);
+      const nFlagged = res.z_scores.filter((z) => Math.abs(z) > threshold).length;
+      toast.success("Outlier detection complete", { description: nFlagged > 0 ? `${nFlagged} specimen(s) flagged` : "No outliers detected" });
     } catch (e) {
-      setError("outliers", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("outliers", msg);
+      toast.error("Outlier detection failed", { description: msg });
     } finally {
       setLoading("outliers", false);
     }
@@ -59,7 +64,8 @@ export default function Outliers() {
       description="Specimens with unusually large Procrustes distances from the mean"
       actions={
         <Button size="sm" variant="outline" onClick={run} disabled={loading["outliers"]}>
-          <RefreshCw size={14} /> Refresh
+          {loading["outliers"] ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+          {loading["outliers"] ? "Running…" : "Refresh"}
         </Button>
       }
     >

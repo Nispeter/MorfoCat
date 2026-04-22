@@ -1,14 +1,17 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupScatterPlot } from "@/components/plots/GroupScatterPlot";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runCVA } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Loader2, Download, HelpCircle } from "lucide-react";
 
 export default function CVA() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -28,8 +31,11 @@ export default function CVA() {
     try {
       const res = await runCVA(aligned, groups, permutations);
       setCVA(res);
+      toast.success("CVA complete", { description: `p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)} · ${res.mahalanobis_distances.length} pairwise distances` });
     } catch (e) {
-      setError("cva", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("cva", msg);
+      toast.error("CVA failed", { description: msg });
     } finally {
       setLoading("cva", false);
     }
@@ -43,12 +49,33 @@ export default function CVA() {
       description="Maximise among-group to within-group variation"
       actions={
         <div className="flex items-center gap-2">
+          {cva && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const headers = ["Group1", "Group2", "MahalanobisDistance"];
+              const rows = cva.mahalanobis_distances.map((d) => [d.group1, d.group2, d.distance]);
+              downloadCSV("cva_mahalanobis_distances", headers, rows);
+              toast.success("Mahalanobis distances exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={13} className="text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-56 text-xs">
+                Number of random permutations to assess significance of group separation (Bookstein et al. 1985).
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
           <label className="text-xs text-muted-foreground">Permutations:</label>
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <Button size="sm" onClick={run} disabled={loading["cva"] || !hasGroups}>
-            <Play size={14} /> {loading["cva"] ? "Running…" : "Run CVA"}
+            {loading["cva"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["cva"] ? "Running…" : "Run CVA"}
           </Button>
         </div>
       }

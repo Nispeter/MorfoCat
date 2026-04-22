@@ -1,13 +1,15 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { matrixCorrelation, computeCovariance } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { Play, Loader2, HelpCircle } from "lucide-react";
 
 export default function MatrixCorr() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -30,8 +32,11 @@ export default function MatrixCorr() {
       const res = await matrixCorrelation(cov1.covariance, cov2.covariance, permutations);
       setMatrixCorr(res);
       setStatus("");
+      toast.success("Matrix correlation complete", { description: `r = ${res.r.toFixed(4)} · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` });
     } catch (e) {
-      setError("matrixCorr", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("matrixCorr", msg);
+      toast.error("Matrix correlation failed", { description: msg });
       setStatus("");
     } finally {
       setLoading("matrixCorr", false);
@@ -52,11 +57,22 @@ export default function MatrixCorr() {
       description="Correlation between two covariance matrices with permutation test"
       actions={
         <div className="flex items-center gap-2">
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={13} className="text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-56 text-xs">
+                Number of random permutations for the Mantel test p-value. More permutations = more precise p-value (Mantel 1967).
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
           <Button size="sm" onClick={run} disabled={loading["matrixCorr"]}>
-            <Play size={14} /> {loading["matrixCorr"] ? status || "Running…" : "Run"}
+            {loading["matrixCorr"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["matrixCorr"] ? status || "Running…" : "Run"}
           </Button>
         </div>
       }

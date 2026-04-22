@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Sidebar, type PageId } from "./Sidebar";
+import { StatusBar } from "./StatusBar";
 import DataManager from "@/pages/DataManager";
 import ProcrustesFit from "@/pages/ProcrustesFit";
 import Outliers from "@/pages/Outliers";
@@ -35,11 +36,14 @@ export function AppShell() {
   const ActivePage = PAGE_MAP[activePage];
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
-      <Sidebar activePage={activePage} onNavigate={setActivePage} />
-      <main className="flex-1 overflow-hidden">
-        <ActivePage />
-      </main>
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar activePage={activePage} onNavigate={setActivePage} />
+        <main className="flex-1 overflow-hidden">
+          <ActivePage />
+        </main>
+      </div>
+      <StatusBar />
     </div>
   );
 }

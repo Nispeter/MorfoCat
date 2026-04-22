@@ -1,15 +1,18 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { testModularity } from "@/lib/ipc";
-import { Play, Plus, Trash2 } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Plus, Trash2, Loader2, Download, HelpCircle } from "lucide-react";
 
 export default function Modularity() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -32,8 +35,11 @@ export default function Modularity() {
     try {
       const res = await testModularity(aligned, hypothesis, permutations);
       setModularity(res);
+      toast.success("Modularity test complete", { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_rv < 0.001 ? "< 0.001" : res.p_value_rv.toFixed(3)}` });
     } catch (e) {
-      setError("modularity", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("modularity", msg);
+      toast.error("Modularity test failed", { description: msg });
     } finally {
       setLoading("modularity", false);
     }
@@ -53,10 +59,33 @@ export default function Modularity() {
       description="Test whether landmark subsets form distinct covariance modules (RV coefficient, CR statistic)"
       actions={
         <div className="flex items-center gap-2">
+          {modularity && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const headers = ["RV_null"];
+              const rows = modularity.null_rv.map((v) => [v]);
+              downloadCSV("modularity_null_distribution", headers, rows);
+              toast.success("Null distribution exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <TooltipProvider>
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle size={13} className="text-muted-foreground cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-56 text-xs">
+                Number of random permutations for testing modularity significance via the RV coefficient null distribution (Adams 2016).
+              </TooltipContent>
+            </UITooltip>
+          </TooltipProvider>
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
-          <Button size="sm" onClick={run} disabled={loading["modularity"]}><Play size={14} /> {loading["modularity"] ? "Running…" : "Test"}</Button>
+          <Button size="sm" onClick={run} disabled={loading["modularity"]}>
+            {loading["modularity"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["modularity"] ? "Running…" : "Test"}
+          </Button>
         </div>
       }
     >

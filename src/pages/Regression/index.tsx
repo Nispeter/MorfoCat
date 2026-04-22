@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,7 +11,8 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runRegression } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
+import { Play, Loader2, Download } from "lucide-react";
 
 export default function Regression() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -31,8 +33,11 @@ export default function Regression() {
     try {
       const res = await runRegression(aligned, independent, groups, pooled);
       setRegression(res);
+      toast.success("Regression complete", { description: `R² = ${res.r_squared.toFixed(4)}${res.p_value != null ? ` · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` : ""}` });
     } catch (e) {
-      setError("regression", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("regression", msg);
+      toast.error("Regression failed", { description: msg });
     } finally {
       setLoading("regression", false);
     }
@@ -48,7 +53,25 @@ export default function Regression() {
     <PanelLayout
       title="Regression"
       description="Regress shape on centroid size (allometry) or other predictors"
-      actions={<Button size="sm" onClick={run} disabled={loading["regression"]}><Play size={14} /> {loading["regression"] ? "Running…" : "Run Regression"}</Button>}
+      actions={
+        <>
+          {regression && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const rscores = regression.regression_scores as number[] | undefined;
+              const headers = ["ID", "Predictor", "RegressionScore"];
+              const rows = included.map((sp, i) => [sp.id, logCS[i] ?? i, rscores?.[i] ?? ""]);
+              downloadCSV("regression_scores", headers, rows);
+              toast.success("Regression scores exported");
+            }}>
+              <Download size={14} /> Export CSV
+            </Button>
+          )}
+          <Button size="sm" onClick={run} disabled={loading["regression"]}>
+            {loading["regression"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
+            {loading["regression"] ? "Running…" : "Run Regression"}
+          </Button>
+        </>
+      }
     >
       <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
         <div className="space-y-3">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPhyloMapping, runIndependentContrasts } from "@/lib/ipc";
-import { Play } from "lucide-react";
+import { Play, Loader2 } from "lucide-react";
 
 const EXAMPLE_NEWICK = "((A:1,B:1):1,(C:1,D:1):1);";
 
@@ -27,8 +28,11 @@ export default function Phylogenetics() {
     try {
       const res = await runPhyloMapping(aligned, newick.trim(), ids);
       setPhyloMapping(res);
+      toast.success("Phylogenetic mapping complete", { description: `${Object.keys(res.node_values).length} nodes reconstructed` });
     } catch (e) {
-      setError("phylo", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("phylo", msg);
+      toast.error("Phylogenetic mapping failed", { description: msg });
     } finally {
       setLoading("phylo", false);
     }
@@ -41,8 +45,11 @@ export default function Phylogenetics() {
     try {
       const res = await runIndependentContrasts(aligned, newick.trim(), ids);
       setPIC(res);
+      toast.success("Independent contrasts complete", { description: `${res.n_contrasts} contrasts computed` });
     } catch (e) {
-      setError("pic", e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("pic", msg);
+      toast.error("Independent contrasts failed", { description: msg });
     } finally {
       setLoading("pic", false);
     }
@@ -75,10 +82,12 @@ export default function Phylogenetics() {
           </Card>
           <div className="flex gap-2">
             <Button size="sm" className="flex-1" onClick={runMapping} disabled={loading["phylo"] || !newick}>
-              <Play size={12} /> Map shapes
+              {loading["phylo"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+              {loading["phylo"] ? "Running…" : "Map shapes"}
             </Button>
             <Button size="sm" variant="outline" className="flex-1" onClick={runPIC} disabled={loading["pic"] || !newick}>
-              <Play size={12} /> Contrasts
+              {loading["pic"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+              {loading["pic"] ? "Running…" : "Contrasts"}
             </Button>
           </div>
           {(errors["phylo"] || errors["pic"]) && (

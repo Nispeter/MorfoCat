@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useDropzone } from "react-dropzone";
+import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,29 +8,37 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { parseTPS, parseNTS, parseMorphologika, writeTPS } from "@/lib/ipc";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
-import { Upload, Download, Trash2, Eye, EyeOff } from "lucide-react";
+import { useRecentFilesStore } from "@/store/recentFilesStore";
+import { Upload, Download, Trash2, Eye, EyeOff, Clock, X } from "lucide-react";
+
+function formatRelTime(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
+async function parseFile(name: string, content: string) {
+  const ext = name.split(".").pop()?.toLowerCase();
+  if (ext === "tps") return { parsed: await parseTPS(content), format: "TPS" };
+  if (ext === "nts") return { parsed: await parseNTS(content), format: "NTS" };
+  if (ext === "txt" || ext === "dat") return { parsed: await parseMorphologika(content), format: "Morphologika" };
+  throw new Error(`Unsupported format: .${ext}. Use .tps, .nts, or .txt (Morphologika).`);
+}
 
 export default function DataManager() {
   const { dataset, setDataset, toggleSpecimen, clear } = useDatasetStore();
+  const { files: recentFiles, addRecentFile, removeRecentFile } = useRecentFilesStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const onDrop = useCallback(
-    async (acceptedFiles: File[]) => {
-      if (!acceptedFiles.length) return;
-      const file = acceptedFiles[0];
-      const content = await file.text();
-      const ext = file.name.split(".").pop()?.toLowerCase();
-
+  const load = useCallback(
+    async (name: string, content: string) => {
       setLoading(true);
       setError(null);
       try {
-        let parsed;
-        if (ext === "tps") parsed = await parseTPS(content);
-        else if (ext === "nts") parsed = await parseNTS(content);
-        else if (ext === "txt" || ext === "dat") parsed = await parseMorphologika(content);
-        else throw new Error(`Unsupported format: .${ext}. Use .tps, .nts, or .txt (Morphologika).`);
-
+        const { parsed, format } = await parseFile(name, content);
         const specimens: Specimen[] = parsed.specimens.map((sp, i) => ({
           id: sp.id ?? `specimen_${i + 1}`,
           landmarks: sp.landmarks,
@@ -37,20 +46,27 @@ export default function DataManager() {
           image: sp.image,
           include: true,
         }));
-
-        setDataset({
-          specimens,
-          n_landmarks: parsed.n_landmarks,
-          dimensions: parsed.dimensions,
-          filename: file.name,
-        });
+        setDataset({ specimens, n_landmarks: parsed.n_landmarks, dimensions: parsed.dimensions, filename: name });
+        addRecentFile({ name, format, content });
+        toast.success(`Loaded ${name}`, { description: `${specimens.length} specimens · ${parsed.n_landmarks} landmarks` });
       } catch (e) {
-        setError(e instanceof Error ? e.message : String(e));
+        const msg = e instanceof Error ? e.message : String(e);
+        setError(msg);
+        toast.error("Failed to load file", { description: msg });
       } finally {
         setLoading(false);
       }
     },
-    [setDataset]
+    [setDataset, addRecentFile]
+  );
+
+  const onDrop = useCallback(
+    async (acceptedFiles: File[]) => {
+      if (!acceptedFiles.length) return;
+      const file = acceptedFiles[0];
+      await load(file.name, await file.text());
+    },
+    [load]
   );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -71,6 +87,12 @@ export default function DataManager() {
     a.download = dataset.filename.replace(/\.[^.]+$/, "") + "_export.tps";
     a.click();
     URL.revokeObjectURL(url);
+    toast.success("Exported TPS file");
+  };
+
+  const handleClear = () => {
+    clear();
+    toast.info("Dataset cleared");
   };
 
   return (
@@ -83,7 +105,7 @@ export default function DataManager() {
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download size={14} /> Export TPS
             </Button>
-            <Button variant="destructive" size="sm" onClick={clear}>
+            <Button variant="destructive" size="sm" onClick={handleClear}>
               <Trash2 size={14} /> Clear
             </Button>
           </>
@@ -92,6 +114,38 @@ export default function DataManager() {
     >
       {!dataset ? (
         <div className="flex h-full flex-col items-center justify-center gap-4">
+          {/* Recent files */}
+          {recentFiles.length > 0 && (
+            <div className="w-full max-w-lg">
+              <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Clock size={11} /> Recent files
+              </p>
+              <div className="flex flex-col gap-1">
+                {recentFiles.map((rf) => (
+                  <div key={rf.name} className="flex items-center gap-2 rounded-md border bg-card px-3 py-2 text-sm transition-colors hover:bg-muted/50">
+                    <button
+                      className="flex flex-1 items-center gap-2 text-left"
+                      onClick={() => load(rf.name, rf.content)}
+                      disabled={loading}
+                    >
+                      <span className="font-medium truncate">{rf.name}</span>
+                      <Badge variant="outline" className="text-[10px] shrink-0">{rf.format}</Badge>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">{formatRelTime(rf.timestamp)}</span>
+                    </button>
+                    <button
+                      className="shrink-0 text-muted-foreground hover:text-foreground"
+                      onClick={() => removeRecentFile(rf.name)}
+                      title="Remove from recents"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Drop zone */}
           <div
             {...getRootProps()}
             className={`flex h-48 w-full max-w-lg cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed transition-colors ${
@@ -110,7 +164,11 @@ export default function DataManager() {
             )}
             {loading && <p className="mt-2 text-xs text-primary">Parsing…</p>}
           </div>
-          {error && <p className="max-w-lg rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>}
+          {error && (
+            <p className="max-w-lg rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
         </div>
       ) : (
         <div className="grid h-full grid-cols-[1fr_280px] gap-4">
@@ -138,11 +196,7 @@ export default function DataManager() {
                   </thead>
                   <tbody>
                     {dataset.specimens.map((sp, i) => (
-                      <SpecimenRow
-                        key={i}
-                        specimen={sp}
-                        onToggle={() => toggleSpecimen(i)}
-                      />
+                      <SpecimenRow key={i} specimen={sp} onToggle={() => toggleSpecimen(i)} />
                     ))}
                   </tbody>
                 </table>
@@ -174,6 +228,27 @@ export default function DataManager() {
                 <p>3. Proceed with <strong>PCA</strong> or other analyses</p>
               </CardContent>
             </Card>
+            {recentFiles.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm flex items-center gap-1.5">
+                    <Clock size={12} /> Recent
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1">
+                  {recentFiles.slice(0, 5).map((rf) => (
+                    <button
+                      key={rf.name}
+                      onClick={() => load(rf.name, rf.content)}
+                      className="flex w-full items-center gap-2 rounded px-1 py-1 text-left text-xs hover:bg-muted/50 transition-colors"
+                    >
+                      <span className="truncate text-foreground/80">{rf.name}</span>
+                      <span className="ml-auto shrink-0 text-muted-foreground">{formatRelTime(rf.timestamp)}</span>
+                    </button>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       )}
@@ -181,13 +256,7 @@ export default function DataManager() {
   );
 }
 
-function SpecimenRow({
-  specimen,
-  onToggle,
-}: {
-  specimen: Specimen;
-  onToggle: () => void;
-}) {
+function SpecimenRow({ specimen, onToggle }: { specimen: Specimen; onToggle: () => void }) {
   return (
     <tr className={`border-b transition-colors hover:bg-muted/30 ${!specimen.include ? "opacity-50" : ""}`}>
       <td className="px-4 py-1.5">
