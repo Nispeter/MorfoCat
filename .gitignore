@@ -1,0 +1,48 @@
+# ── Node ─────────────────────────────────────────────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+.vite/
+
+# ── Rust / Tauri ──────────────────────────────────────────────────────────────
+src-tauri/target/
+src-tauri/gen/
+src-tauri/binaries/
+
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+venv/
+.venv/
+env/
+python/dist/
+python/build/
+python/*.spec
+
+# ── Test / coverage ───────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ── Environment ───────────────────────────────────────────────────────────────
+.env
+.env.local
+*.local
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────────────────────────────────
+.vscode/settings.json
+.idea/
+*.suo
+*.user
+
+# ── MorfoCat project files (user data, not source) ───────────────────────────
+*.morfocat

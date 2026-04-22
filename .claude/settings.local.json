@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/Nispe/.cargo/bin/**)",
+      "Bash(cmd.exe /c \"where cargo\")",
+      "Bash(cmd.exe /c \"rustc --version\")",
+      "Bash(cmd.exe /c \"winget --version\")",
+      "Bash(cmd.exe /c \"winget search Rust.Rustup 2>&1\")",
+      "PowerShell(winget search \"Rust\" --exact --id Rustup.Rustup 2>&1)",
+      "PowerShell(Get-Command winget -ErrorAction SilentlyContinue; $env:PATH -split \";\" | Where-Object { Test-Path \"$_\\\\cargo.exe\" })",
+      "PowerShell(winget install Rustup.Rustup --silent --accept-package-agreements --accept-source-agreements 2>&1)",
+      "Bash(python -c \"import PIL; print\\('PIL available'\\)\")",
+      "Bash(python scripts/gen_icons.py)",
+      "Bash(export PATH=\"$HOME/.cargo/bin:$PATH\")",
+      "Bash(npm run *)",
+      "Bash(echo \"PID: $!\")",
+      "Bash(netstat -ano)",
+      "Bash(awk '{print $5}')",
+      "Bash(xargs -I{} taskkill /F /PID {})"
+    ]
+  }
+}
