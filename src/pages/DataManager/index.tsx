@@ -6,8 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { parseTPS, parseNTS, parseMorphologika, writeTPS } from "@/lib/ipc";
+import { writeTPS } from "@/lib/ipc";
+import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
+import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
 import { Upload, Download, Trash2, Eye, EyeOff, Clock, X } from "lucide-react";
 
@@ -19,16 +21,54 @@ function formatRelTime(ts: number) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-async function parseFile(name: string, content: string) {
+function resolveId(id: string | null | undefined, image: string | null | undefined, fallbackIdx: number): string {
+  if (id && !/^\d+$/.test(id.trim())) return id.trim();
+  if (image) return image.replace(/\.[^.]+$/, "");
+  if (id) return id.trim();
+  return `specimen_${fallbackIdx + 1}`;
+}
+
+function detectGroup(image: string | null | undefined): string | undefined {
+  if (!image) return undefined;
+  const base = image.replace(/\.[^.]+$/, "").replace(/_[^_]+$/, "");
+  const m = base.match(/^([A-Za-z]+?)[FM]\d/);
+  return m ? m[1].toLowerCase() : undefined;
+}
+
+function detectFormat(content: string): "TPS" | "NTS" | "Morphologika" | null {
+  // TPS: has a bare "LM=<number>" line (with optional * prefix)
+  if (/^\*?LM=\d+/im.test(content)) return "TPS";
+  // Morphologika: has [individuals] section header
+  if (/^\[individuals\]/im.test(content)) return "Morphologika";
+  // NTS: first non-comment line is 4–5 space/comma-separated integers
+  const firstDataLine = content.split(/\r?\n/).find((l) => l.trim() && !l.trim().startsWith("'"));
+  if (firstDataLine) {
+    const parts = firstDataLine.trim().split(/[\s,]+/);
+    if (parts.length >= 4 && parts.slice(0, 4).every((p) => /^\d+$/.test(p))) return "NTS";
+  }
+  return null;
+}
+
+function parseFile(name: string, content: string) {
   const ext = name.split(".").pop()?.toLowerCase();
-  if (ext === "tps") return { parsed: await parseTPS(content), format: "TPS" };
-  if (ext === "nts") return { parsed: await parseNTS(content), format: "NTS" };
-  if (ext === "txt" || ext === "dat") return { parsed: await parseMorphologika(content), format: "Morphologika" };
-  throw new Error(`Unsupported format: .${ext}. Use .tps, .nts, or .txt (Morphologika).`);
+
+  // Content-based detection first — more reliable than extension alone
+  const detected = detectFormat(content);
+  if (detected === "TPS") return { parsed: parseTPS(content), format: "TPS" };
+  if (detected === "Morphologika") return { parsed: parseMorphologika(content), format: "Morphologika" };
+  if (detected === "NTS") return { parsed: parseNTS(content), format: "NTS" };
+
+  // Fallback to extension
+  if (ext === "tps") return { parsed: parseTPS(content), format: "TPS" };
+  if (ext === "nts") return { parsed: parseNTS(content), format: "NTS" };
+  if (ext === "txt" || ext === "dat") return { parsed: parseMorphologika(content), format: "Morphologika" };
+
+  throw new Error(`Cannot detect file format. Expected TPS (LM= lines), NTS, or Morphologika ([individuals] header). Got: .${ext ?? "unknown"}`);
 }
 
 export default function DataManager() {
   const { dataset, setDataset, toggleSpecimen, clear } = useDatasetStore();
+  const clearAnalyses = useAnalysisStore((s) => s.clearAll);
   const { files: recentFiles, addRecentFile, removeRecentFile } = useRecentFilesStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,14 +78,16 @@ export default function DataManager() {
       setLoading(true);
       setError(null);
       try {
-        const { parsed, format } = await parseFile(name, content);
+        const { parsed, format } = parseFile(name, content);
         const specimens: Specimen[] = parsed.specimens.map((sp, i) => ({
-          id: sp.id ?? `specimen_${i + 1}`,
+          id: resolveId(sp.id, sp.image, i),
+          group: detectGroup(sp.image),
           landmarks: sp.landmarks,
           scale: sp.scale,
           image: sp.image,
           include: true,
         }));
+        clearAnalyses();
         setDataset({ specimens, n_landmarks: parsed.n_landmarks, dimensions: parsed.dimensions, filename: name });
         addRecentFile({ name, format, content });
         toast.success(`Loaded ${name}`, { description: `${specimens.length} specimens · ${parsed.n_landmarks} landmarks` });
@@ -57,7 +99,7 @@ export default function DataManager() {
         setLoading(false);
       }
     },
-    [setDataset, addRecentFile]
+    [setDataset, addRecentFile, clearAnalyses]
   );
 
   const onDrop = useCallback(
@@ -71,7 +113,7 @@ export default function DataManager() {
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { "text/*": [".tps", ".nts", ".txt", ".dat"] },
+    accept: { "text/*": [".tps", ".nts", ".txt", ".dat"], "application/octet-stream": [".tps", ".nts"] },
     multiple: false,
   });
 
@@ -92,6 +134,7 @@ export default function DataManager() {
 
   const handleClear = () => {
     clear();
+    clearAnalyses();
     toast.info("Dataset cleared");
   };
 

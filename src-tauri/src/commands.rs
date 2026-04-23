@@ -2,15 +2,19 @@ use serde_json::Value;
 use std::io::Write;
 use std::process::{Command, Stdio};
 
-fn sidecar_program() -> (&'static str, Vec<&'static str>) {
+fn sidecar_path() -> String {
+    // CARGO_MANIFEST_DIR is the absolute path to src-tauri/ at compile time.
+    // This makes the dev-mode path reliable regardless of runtime CWD.
+    let manifest = env!("CARGO_MANIFEST_DIR");
+    format!("{}/../python/sidecar.py", manifest)
+}
+
+fn sidecar_program() -> (String, Vec<String>) {
     if cfg!(debug_assertions) {
-        if cfg!(target_os = "windows") {
-            ("python", vec!["../python/sidecar.py"])
-        } else {
-            ("python3", vec!["../python/sidecar.py"])
-        }
+        let python = if cfg!(target_os = "windows") { "python" } else { "python3" };
+        (python.to_string(), vec![sidecar_path()])
     } else {
-        ("morfocat-sidecar", vec![])
+        ("morfocat-sidecar".to_string(), vec![])
     }
 }
 
@@ -21,13 +25,13 @@ pub async fn run_analysis(method: String, params: Value) -> Result<Value, String
 
     let (prog, args) = sidecar_program();
 
-    let mut child = Command::new(prog)
+    let mut child = Command::new(&prog)
         .args(&args)
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .map_err(|e| format!("Failed to start Python sidecar '{}': {}", prog, e))?;
+        .map_err(|e| format!("Failed to start Python sidecar '{}' (args: {:?}): {}", prog, args, e))?;
 
     child
         .stdin

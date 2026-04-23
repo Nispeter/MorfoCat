@@ -1,14 +1,10 @@
 """TPS (thin-plate spline) file format parser and writer.
 
-TPS is the most common format for geometric morphometrics landmark data.
-Each specimen block:
-  LM=<n>
-  x1 y1
-  ...
-  xn yn
-  ID=<name>       (optional)
-  SCALE=<float>   (optional)
-  IMAGE=<file>    (optional)
+Handles both orderings that exist in the wild:
+  - Metadata after coordinates (most common):
+      LM=n  /  coords  /  IMAGE=  /  *ID=  /  SCALE=
+  - Metadata before coordinates (some digitizers):
+      IMAGE=  /  *ID=  /  SCALE=  /  LM=n  /  coords
 """
 from __future__ import annotations
 import re
@@ -21,13 +17,15 @@ def parse_tps(content: str) -> dict[str, Any]:
     current: dict | None = None
     lm_count = 0
     collected = 0
+    # Buffer for metadata lines that arrive before the LM= of their block
+    pending: dict = {}
 
     for raw_line in content.splitlines():
         line = raw_line.strip()
         if not line:
             continue
 
-        key_match = re.match(r"^([A-Z_]+)=(.*)$", line, re.IGNORECASE)
+        key_match = re.match(r"^\*?([A-Z_]+)=(.*)$", line, re.IGNORECASE)
         if key_match:
             key = key_match.group(1).upper()
             val = key_match.group(2).strip()
@@ -35,22 +33,39 @@ def parse_tps(content: str) -> dict[str, Any]:
             if key == "LM":
                 if current is not None:
                     specimens.append(current)
-                current = {"landmarks": [], "id": None, "scale": None, "image": None}
+                current = {
+                    "landmarks": [],
+                    "id": pending.pop("id", None),
+                    "scale": pending.pop("scale", None),
+                    "image": pending.pop("image", None),
+                }
+                pending.clear()
                 lm_count = int(val)
                 collected = 0
 
-            elif key in ("ID", "IMAGE") and current is not None:
-                current[key.lower()] = val
+            elif key == "ID":
+                if current is not None:
+                    current["id"] = val
+                else:
+                    pending["id"] = val
 
-            elif key == "SCALE" and current is not None:
+            elif key == "IMAGE":
+                if current is not None:
+                    current["image"] = val
+                else:
+                    pending["image"] = val
+
+            elif key == "SCALE":
                 try:
-                    current["scale"] = float(val)
+                    f = float(val)
+                    if current is not None:
+                        current["scale"] = f
+                    else:
+                        pending["scale"] = f
                 except ValueError:
                     pass
 
-            elif key == "CURVES":
-                # skip curve data blocks
-                pass
+            # silently skip CURVES and other unknown keys
 
         elif current is not None and collected < lm_count:
             coords = [float(v) for v in line.split()]
@@ -63,12 +78,15 @@ def parse_tps(content: str) -> dict[str, Any]:
     if not specimens:
         raise ValueError("No specimens found in TPS file.")
 
-    # Validate uniform landmark count
     n_lm = len(specimens[0]["landmarks"])
-    dim = len(specimens[0]["landmarks"][0]) if specimens[0]["landmarks"] else 2
-    for sp in specimens:
+    if n_lm == 0:
+        raise ValueError("First specimen has no landmark coordinates.")
+    dim = len(specimens[0]["landmarks"][0])
+    for i, sp in enumerate(specimens):
         if len(sp["landmarks"]) != n_lm:
-            raise ValueError("Inconsistent landmark counts across specimens.")
+            raise ValueError(
+                f"Specimen {i} has {len(sp['landmarks'])} landmarks; expected {n_lm}."
+            )
 
     return {
         "specimens": [

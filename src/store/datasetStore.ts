@@ -42,7 +42,7 @@ export const useDatasetStore = create<DatasetState>((set) => ({
   centroid_sizes: null,
   procrustes_distances: null,
 
-  setDataset: (ds) => set({ dataset: ds, aligned: null, consensus: null }),
+  setDataset: (ds) => set({ dataset: ds, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null }),
 
   setAligned: (aligned, consensus, centroid_sizes, procrustes_distances) =>
     set({ aligned, consensus, centroid_sizes, procrustes_distances }),
