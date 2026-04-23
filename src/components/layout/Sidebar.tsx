@@ -6,12 +6,15 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database, GitMerge, ScanSearch, BarChart2, Layers, TrendingUp,
   Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight, Cat,
-  Grid3X3,
+  Grid3X3, Images, MousePointerClick, PackageOpen,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
+import { useNavStore } from "@/store/navStore";
 
 export type PageId =
   | "data"
+  | "image-import"
+  | "digitizer"
   | "procrustes"
   | "outliers"
   | "covariance"
@@ -23,7 +26,8 @@ export type PageId =
   | "cva"
   | "lda"
   | "phylogenetics"
-  | "quant-genetics";
+  | "quant-genetics"
+  | "export-all";
 
 interface NavItem {
   id: PageId;
@@ -33,28 +37,27 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { id: "data", label: "Data Manager", icon: <Database size={18} />, group: "Data" },
-  { id: "procrustes", label: "Procrustes Fit", icon: <GitMerge size={18} />, group: "Core" },
-  { id: "outliers", label: "Outlier Detection", icon: <ScanSearch size={18} />, group: "Core" },
-  { id: "covariance", label: "Covariance Matrix", icon: <Grid3X3 size={18} />, group: "Core" },
-  { id: "pca", label: "PCA", icon: <BarChart2 size={18} />, group: "Multivariate" },
-  { id: "matrix-corr", label: "Matrix Correlation", icon: <Layers size={18} />, group: "Multivariate" },
-  { id: "pls", label: "Two-Block PLS", icon: <Sigma size={18} />, group: "Multivariate" },
-  { id: "regression", label: "Regression", icon: <TrendingUp size={18} />, group: "Multivariate" },
-  { id: "modularity", label: "Modularity", icon: <Network size={18} />, group: "Multivariate" },
-  { id: "cva", label: "CVA", icon: <Activity size={18} />, group: "Discriminant" },
-  { id: "lda", label: "LDA / Cross-Val", icon: <GitBranch size={18} />, group: "Discriminant" },
-  { id: "phylogenetics", label: "Phylogenetics", icon: <GitBranch size={18} />, group: "Comparative" },
-  { id: "quant-genetics", label: "Quant. Genetics", icon: <Dna size={18} />, group: "Comparative" },
+  { id: "data",         label: "Data Manager",       icon: <Database size={18} />,          group: "Data" },
+  { id: "image-import", label: "Image Import",        icon: <Images size={18} />,            group: "Digitize" },
+  { id: "digitizer",   label: "Landmark Digitizer",  icon: <MousePointerClick size={18} />, group: "Digitize" },
+  { id: "procrustes",  label: "Procrustes Fit",      icon: <GitMerge size={18} />,          group: "Core" },
+  { id: "outliers",    label: "Outlier Detection",   icon: <ScanSearch size={18} />,        group: "Core" },
+  { id: "covariance",  label: "Covariance Matrix",   icon: <Grid3X3 size={18} />,           group: "Core" },
+  { id: "pca",         label: "PCA",                 icon: <BarChart2 size={18} />,         group: "Multivariate" },
+  { id: "matrix-corr", label: "Matrix Correlation",  icon: <Layers size={18} />,            group: "Multivariate" },
+  { id: "pls",         label: "Two-Block PLS",       icon: <Sigma size={18} />,             group: "Multivariate" },
+  { id: "regression",  label: "Regression",          icon: <TrendingUp size={18} />,        group: "Multivariate" },
+  { id: "modularity",  label: "Modularity",          icon: <Network size={18} />,           group: "Multivariate" },
+  { id: "cva",         label: "CVA",                 icon: <Activity size={18} />,          group: "Discriminant" },
+  { id: "lda",         label: "LDA / Cross-Val",     icon: <GitBranch size={18} />,         group: "Discriminant" },
+  { id: "phylogenetics",   label: "Phylogenetics",   icon: <GitBranch size={18} />,         group: "Comparative" },
+  { id: "quant-genetics",  label: "Quant. Genetics", icon: <Dna size={18} />,               group: "Comparative" },
+  { id: "export-all",  label: "Export All",          icon: <PackageOpen size={18} />,       group: "Tools" },
 ];
 
-interface SidebarProps {
-  activePage: PageId;
-  onNavigate: (id: PageId) => void;
-}
-
-export function Sidebar({ activePage, onNavigate }: SidebarProps) {
+export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { activePage, navigate } = useNavStore();
 
   const groups = [...new Set(NAV.map((n) => n.group))];
 
@@ -93,7 +96,7 @@ export function Sidebar({ activePage, onNavigate }: SidebarProps) {
                         collapsed && "justify-center",
                         activePage === item.id && "font-semibold"
                       )}
-                      onClick={() => onNavigate(item.id)}
+                      onClick={() => navigate(item.id)}
                     >
                       {item.icon}
                       {!collapsed && <span className="truncate">{item.label}</span>}

@@ -264,3 +264,14 @@ export interface SelectionGradientResult {
 
 export const runSelectionGradient = (aligned: number[][][], fitness: number[]) =>
   runAnalysis<SelectionGradientResult>("run_selection_gradient", { aligned, fitness });
+
+// ── File system helpers (Rust commands, no plugin needed) ────────────────────
+
+export const readFileB64 = (path: string): Promise<string> =>
+  invoke<string>("read_file_b64", { path });
+
+export const writeTextFile = (path: string, content: string): Promise<void> =>
+  invoke<void>("write_text_file", { path, content });
+
+export const ensureDir = (path: string): Promise<void> =>
+  invoke<void>("ensure_dir", { path });

@@ -4,7 +4,13 @@ mod commands;
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![commands::run_analysis])
+        .plugin(tauri_plugin_dialog::init())
+        .invoke_handler(tauri::generate_handler![
+            commands::run_analysis,
+            commands::read_file_b64,
+            commands::write_text_file,
+            commands::ensure_dir,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running MorfoCat");
 }

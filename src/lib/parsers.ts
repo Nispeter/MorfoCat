@@ -1,5 +1,41 @@
 import type { ParsedDataset } from "./ipc";
 
+export interface TpsSpecimen {
+  id?: string | null;
+  image?: string | null;
+  scale?: number | null;
+  landmarks: number[][];
+  semiLandmarkIndices?: number[];
+}
+
+/** Serialize specimens to TPS text, writing SLIDERS= for any semilandmarks. */
+export function writeTPS(specimens: TpsSpecimen[]): string {
+  const lines: string[] = [];
+  for (const sp of specimens) {
+    if (sp.image) lines.push(`IMAGE=${sp.image}`);
+    lines.push(`LM=${sp.landmarks.length}`);
+    for (const pt of sp.landmarks) {
+      lines.push(pt.map((v) => v.toFixed(6)).join(" "));
+    }
+    if (sp.id != null) lines.push(`ID=${sp.id}`);
+    if (sp.scale != null) lines.push(`SCALE=${sp.scale.toFixed(6)}`);
+    if (sp.semiLandmarkIndices && sp.semiLandmarkIndices.length >= 2) {
+      const si = sp.semiLandmarkIndices;
+      // SLIDERS rows: before, slider, after — build a chain
+      const sliders: string[] = [];
+      for (let k = 0; k < si.length; k++) {
+        const before = k === 0 ? si[0] : si[k - 1];
+        const after = k === si.length - 1 ? si[si.length - 1] : si[k + 1];
+        sliders.push(`${before + 1} ${si[k] + 1} ${after + 1}`);
+      }
+      lines.push(`SLIDERS=${si.length}`);
+      lines.push(...sliders);
+    }
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
 export function parseTPS(content: string): ParsedDataset {
   type Specimen = { landmarks: number[][]; id: string | null; scale: number | null; image: string | null };
 
@@ -91,7 +127,7 @@ export function parseNTS(content: string): ParsedDataset {
   const n = parseInt(header[0], 10); // specimens
   const p = parseInt(header[1], 10); // landmarks
   const k = parseInt(header[2], 10); // dimensions
-  const missFlag = header[4]?.toUpperCase() ?? "ABSENT";
+  // missFlag (header[4]) reserved for future missing-value handling
 
   if (isNaN(n) || isNaN(p) || isNaN(k)) throw new Error("Cannot parse NTS header.");
 
