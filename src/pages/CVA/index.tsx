@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +18,7 @@ export default function CVA() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { cva, setCVA, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [permutations, setPermutations] = useState(999);
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
@@ -45,8 +47,8 @@ export default function CVA() {
 
   return (
     <PanelLayout
-      title="Canonical Variate Analysis"
-      description="Maximise among-group to within-group variation"
+      title={t("page.cva.title")}
+      description={t("page.cva.desc")}
       actions={
         <div className="flex items-center gap-2">
           {cva && (
@@ -75,7 +77,7 @@ export default function CVA() {
           </select>
           <Button size="sm" onClick={run} disabled={loading["cva"] || !hasGroups}>
             {loading["cva"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["cva"] ? "Running…" : "Run CVA"}
+            {loading["cva"] ? t("action.running") : t("action.run") + " CVA"}
           </Button>
         </div>
       }
@@ -84,7 +86,7 @@ export default function CVA() {
       {errors["cva"] && <p className="mb-3 text-sm text-destructive">{errors["cva"]}</p>}
 
       {!cva ? (
-        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run CVA to see results.</div>
+        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("action.run")} CVA</div>
       ) : (
         <Tabs defaultValue="scores">
           <TabsList>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ export default function Phylogenetics() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { phyloMapping, pic, setPhyloMapping, setPIC, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [newick, setNewick] = useState("");
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
@@ -62,7 +64,7 @@ export default function Phylogenetics() {
   );
 
   return (
-    <PanelLayout title="Phylogenetic Comparative Methods" description="Map shape onto a phylogeny · Independent contrasts (Felsenstein 1985)">
+    <PanelLayout title={t("page.phylogenetics.title")} description={t("page.phylogenetics.desc")}>
       <div className="grid grid-cols-[300px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
@@ -83,11 +85,11 @@ export default function Phylogenetics() {
           <div className="flex gap-2">
             <Button size="sm" className="flex-1" onClick={runMapping} disabled={loading["phylo"] || !newick}>
               {loading["phylo"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-              {loading["phylo"] ? "Running…" : "Map shapes"}
+              {loading["phylo"] ? t("action.running") : t("action.run")}
             </Button>
             <Button size="sm" variant="outline" className="flex-1" onClick={runPIC} disabled={loading["pic"] || !newick}>
               {loading["pic"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-              {loading["pic"] ? "Running…" : "Contrasts"}
+              {loading["pic"] ? t("action.running") : "PIC"}
             </Button>
           </div>
           {(errors["phylo"] || errors["pic"]) && (

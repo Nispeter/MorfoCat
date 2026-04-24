@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default function MatrixCorr() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { matrixCorr, setMatrixCorr, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [permutations, setPermutations] = useState(999);
   const [status, setStatus] = useState("");
 
@@ -72,7 +74,7 @@ export default function MatrixCorr() {
           </select>
           <Button size="sm" onClick={run} disabled={loading["matrixCorr"]}>
             {loading["matrixCorr"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["matrixCorr"] ? status || "Running…" : "Run"}
+            {loading["matrixCorr"] ? status || t("action.running") : t("action.run")}
           </Button>
         </div>
       }

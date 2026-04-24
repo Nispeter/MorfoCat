@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ export default function LDA() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { lda, setLDA, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
   const groups = included.map((s) => s.group ?? "unassigned");
@@ -43,8 +45,8 @@ export default function LDA() {
 
   return (
     <PanelLayout
-      title="Linear Discriminant Analysis"
-      description="LDA with leave-one-out cross-validation"
+      title={t("page.lda.title")}
+      description={t("page.lda.desc")}
       actions={
         <>
           {lda && (
@@ -63,7 +65,7 @@ export default function LDA() {
           )}
           <Button size="sm" onClick={run} disabled={loading["lda"] || !hasGroups}>
             {loading["lda"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["lda"] ? "Running…" : "Run LDA"}
+            {loading["lda"] ? t("action.running") : t("action.run") + " LDA"}
           </Button>
         </>
       }
@@ -72,7 +74,7 @@ export default function LDA() {
       {errors["lda"] && <p className="mb-3 text-sm text-destructive">{errors["lda"]}</p>}
 
       {!lda ? (
-        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run LDA to see results.</div>
+        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("action.run")} LDA</div>
       ) : (
         <>
           <div className="mb-4 flex gap-3">

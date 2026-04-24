@@ -17,6 +17,7 @@ import LDA from "@/pages/LDA";
 import Phylogenetics from "@/pages/Phylogenetics";
 import QuantGenetics from "@/pages/QuantGenetics";
 import ExportAll from "@/pages/ExportAll";
+import Settings from "@/pages/Settings";
 
 const PAGE_MAP: Record<PageId, React.ComponentType> = {
   "data":           DataManager,
@@ -35,6 +36,7 @@ const PAGE_MAP: Record<PageId, React.ComponentType> = {
   "phylogenetics":  Phylogenetics,
   "quant-genetics": QuantGenetics,
   "export-all":     ExportAll,
+  "settings":       Settings,
 };
 
 export function AppShell() {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ export default function Modularity() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { modularity, setModularity, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [permutations, setPermutations] = useState(999);
   const [modules, setModules] = useState<string[]>(["", ""]);
 
@@ -55,8 +57,8 @@ export default function Modularity() {
 
   return (
     <PanelLayout
-      title="Modularity Hypotheses"
-      description="Test whether landmark subsets form distinct covariance modules (RV coefficient, CR statistic)"
+      title={t("page.modularity.title")}
+      description={t("page.modularity.desc")}
       actions={
         <div className="flex items-center gap-2">
           {modularity && (
@@ -84,7 +86,7 @@ export default function Modularity() {
           </select>
           <Button size="sm" onClick={run} disabled={loading["modularity"]}>
             {loading["modularity"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["modularity"] ? "Running…" : "Test"}
+            {loading["modularity"] ? t("action.running") : t("action.run")}
           </Button>
         </div>
       }

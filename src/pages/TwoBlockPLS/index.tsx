@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ export default function TwoBlockPLS() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { pls, setPLS, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [permutations, setPermutations] = useState(999);
   const [splitIdx, setSplitIdx] = useState<number | null>(null);
 
@@ -55,8 +57,8 @@ export default function TwoBlockPLS() {
 
   return (
     <PanelLayout
-      title="Two-Block Partial Least Squares"
-      description="Covariation between two landmark blocks via SVD of the cross-covariance matrix"
+      title={t("page.pls.title")}
+      description={t("page.pls.desc")}
       actions={
         <div className="flex items-center gap-2">
           <label className="text-xs text-muted-foreground">Block split at LM:</label>
@@ -76,7 +78,7 @@ export default function TwoBlockPLS() {
           </select>
           <Button size="sm" onClick={run} disabled={loading["pls"]}>
             {loading["pls"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["pls"] ? "Running…" : "Run PLS"}
+            {loading["pls"] ? t("action.running") : t("action.run") + " PLS"}
           </Button>
         </div>
       }

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ export default function Regression() {
   const dataset = useDatasetStore((s) => s.dataset);
   const centroid_sizes = useDatasetStore((s) => s.centroid_sizes);
   const { regression, setRegression, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [pooled, setPooled] = useState(false);
   const [useCS, setUseCS] = useState(true);
 
@@ -43,7 +45,7 @@ export default function Regression() {
     }
   };
 
-  if (!aligned) return <NeedsProcrustes title="Regression" />;
+  if (!aligned) return <NeedsProcrustes title={t("page.regression.title")} />;
 
   const logCS = centroid_sizes?.map(Math.log) ?? [];
   const regrScores = regression?.regression_scores as number[] | undefined;
@@ -51,8 +53,8 @@ export default function Regression() {
 
   return (
     <PanelLayout
-      title="Regression"
-      description="Regress shape on centroid size (allometry) or other predictors"
+      title={t("page.regression.title")}
+      description={t("page.regression.desc")}
       actions={
         <>
           {regression && (
@@ -68,7 +70,7 @@ export default function Regression() {
           )}
           <Button size="sm" onClick={run} disabled={loading["regression"]}>
             {loading["regression"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["regression"] ? "Running…" : "Run Regression"}
+            {loading["regression"] ? t("action.running") : t("action.run")}
           </Button>
         </>
       }
@@ -111,7 +113,7 @@ export default function Regression() {
 
         <div className="space-y-4 overflow-auto">
           {!regression ? (
-            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Click Run Regression.</div>
+            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("action.run")}</div>
           ) : (
             <Tabs defaultValue="plot">
               <TabsList>

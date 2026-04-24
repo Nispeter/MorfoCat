@@ -47,6 +47,52 @@
     --input: 217.2 32.6% 17.5%;
     --ring: 224.3 76.3% 48%;
   }
+
+  /* ── Dark Purple theme ────────────────────────────────────────────────────── */
+  [data-theme="dark-purple"] {
+    --background: 270 35% 6%;
+    --foreground: 275 25% 95%;
+    --card: 270 32% 9%;
+    --card-foreground: 275 25% 95%;
+    --popover: 270 32% 9%;
+    --popover-foreground: 275 25% 95%;
+    --primary: 270 72% 65%;
+    --primary-foreground: 270 10% 8%;
+    --secondary: 270 28% 16%;
+    --secondary-foreground: 275 25% 95%;
+    --muted: 270 28% 13%;
+    --muted-foreground: 270 18% 62%;
+    --accent: 270 28% 16%;
+    --accent-foreground: 275 25% 95%;
+    --destructive: 0 55% 38%;
+    --destructive-foreground: 275 25% 95%;
+    --border: 270 28% 18%;
+    --input: 270 28% 15%;
+    --ring: 270 72% 65%;
+  }
+
+  /* ── Light Cyan theme ─────────────────────────────────────────────────────── */
+  [data-theme="light-cyan"] {
+    --background: 186 40% 97%;
+    --foreground: 195 55% 8%;
+    --card: 0 0% 100%;
+    --card-foreground: 195 55% 8%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 195 55% 8%;
+    --primary: 190 88% 38%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 190 30% 90%;
+    --secondary-foreground: 195 55% 10%;
+    --muted: 190 22% 92%;
+    --muted-foreground: 195 22% 44%;
+    --accent: 190 30% 90%;
+    --accent-foreground: 195 55% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 190 25% 84%;
+    --input: 190 25% 84%;
+    --ring: 190 88% 38%;
+  }
 }
 
 @layer base {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ export default function PCA() {
   const consensus = useDatasetStore((s) => s.consensus);
   const dataset = useDatasetStore((s) => s.dataset);
   const { pca, setPCA, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [pcX, setPcX] = useState(0);
   const [pcY, setPcY] = useState(1);
   const [scale, setScale] = useState(2);
@@ -49,7 +51,7 @@ export default function PCA() {
 
   if (!aligned) {
     return (
-      <PanelLayout title="Principal Component Analysis">
+      <PanelLayout title={t("page.pca.title")}>
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
       </PanelLayout>
     );
@@ -57,8 +59,8 @@ export default function PCA() {
 
   return (
     <PanelLayout
-      title="Principal Component Analysis"
-      description="PCA of Procrustes shape coordinates"
+      title={t("page.pca.title")}
+      description={t("page.pca.desc")}
       actions={
         <>
           {pca && (
@@ -74,14 +76,14 @@ export default function PCA() {
           )}
           <Button size="sm" onClick={run} disabled={loading["pca"]}>
             {loading["pca"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["pca"] ? "Running…" : "Run PCA"}
+            {loading["pca"] ? t("action.running") : t("action.run") + " PCA"}
           </Button>
         </>
       }
     >
       {!pca ? (
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-          {errors["pca"] ? <span className="text-destructive">{errors["pca"]}</span> : "Click Run PCA to begin."}
+          {errors["pca"] ? <span className="text-destructive">{errors["pca"]}</span> : t("action.run") + " PCA"}
         </div>
       ) : (
         <Tabs defaultValue="scree" className="h-full">

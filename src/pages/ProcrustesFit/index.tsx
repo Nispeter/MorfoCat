@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +19,7 @@ import { Play, Loader2, HelpCircle } from "lucide-react";
 export default function ProcrustesFit() {
   const { dataset, setAligned } = useDatasetStore();
   const { setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const aligned = useDatasetStore((s) => s.aligned);
   const consensus = useDatasetStore((s) => s.consensus);
   const procDist = useDatasetStore((s) => s.procrustes_distances);
@@ -52,12 +54,12 @@ export default function ProcrustesFit() {
 
   return (
     <PanelLayout
-      title="Procrustes Fit"
-      description="Generalized Procrustes Analysis — align all specimens to a common mean shape"
+      title={t("page.procrustes.title")}
+      description={t("page.procrustes.desc")}
       actions={
         <Button size="sm" onClick={run} disabled={loading["procrustes"]}>
           {loading["procrustes"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-          {loading["procrustes"] ? "Running…" : "Run GPA"}
+          {loading["procrustes"] ? t("action.running") : t("action.run") + " GPA"}
         </Button>
       }
     >
@@ -107,7 +109,7 @@ export default function ProcrustesFit() {
         <div className="space-y-4 overflow-auto">
           {!aligned ? (
             <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-              Run GPA to see results
+              {t("action.run")} GPA
             </div>
           ) : (
             <>
@@ -167,8 +169,9 @@ export default function ProcrustesFit() {
 }
 
 function NoData() {
+  const t = useT();
   return (
-    <PanelLayout title="Procrustes Fit">
+    <PanelLayout title={t("page.procrustes.title")}>
       <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
         Import a dataset in Data Manager first.
       </div>

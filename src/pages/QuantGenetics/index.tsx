@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default function QuantGenetics() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { gMatrix, selectionGradient, setGMatrix, setSelectionGradient, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
 
   const [sireCol, setSireCol] = useState("");
   const [damCol, setDamCol] = useState("");
@@ -70,7 +72,7 @@ export default function QuantGenetics() {
   const maxAbs = Math.max(...gCov.flat().map(Math.abs), 1e-10);
 
   return (
-    <PanelLayout title="Quantitative Genetics of Shape" description="G matrix estimation · Selection gradient analysis">
+    <PanelLayout title={t("page.quantGenetics.title")} description={t("page.quantGenetics.desc")}>
       <Tabs defaultValue="gmatrix">
         <TabsList>
           <TabsTrigger value="gmatrix">G Matrix</TabsTrigger>
@@ -94,7 +96,7 @@ export default function QuantGenetics() {
                   <p className="text-xs text-muted-foreground">Requires family structure data. At least 2 sires needed.</p>
                   <Button size="sm" className="w-full" onClick={runG} disabled={loading["gMatrix"]}>
                     {loading["gMatrix"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-                    {loading["gMatrix"] ? "Running…" : "Estimate G"}
+                    {loading["gMatrix"] ? t("action.running") : t("action.run") + " G"}
                   </Button>
                   {errors["gMatrix"] && <p className="text-xs text-destructive">{errors["gMatrix"]}</p>}
                 </CardContent>
@@ -154,7 +156,7 @@ export default function QuantGenetics() {
                   </div>
                   <Button size="sm" className="w-full" onClick={runSel} disabled={loading["selection"] || !fitnessStr.trim()}>
                     {loading["selection"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-                    {loading["selection"] ? "Running…" : "Compute β"}
+                    {loading["selection"] ? t("action.running") : "β"}
                   </Button>
                   {errors["selection"] && <p className="text-xs text-destructive">{errors["selection"]}</p>}
                 </CardContent>

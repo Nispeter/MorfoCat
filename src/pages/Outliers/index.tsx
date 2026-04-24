@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +16,7 @@ export default function Outliers() {
   const dataset = useDatasetStore((s) => s.dataset);
   const toggleSpecimen = useDatasetStore((s) => s.toggleSpecimen);
   const { outliers, setOutliers, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [threshold, setThreshold] = useState(3);
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
@@ -41,7 +43,7 @@ export default function Outliers() {
 
   if (!aligned) {
     return (
-      <PanelLayout title="Outlier Detection">
+      <PanelLayout title={t("page.outliers.title")}>
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
           Run Procrustes Fit first.
         </div>
@@ -60,12 +62,12 @@ export default function Outliers() {
 
   return (
     <PanelLayout
-      title="Outlier Detection"
-      description="Specimens with unusually large Procrustes distances from the mean"
+      title={t("page.outliers.title")}
+      description={t("page.outliers.desc")}
       actions={
         <Button size="sm" variant="outline" onClick={run} disabled={loading["outliers"]}>
           {loading["outliers"] ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
-          {loading["outliers"] ? "Running…" : "Refresh"}
+          {loading["outliers"] ? t("action.running") : t("action.refresh")}
         </Button>
       }
     >

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +17,7 @@ export default function Covariance() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
   const { covariance, setCovariance, setLoading, setError, loading, errors } = useAnalysisStore();
+  const t = useT();
   const [pooled, setPooled] = useState(false);
 
   const groups = pooled
@@ -41,7 +43,7 @@ export default function Covariance() {
 
   if (!aligned) {
     return (
-      <PanelLayout title="Covariance Matrix">
+      <PanelLayout title={t("page.covariance.title")}>
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
       </PanelLayout>
     );
@@ -55,8 +57,8 @@ export default function Covariance() {
 
   return (
     <PanelLayout
-      title="Covariance Matrix"
-      description="Variance-covariance matrix of Procrustes shape coordinates"
+      title={t("page.covariance.title")}
+      description={t("page.covariance.desc")}
       actions={
         <>
           {covariance && (

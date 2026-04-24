@@ -1,0 +1,6 @@
+- finish the last dev
+- add variable cuantity of landmarks 
+- add variable cuantity of semi landmarks
+- have line (deactivable) between landmarks and semilandmarks
+- add open and close tabs on extended sidebar
+- 
