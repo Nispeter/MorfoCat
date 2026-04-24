@@ -5,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database, GitMerge, ScanSearch, BarChart2, Layers, TrendingUp,
-  Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight,
+  Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight, ChevronDown,
   Cat, Grid3X3, Images, MousePointerClick, PackageOpen, Settings,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -28,9 +28,9 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { id: "data",           labelKey: "nav.data",          icon: <Database size={18} />,          group: "Data" },
   { id: "image-import",   labelKey: "nav.imageImport",   icon: <Images size={18} />,            group: "Digitize" },
   { id: "digitizer",      labelKey: "nav.digitizer",     icon: <MousePointerClick size={18} />, group: "Digitize" },
+  { id: "data",           labelKey: "nav.data",          icon: <Database size={18} />,          group: "Data" },
   { id: "procrustes",     labelKey: "nav.procrustes",    icon: <GitMerge size={18} />,          group: "Core" },
   { id: "outliers",       labelKey: "nav.outliers",      icon: <ScanSearch size={18} />,        group: "Core" },
   { id: "covariance",     labelKey: "nav.covariance",    icon: <Grid3X3 size={18} />,           group: "Core" },
@@ -49,10 +49,19 @@ const NAV: NavItem[] = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
   const { activePage, navigate } = useNavStore();
   const t = useT();
 
   const groups = [...new Set(NAV.map((n) => n.group))];
+
+  function toggleGroup(group: string) {
+    setClosedGroups((prev) => {
+      const next = new Set(prev);
+      next.has(group) ? next.delete(group) : next.add(group);
+      return next;
+    });
+  }
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -68,35 +77,54 @@ export function Sidebar() {
         <Separator />
 
         <ScrollArea className="flex-1 px-2 py-2">
-          {groups.map((group) => (
-            <div key={group} className="mb-3">
-              {!collapsed && (
-                <p className="mb-1 px-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  {t(`group.${group}` as TranslationKey)}
-                </p>
-              )}
-              {NAV.filter((n) => n.group === group).map((item) => (
-                <Tooltip key={item.id}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant={activePage === item.id ? "default" : "ghost"}
-                      size={collapsed ? "icon" : "sm"}
-                      className={cn(
-                        "w-full justify-start gap-2",
-                        collapsed && "justify-center",
-                        activePage === item.id && "font-semibold"
-                      )}
-                      onClick={() => navigate(item.id)}
-                    >
-                      {item.icon}
-                      {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-                    </Button>
-                  </TooltipTrigger>
-                  {collapsed && <TooltipContent side="right">{t(item.labelKey)}</TooltipContent>}
-                </Tooltip>
-              ))}
-            </div>
-          ))}
+          {groups.map((group) => {
+            const isGroupClosed = closedGroups.has(group);
+            const groupItems = NAV.filter((n) => n.group === group);
+            const groupActive = groupItems.some((n) => n.id === activePage);
+
+            return (
+              <div key={group} className="mb-1">
+                {!collapsed ? (
+                  <button
+                    onClick={() => toggleGroup(group)}
+                    className={cn(
+                      "mb-0.5 flex w-full items-center justify-between rounded px-2 py-1 text-[10px] font-semibold uppercase tracking-widest transition-colors hover:bg-muted/60",
+                      groupActive && isGroupClosed ? "text-primary" : "text-muted-foreground"
+                    )}
+                  >
+                    <span>{t(`group.${group}` as TranslationKey)}</span>
+                    <ChevronDown
+                      size={11}
+                      className={cn("transition-transform duration-150", isGroupClosed && "-rotate-90")}
+                    />
+                  </button>
+                ) : (
+                  <div className="mb-0.5 h-px mx-1 bg-border/50" />
+                )}
+
+                {(!isGroupClosed || collapsed) && groupItems.map((item) => (
+                  <Tooltip key={item.id}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={activePage === item.id ? "default" : "ghost"}
+                        size={collapsed ? "icon" : "sm"}
+                        className={cn(
+                          "w-full justify-start gap-2",
+                          collapsed && "justify-center",
+                          activePage === item.id && "font-semibold"
+                        )}
+                        onClick={() => navigate(item.id)}
+                      >
+                        {item.icon}
+                        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                      </Button>
+                    </TooltipTrigger>
+                    {collapsed && <TooltipContent side="right">{t(item.labelKey)}</TooltipContent>}
+                  </Tooltip>
+                ))}
+              </div>
+            );
+          })}
         </ScrollArea>
 
         <Separator />

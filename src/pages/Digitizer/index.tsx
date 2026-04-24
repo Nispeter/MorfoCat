@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDigitizerStore, type LandmarkPoint } from "@/store/digitizerStore";
@@ -14,7 +15,7 @@ import { parseTPS, writeTPS } from "@/lib/parsers";
 import { readFileB64, writeTextFile } from "@/lib/ipc";
 import {
   ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
-  CheckCircle2, Circle, MousePointerClick, Import,
+  CheckCircle2, Circle, MousePointerClick, Import, Spline,
 } from "lucide-react";
 
 // ── Canvas drawing ────────────────────────────────────────────────────────────
@@ -25,9 +26,9 @@ function drawCanvas(
   canvas: HTMLCanvasElement,
   img: HTMLImageElement,
   landmarks: LandmarkPoint[],
-  nLandmarks: number,
   nSemi: number,
-  xform: React.MutableRefObject<Transform>
+  xform: React.MutableRefObject<Transform>,
+  showLine: boolean
 ) {
   const ctx = canvas.getContext("2d")!;
   const { width, height } = canvas;
@@ -47,10 +48,24 @@ function drawCanvas(
 
   ctx.drawImage(img, ox, oy, iw, ih);
 
-  const firstSemiIdx = nLandmarks - nSemi;
+  // Line through all landmarks in order — green for fixed, amber for semi
+  if (showLine && landmarks.length >= 2) {
+    for (let j = 1; j < landmarks.length; j++) {
+      const prev = landmarks[j - 1];
+      const curr = landmarks[j];
+      const isSemiSeg = prev.isSemi || curr.isSemi;
+      ctx.beginPath();
+      ctx.moveTo(prev.x * scale + ox, prev.y * scale + oy);
+      ctx.lineTo(curr.x * scale + ox, curr.y * scale + oy);
+      ctx.strokeStyle = isSemiSeg ? "rgba(245,158,11,0.75)" : "rgba(34,197,94,0.75)";
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    }
+  }
 
-  // Connect semilandmarks
-  const semiPts = landmarks.filter((_, i) => i >= firstSemiIdx);
+  // Connect semilandmarks with dashed curve
+  const semiPts = landmarks.filter((lm) => lm.isSemi);
   if (semiPts.length >= 2) {
     ctx.beginPath();
     semiPts.forEach((lm, j) => {
@@ -69,7 +84,7 @@ function drawCanvas(
   landmarks.forEach((lm, i) => {
     const cx = lm.x * scale + ox;
     const cy = lm.y * scale + oy;
-    const isSemi = lm.isSemi || i >= firstSemiIdx;
+    const isSemi = nSemi > 0 && lm.isSemi;
 
     ctx.beginPath();
     ctx.arc(cx, cy, 7, 0, Math.PI * 2);
@@ -123,11 +138,14 @@ export default function Digitizer() {
   const xformRef = useRef<Transform>({ scale: 1, ox: 0, oy: 0 });
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [loadingImage, setLoadingImage] = useState(false);
+  const [showLine, setShowLine] = useState(true);
 
   const current = specimens[currentIdx];
   const isComplete = current ? current.landmarks.length >= nLandmarks : false;
   const allComplete = specimens.length > 0 && specimens.every((sp) => sp.landmarks.length >= nLandmarks);
-  const firstSemiIdx = nLandmarks - nSemi;
+  const nFixed = nLandmarks - nSemi;
+  const placedFixed = current?.landmarks.filter((lm) => !lm.isSemi).length ?? 0;
+  const placedSemi  = current?.landmarks.filter((lm) =>  lm.isSemi).length ?? 0;
 
   // Resize canvas to container
   useEffect(() => {
@@ -138,11 +156,11 @@ export default function Digitizer() {
       if (!canvas) return;
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
-      if (imgRef.current) drawCanvas(canvas, imgRef.current, current?.landmarks ?? [], nLandmarks, nSemi, xformRef);
+      if (imgRef.current) drawCanvas(canvas, imgRef.current, current?.landmarks ?? [], nSemi, xformRef, showLine);
     });
     ro.observe(container);
     return () => ro.disconnect();
-  }, [current?.landmarks, nLandmarks, nSemi]);
+  }, [current?.landmarks, nLandmarks, nSemi, showLine]);
 
   // Load image when specimen changes
   useEffect(() => {
@@ -171,18 +189,18 @@ export default function Digitizer() {
     img.onload = () => {
       imgRef.current = img;
       const canvas = canvasRef.current;
-      if (canvas) drawCanvas(canvas, img, current?.landmarks ?? [], nLandmarks, nSemi, xformRef);
+      if (canvas) drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine);
     };
     img.src = imageDataUrl;
-  }, [imageDataUrl]);
+  }, [imageDataUrl, showLine]);
 
   // Redraw on landmark change (image already loaded)
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
-    drawCanvas(canvas, img, current?.landmarks ?? [], nLandmarks, nSemi, xformRef);
-  }, [current?.landmarks, nLandmarks, nSemi]);
+    drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine);
+  }, [current?.landmarks, nLandmarks, nSemi, showLine]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -206,10 +224,15 @@ export default function Digitizer() {
     const imgY = (py - oy) / scale;
     const img = imgRef.current;
     if (!img || imgX < 0 || imgX > img.naturalWidth || imgY < 0 || imgY > img.naturalHeight) return;
-    const nextIdx = current.landmarks.length;
-    const isSemi = e.shiftKey || nextIdx >= firstSemiIdx;
+    const pFixed = current.landmarks.filter((lm) => !lm.isSemi).length;
+    const pSemi  = current.landmarks.filter((lm) =>  lm.isSemi).length;
+    const canFixed = pFixed < nFixed;
+    const canSemi  = nSemi > 0 && pSemi < nSemi;
+    // Shift = prefer semi; fall back to fixed if semi quota full (and vice versa)
+    const isSemi = e.shiftKey ? (canSemi ? true : false) : (canFixed ? false : canSemi);
+    if (!canFixed && !canSemi) return;
     addLandmark(imgX, imgY, isSemi);
-  }, [current, isComplete, firstSemiIdx, addLandmark]);
+  }, [current, isComplete, nFixed, nSemi, addLandmark]);
 
   // ── Open TPS for digitizing ─────────────────────────────────────────────────
   const handleOpenTPS = useCallback(async () => {
@@ -260,12 +283,13 @@ export default function Digitizer() {
     });
     if (!savePath) return;
     try {
-      const semiIndices = Array.from({ length: nSemi }, (_, i) => firstSemiIdx + i);
       const tpsSpecimens = specimens.map((sp) => ({
         id: sp.id,
         image: sp.imageBase || undefined,
         landmarks: sp.landmarks.map((lm) => [lm.x, lm.y]),
-        semiLandmarkIndices: nSemi > 0 ? semiIndices : undefined,
+        semiLandmarkIndices: nSemi > 0
+          ? sp.landmarks.map((lm, i) => lm.isSemi ? i : -1).filter((i) => i >= 0)
+          : undefined,
       }));
       const content = writeTPS(tpsSpecimens);
       await writeTextFile(savePath, content);
@@ -273,7 +297,7 @@ export default function Digitizer() {
     } catch (e) {
       toast.error("Export failed", { description: String(e) });
     }
-  }, [specimens, nSemi, firstSemiIdx, sourceFile]);
+  }, [specimens, nSemi, sourceFile]);
 
   // ── Load into DataManager ───────────────────────────────────────────────────
   const handleLoadAsDataset = useCallback(() => {
@@ -396,11 +420,9 @@ export default function Digitizer() {
             {/* Mode badge */}
             {!isComplete && (
               <div className="absolute bottom-3 left-3 flex gap-2">
-                <Badge variant={placed < firstSemiIdx ? "default" : "secondary"} className="text-xs">
-                  {placed < firstSemiIdx ? "Fixed LM" : "Semi-LM"} #{placed + 1}
-                </Badge>
                 <Badge variant="outline" className="text-xs bg-black/60 text-white border-white/20">
-                  Shift+click = semilandmark
+                  LM #{placed + 1} · {placedFixed < nFixed ? "click = fixed" : "click = semi"}
+                  {nSemi > 0 && placedSemi < nSemi ? " · shift = semi" : ""}
                 </Badge>
               </div>
             )}
@@ -426,6 +448,13 @@ export default function Digitizer() {
               <Button variant="outline" size="sm" className="w-full text-destructive" onClick={clearSpecimen} disabled={placed === 0}>
                 <Trash2 size={13} /> Clear Specimen
               </Button>
+              <div className="flex items-center justify-between py-0.5">
+                <div className="flex items-center gap-2 text-sm">
+                  <Spline size={13} className="text-muted-foreground" />
+                  <span>Connect line</span>
+                </div>
+                <Switch checked={showLine} onCheckedChange={setShowLine} />
+              </div>
             </CardContent>
           </Card>
 
@@ -434,9 +463,15 @@ export default function Digitizer() {
             <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">Progress</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">This specimen</span>
-                <span className="font-medium">{placed}/{total}</span>
+                <span className="text-muted-foreground">Fixed LM</span>
+                <span className="font-medium text-emerald-500">{placedFixed}/{nFixed}</span>
               </div>
+              {nSemi > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-muted-foreground">Semilandmarks</span>
+                  <span className="font-medium text-amber-500">{placedSemi}/{nSemi}</span>
+                </div>
+              )}
               <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
               </div>
@@ -452,24 +487,23 @@ export default function Digitizer() {
             <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">Landmarks</CardTitle></CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
               <ScrollArea className="h-full">
-                <div className="space-y-0.5 px-3 pb-3">
+                <div className="space-y-0.5 px-3 pb-3 pt-1">
                   {Array.from({ length: nLandmarks }, (_, i) => {
                     const lm = current?.landmarks[i];
-                    const isSemi = i >= firstSemiIdx;
                     return (
                       <div key={i} className={`flex items-center gap-2 rounded px-1 py-1 text-xs ${lm ? "" : "opacity-40"}`}>
                         {lm ? (
-                          <CheckCircle2 size={11} className={isSemi ? "text-amber-500" : "text-emerald-500"} />
+                          <CheckCircle2 size={11} className={lm.isSemi ? "text-amber-500" : "text-emerald-500"} />
                         ) : (
                           <Circle size={11} className="text-muted-foreground" />
                         )}
                         <span className="font-mono w-5">{i + 1}</span>
-                        {isSemi && <Badge variant="outline" className="text-[9px] px-1 py-0">semi</Badge>}
                         {lm && (
-                          <span className="ml-auto font-mono text-[10px] text-muted-foreground">
-                            {lm.x.toFixed(0)},{lm.y.toFixed(0)}
-                          </span>
+                          <Badge variant="outline" className={`text-[9px] px-1 py-0 ${lm.isSemi ? "border-amber-500/40 text-amber-500" : "border-emerald-500/40 text-emerald-500"}`}>
+                            {lm.isSemi ? "semi" : "fixed"}
+                          </Badge>
                         )}
+                        {lm && <span className="ml-auto font-mono text-[10px] text-muted-foreground">{lm.x.toFixed(0)},{lm.y.toFixed(0)}</span>}
                       </div>
                     );
                   })}
