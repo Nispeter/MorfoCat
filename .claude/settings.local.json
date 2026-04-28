@@ -17,7 +17,16 @@
       "Bash(netstat -ano)",
       "Bash(awk '{print $5}')",
       "Bash(xargs -I{} taskkill /F /PID {})",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "PowerShell(@\\(\"winget\",\"choco\",\"scoop\"\\) | ForEach-Object { $cmd = $_; try { Get-Command $cmd -ErrorAction Stop | Out-Null; \"$cmd -> FOUND\" } catch { \"$cmd -> NOT FOUND\" } })",
+      "PowerShell(winget install OpenJS.NodeJS --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell(winget install Python.Python.3.12 --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell(winget install Rustlang.Rustup --accept-package-agreements --accept-source-agreements 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); node --version; npm --version; python --version; pip --version; rustup --version; cargo --version)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); cd \"c:\\\\Users\\\\Nisp\\\\Documents\\\\Code\\\\MorfoCat\"; & \"npm.cmd\" install 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); cd \"c:\\\\Users\\\\Nisp\\\\Documents\\\\Code\\\\MorfoCat\"; pip install -r python/requirements.txt 2>&1)",
+      "PowerShell($env:Path = [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"Machine\"\\) + \";\" + [System.Environment]::GetEnvironmentVariable\\(\"Path\",\"User\"\\); cd \"c:\\\\Users\\\\Nisp\\\\Documents\\\\Code\\\\MorfoCat\"; & \"npm.cmd\" run tauri -- --version 2>&1)",
+      "PowerShell(winget install Microsoft.VisualStudio.2022.BuildTools --override \"--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended\" --accept-package-agreements --accept-source-agreements 2>&1)"
     ]
   }
 }
