@@ -21,6 +21,41 @@ Modern geometric morphometrics — a full-featured reimplementation of MorphoJ b
 
 ---
 
+## Installing (for end users)
+
+If someone shared an installer file with you, or you downloaded one from the project's
+**Releases** page, you do **not** need Node, Rust, or Python — everything (including the
+Python computation engine) is bundled inside. Just install and run.
+
+### Windows
+
+1. Download the installer:
+   - **`MorfoCat_<version>_x64-setup.exe`** — recommended for individuals (simple wizard, installs per-user, no admin rights needed)
+   - **`MorfoCat_<version>_x64_en-US.msi`** — better for IT / networked deployment
+2. **Double-click** it → **Next** → **Install** → **Finish**.
+3. Launch **MorfoCat** from the Start menu. That's it — no other tools required.
+
+> **"Windows protected your PC" warning.** Because the build is not code-signed, Windows
+> SmartScreen may block it on first launch. Click **More info → Run anyway**. Some antivirus
+> tools may also flag it as a false positive (common for PyInstaller-packed apps). This is
+> expected for an unsigned build.
+
+### macOS / Linux
+
+Install the artifact for your platform (`.dmg`, `.deb`, or `.AppImage`) — see the formats
+table under [Building for distribution](#building-for-distribution-installer). On macOS you
+may need to right-click → **Open** the first time to bypass Gatekeeper on an unsigned app.
+
+**Sharing the installer:** it is a single (~70 MB) file. That exceeds most email limits
+(e.g. Gmail's 25 MB), so share it via Google Drive, OneDrive, WeTransfer, or a USB drive —
+the recipient just double-clicks it.
+
+> **Maintainers:** the installer does not exist until someone builds it. See
+> [Building for distribution](#building-for-distribution-installer) to produce it locally, or
+> push a version tag to let CI build and attach installers to a GitHub Release.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Install |
