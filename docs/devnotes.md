@@ -3,3 +3,7 @@
 - font on dark theme
 - add analysis variable tags 
 - add value graphs to the side of PCA
+- customize the side image on the PCA grags 
+
+use cases
+- 
