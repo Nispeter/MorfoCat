@@ -10,6 +10,18 @@ export interface GroupStyle {
   filled: boolean;
 }
 
+/**
+ * Appearance of a second classifier shown at the same time as the first.
+ * A specimen has exactly one value per classifier, but it can carry several
+ * classifiers at once (site *and* sex), so a plot can encode two of them:
+ * colour for one, symbol shape for the other.
+ */
+export interface SymbolGroupStyle {
+  label: string;
+  symbol: SymbolKind;
+  filled: boolean;
+}
+
 export type AxisMode = "auto" | "symmetric" | "manual";
 
 /**
@@ -29,8 +41,12 @@ export interface AxisLimits {
 }
 
 interface PlotStyleState {
-  /** Per-group appearance, keyed by the raw classifier value. */
+  /** Per-group appearance for the colour classifier, keyed by its raw value. */
   styles: Record<string, GroupStyle>;
+  /** Classifier driving symbol shape; null means symbols follow the colours. */
+  symbolBy: string | null;
+  /** Per-value symbols for `symbolBy`, kept separate so values can't collide. */
+  symbolStyles: Record<string, SymbolGroupStyle>;
   axisMode: AxisMode;
   manualLimits: AxisLimits;
   /** Number of reference shapes drawn along each axis (0 hides them). */
@@ -47,6 +63,9 @@ interface PlotStyleState {
   ensureGroups: (groups: string[]) => void;
   setStyle: (group: string, patch: Partial<GroupStyle>) => void;
   resetStyles: () => void;
+  setSymbolBy: (name: string | null) => void;
+  ensureSymbolGroups: (values: string[]) => void;
+  setSymbolStyle: (value: string, patch: Partial<SymbolGroupStyle>) => void;
   setAxisMode: (mode: AxisMode) => void;
   setManualLimits: (patch: Partial<AxisLimits>) => void;
   setRefShapes: (axis: "x" | "y", n: number) => void;
@@ -60,6 +79,8 @@ export const usePlotStyleStore = create<PlotStyleState>()(
   persist(
     (set, get) => ({
       styles: {},
+      symbolBy: null,
+      symbolStyles: {},
       axisMode: "auto",
       manualLimits: { xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
       refShapesX: 4,
@@ -94,7 +115,28 @@ export const usePlotStyleStore = create<PlotStyleState>()(
           return { styles: { ...s.styles, [group]: { ...current, ...patch } } };
         }),
 
-      resetStyles: () => set({ styles: {} }),
+      resetStyles: () => set({ styles: {}, symbolStyles: {} }),
+
+      setSymbolBy: (symbolBy) => set({ symbolBy }),
+
+      ensureSymbolGroups: (values) => {
+        const existing = get().symbolStyles;
+        if (values.every((v) => existing[v])) return;
+        const next = { ...existing };
+        values.forEach((v, i) => {
+          if (next[v]) return;
+          next[v] = { label: v, symbol: defaultGroupSymbol(i), filled: true };
+        });
+        set({ symbolStyles: next });
+      },
+
+      setSymbolStyle: (value, patch) =>
+        set((s) => {
+          const current = s.symbolStyles[value];
+          if (!current) return s;
+          return { symbolStyles: { ...s.symbolStyles, [value]: { ...current, ...patch } } };
+        }),
+
       setAxisMode: (axisMode) => set({ axisMode }),
       setManualLimits: (patch) => set((s) => ({ manualLimits: { ...s.manualLimits, ...patch } })),
       setRefShapes: (axis, n) =>

@@ -10,19 +10,28 @@ import { Palette, RotateCcw, FolderOpen } from "lucide-react";
 
 /** Controls for how the PCA figure looks: group appearance, axes, references. */
 export function FigureStylePanel({
-  groups, imageDir, onPickImageFolder,
+  groups, symbolValues, classifiers, activeClassifier, imageDir, onPickImageFolder,
 }: {
   groups: string[];
+  /** Distinct values of the second classifier, when one is chosen. */
+  symbolValues: string[];
+  /** Every classifier defined on the dataset. */
+  classifiers: string[];
+  activeClassifier: string | null;
   imageDir: string | null;
   onPickImageFolder: () => void;
 }) {
   const {
     styles, setStyle, resetStyles,
+    symbolBy, setSymbolBy, symbolStyles, setSymbolStyle,
     axisMode, setAxisMode, manualLimits, setManualLimits,
     refShapesX, refShapesY, setRefShapes,
     refSource, setRefSource, refShowIds, setRefShowIds,
     showLegend, setShowLegend,
   } = usePlotStyleStore();
+
+  const splitEncoding = !!symbolBy;
+  const otherClassifiers = classifiers.filter((c) => c !== activeClassifier);
 
   return (
     <div className="space-y-3">
@@ -66,15 +75,78 @@ export function FigureStylePanel({
                     className="h-7 w-8 cursor-pointer rounded border bg-background"
                     title="Colour"
                   />
+                  {/* When a second classifier drives the symbols, shape is no
+                      longer this classifier's to set. */}
+                  {!splitEncoding && (
+                    <>
+                      <select
+                        className="h-7 flex-1 rounded border bg-background px-1 text-xs"
+                        value={st.symbol}
+                        onChange={(e) => setStyle(g, { symbol: e.target.value as SymbolKind })}
+                      >
+                        {SYMBOL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                      </select>
+                      <button
+                        onClick={() => setStyle(g, { filled: !st.filled })}
+                        disabled={isStrokeOnly(st.symbol)}
+                        className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
+                        title="Filled or open symbol"
+                      >
+                        {st.filled ? "solid" : "open"}
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {otherClassifiers.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">Second classifier</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-xs">
+            <select
+              className="w-full rounded border bg-background px-1.5 py-1"
+              value={symbolBy ?? ""}
+              onChange={(e) => setSymbolBy(e.target.value || null)}
+            >
+              <option value="">Symbols follow the colours</option>
+              {otherClassifiers.map((c) => (
+                <option key={c} value={c}>Symbol by “{c}”</option>
+              ))}
+            </select>
+            <p className="text-muted-foreground">
+              {splitEncoding
+                ? `Colour shows “${activeClassifier}”, symbol shape shows “${symbolBy}” — each point carries both.`
+                : "Show a second classifier at the same time by giving it the symbol shapes."}
+            </p>
+
+            {splitEncoding && symbolValues.map((v) => {
+              const st = symbolStyles[v];
+              if (!st) return null;
+              const stroke = isStrokeOnly(st.symbol) || !st.filled;
+              return (
+                <div key={v} className="flex items-center gap-1.5">
+                  <svg width={18} height={18} viewBox="-9 -9 18 18" className="shrink-0">
+                    <path d={symbolPath(st.symbol, 6)} fill={stroke ? "none" : "currentColor"} stroke="currentColor" strokeWidth={stroke ? 1.8 : 0.8} />
+                  </svg>
+                  <Input
+                    className="h-7 w-20 text-xs"
+                    value={st.label}
+                    onChange={(e) => setSymbolStyle(v, { label: e.target.value })}
+                    title={`Legend name for "${v}"`}
+                  />
                   <select
                     className="h-7 flex-1 rounded border bg-background px-1 text-xs"
                     value={st.symbol}
-                    onChange={(e) => setStyle(g, { symbol: e.target.value as SymbolKind })}
+                    onChange={(e) => setSymbolStyle(v, { symbol: e.target.value as SymbolKind })}
                   >
                     {SYMBOL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
                   </select>
                   <button
-                    onClick={() => setStyle(g, { filled: !st.filled })}
+                    onClick={() => setSymbolStyle(v, { filled: !st.filled })}
                     disabled={isStrokeOnly(st.symbol)}
                     className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
                     title="Filled or open symbol"
@@ -82,11 +154,11 @@ export function FigureStylePanel({
                     {st.filled ? "solid" : "open"}
                   </button>
                 </div>
-              </div>
-            );
-          })}
-        </CardContent>
-      </Card>
+              );
+            })}
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Axes</CardTitle></CardHeader>

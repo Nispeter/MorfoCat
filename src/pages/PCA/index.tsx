@@ -95,6 +95,25 @@ export default function PCA() {
   const ensureGroups = usePlotStyleStore((s) => s.ensureGroups);
   useEffect(() => { ensureGroups(uniqueGroups); }, [uniqueGroups, ensureGroups]);
 
+  // A specimen carries one value per classifier but can have several
+  // classifiers, so a second one can drive the symbol shapes.
+  const symbolBy = usePlotStyleStore((s) => s.symbolBy);
+  const setSymbolBy = usePlotStyleStore((s) => s.setSymbolBy);
+  const ensureSymbolGroups = usePlotStyleStore((s) => s.ensureSymbolGroups);
+  const classifiers = dataset?.classifierNames ?? [];
+  const symbolGroups = symbolBy ? groupsOf(included, symbolBy) : null;
+  const symbolKey = symbolGroups?.join(" ") ?? "";
+  const uniqueSymbolGroups = useMemo(
+    () => (symbolKey ? [...new Set(symbolKey.split(" "))] : []),
+    [symbolKey]
+  );
+  useEffect(() => { ensureSymbolGroups(uniqueSymbolGroups); }, [uniqueSymbolGroups, ensureSymbolGroups]);
+
+  // Drop the second classifier if it disappears (deleted, renamed, or made active).
+  useEffect(() => {
+    if (symbolBy && (!classifiers.includes(symbolBy) || symbolBy === active)) setSymbolBy(null);
+  }, [symbolBy, classifiers.join(" "), active, setSymbolBy]);
+
   const run = async () => {
     if (!aligned) return;
     setLoading("pca", true);
@@ -200,7 +219,7 @@ export default function PCA() {
                 </>
               }
             >
-              <BiPlot scores={pca.scores} loadings={pca.loadings} groups={groups} pcX={pcX} pcY={pcY} pctVariance={pca.pct_variance} ids={ids} showLoadings={false} />
+              <BiPlot scores={pca.scores} loadings={pca.loadings} groups={groups} symbolGroups={symbolGroups} pcX={pcX} pcY={pcY} pctVariance={pca.pct_variance} ids={ids} showLoadings={false} />
             </ChartFrame>
           </TabsContent>
 
@@ -230,6 +249,8 @@ export default function PCA() {
                   aligned={aligned}
                   wireframe={wireframe}
                   groups={groups}
+                  symbolGroups={symbolGroups}
+                  activeLabel={active ?? "group"}
                   ids={ids}
                   photos={photos}
                   pcX={pcX}
@@ -238,6 +259,9 @@ export default function PCA() {
               </ChartFrame>
               <FigureStylePanel
                 groups={uniqueGroups}
+                symbolValues={uniqueSymbolGroups}
+                classifiers={classifiers}
+                activeClassifier={active}
                 imageDir={imageDir}
                 onPickImageFolder={pickImageFolder}
               />

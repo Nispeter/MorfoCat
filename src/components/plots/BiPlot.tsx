@@ -7,6 +7,8 @@ interface BiPlotProps {
   scores: number[][];
   loadings: number[][];
   groups?: string[];
+  /** Second classifier driving symbol shape, as on the Figure tab. */
+  symbolGroups?: string[] | null;
   pcX?: number;
   pcY?: number;
   pctVariance?: number[];
@@ -15,11 +17,13 @@ interface BiPlotProps {
 }
 
 export function BiPlot({
-  scores, loadings, groups, pcX = 0, pcY = 1,
+  scores, loadings, groups, symbolGroups, pcX = 0, pcY = 1,
   pctVariance, ids, showLoadings = true,
 }: BiPlotProps) {
   const ref = useRef<SVGSVGElement>(null);
   const styles = usePlotStyleStore((s) => s.styles);
+  const symbolBy = usePlotStyleStore((s) => s.symbolBy);
+  const symbolStyles = usePlotStyleStore((s) => s.symbolStyles);
 
   useEffect(() => {
     if (!ref.current || !scores.length) return;
@@ -60,6 +64,20 @@ export function BiPlot({
       };
     };
 
+    // With a second classifier, colour and shape encode different things.
+    const splitEncoding = !!symbolBy && !!symbolGroups;
+    const markFor = (i: number) => {
+      const colour = styleFor(groups ? groups[i] : "all");
+      const shape = splitEncoding
+        ? symbolStyles[symbolGroups![i]] ?? { symbol: "circle" as const, filled: true }
+        : colour;
+      return {
+        color: colour.color,
+        symbol: shape.symbol,
+        outline: isStrokeOnly(shape.symbol) || !shape.filled,
+      };
+    };
+
     // Grid
     g.append("g").attr("class", "grid").call(
       d3.axisLeft(yScale).tickSize(-w).tickFormat(() => "")
@@ -91,20 +109,19 @@ export function BiPlot({
 
     // Scores
     scores.forEach((s, i) => {
-      const st = styleFor(groups ? groups[i] : "all");
-      const outline = isStrokeOnly(st.symbol) || !st.filled;
+      const { color, symbol, outline } = markFor(i);
       const cx = xScale(s[pcX] ?? 0);
       const cy = yScale(s[pcY] ?? 0);
       g.append("path")
-        .attr("d", symbolPath(st.symbol, 4.5))
+        .attr("d", symbolPath(symbol, 4.5))
         .attr("transform", `translate(${cx},${cy})`)
-        .attr("fill", outline ? "none" : st.color)
-        .attr("stroke", st.color)
+        .attr("fill", outline ? "none" : color)
+        .attr("stroke", color)
         .attr("stroke-width", outline ? 1.6 : 0.7)
         .attr("opacity", 0.85)
         .style("cursor", "pointer")
         .on("mouseenter", function () {
-          d3.select(this).attr("opacity", 1).attr("d", symbolPath(st.symbol, 6.5));
+          d3.select(this).attr("opacity", 1).attr("d", symbolPath(symbol, 6.5));
           const name = ids?.[i] ?? `sp_${i + 1}`;
           const vals = `PC${pcX + 1} ${(s[pcX] ?? 0).toFixed(4)} · PC${pcY + 1} ${(s[pcY] ?? 0).toFixed(4)}`;
           tipName.text(name);
@@ -116,7 +133,7 @@ export function BiPlot({
             .style("display", null);
         })
         .on("mouseleave", function () {
-          d3.select(this).attr("opacity", 0.85).attr("d", symbolPath(st.symbol, 4.5));
+          d3.select(this).attr("opacity", 0.85).attr("d", symbolPath(symbol, 4.5));
           tip.style("display", "none");
         });
     });
@@ -141,20 +158,36 @@ export function BiPlot({
       });
     }
 
-    // Legend
-    if (groups && uniqueGroups.length > 1) {
+    // Legend — colours first, then shapes when a second classifier is in play
+    if (groups && (uniqueGroups.length > 1 || splitEncoding)) {
       const legend = g.append("g").attr("transform", `translate(${w - 8},8)`);
-      uniqueGroups.forEach((name, i) => {
+      let row = 0;
+      const entry = (
+        d: string, colour: string, outline: boolean, label: string
+      ) => {
+        const line = legend.append("g").attr("transform", `translate(0,${row * 15})`);
+        line.append("path").attr("d", d).attr("transform", "translate(-6,0)")
+          .attr("fill", outline ? "none" : colour).attr("stroke", colour).attr("stroke-width", outline ? 1.6 : 0.7);
+        line.append("text").attr("x", -14).attr("y", 4).attr("text-anchor", "end")
+          .attr("font-size", 10).attr("fill", "hsl(var(--foreground))").text(label);
+        row++;
+      };
+
+      uniqueGroups.forEach((name) => {
         const st = styleFor(name);
-        const outline = isStrokeOnly(st.symbol) || !st.filled;
-        const row = legend.append("g").attr("transform", `translate(0,${i * 15})`);
-        row.append("path").attr("d", symbolPath(st.symbol, 4)).attr("transform", "translate(-6,0)")
-          .attr("fill", outline ? "none" : st.color).attr("stroke", st.color).attr("stroke-width", outline ? 1.6 : 0.7);
-        row.append("text").attr("x", -14).attr("y", 4).attr("text-anchor", "end")
-          .attr("font-size", 10).attr("fill", "hsl(var(--foreground))").text(st.label);
+        const outline = !splitEncoding && (isStrokeOnly(st.symbol) || !st.filled);
+        entry(symbolPath(splitEncoding ? "circle" : st.symbol, 4), st.color, outline, st.label);
       });
+
+      if (splitEncoding) {
+        row += 0.4; // small gap between the two blocks
+        [...new Set(symbolGroups!)].forEach((v) => {
+          const st = symbolStyles[v] ?? { label: v, symbol: "circle" as const, filled: true };
+          entry(symbolPath(st.symbol, 4), "hsl(var(--foreground))", isStrokeOnly(st.symbol) || !st.filled, st.label);
+        });
+      }
     }
-  }, [scores, loadings, groups, pcX, pcY, pctVariance, ids, showLoadings, styles]);
+  }, [scores, loadings, groups, symbolGroups, symbolBy, pcX, pcY, pctVariance, ids, showLoadings, styles, symbolStyles]);
 
   return <svg ref={ref} width="100%" style={{ display: "block" }} />;
 }

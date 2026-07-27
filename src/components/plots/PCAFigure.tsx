@@ -12,7 +12,12 @@ interface PCAFigureProps {
   /** Procrustes-aligned coordinates, used to draw real specimens as references. */
   aligned: number[][][] | null;
   wireframe: [number, number][];
+  /** Value of the colour classifier for each specimen. */
   groups: string[];
+  /** Value of the symbol classifier, when a second one is in play. */
+  symbolGroups?: string[] | null;
+  /** Name of the colour classifier, used as the legend heading. */
+  activeLabel?: string;
   ids: string[];
   /** Photo for each specimen, keyed by its index in `scores`. */
   photos: Record<number, string>;
@@ -31,11 +36,13 @@ const REF_BOX = 96;
  * figure is a single SVG so it exports as one high-resolution image.
  */
 export function PCAFigure({
-  scores, loadings, pctVariance, consensus, aligned, wireframe, groups, ids, photos,
+  scores, loadings, pctVariance, consensus, aligned, wireframe,
+  groups, symbolGroups, activeLabel = "group", ids, photos,
   pcX, pcY, width = 900, height = 680,
 }: PCAFigureProps) {
   const {
-    styles, axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds,
+    styles, symbolBy, symbolStyles,
+    axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds,
     legendPos, showLegend, setLegendPos,
   } = usePlotStyleStore();
 
@@ -62,6 +69,32 @@ export function PCAFigure({
   const uniqueGroups = useMemo(() => [...new Set(groups)], [groups]);
   const styleFor = (g: string) =>
     styles[g] ?? { label: g, color: "#3b82f6", symbol: "circle" as const, filled: true };
+
+  // A second classifier splits the encoding in two: the first picks the colour,
+  // the second the symbol shape, so one point can show both memberships.
+  const splitEncoding = !!symbolBy && !!symbolGroups;
+  const uniqueSymbolGroups = useMemo(
+    () => (symbolGroups ? [...new Set(symbolGroups)] : []),
+    [symbolGroups]
+  );
+  const symbolStyleFor = (v: string) =>
+    symbolStyles[v] ?? { label: v, symbol: "circle" as const, filled: true };
+
+  // Legend height: one row per entry, plus a heading per block when split.
+  const legendRows = splitEncoding
+    ? uniqueGroups.length + uniqueSymbolGroups.length + 2
+    : uniqueGroups.length;
+
+  /** Final paint for a point: colour from one classifier, shape from the other. */
+  function markFor(i: number) {
+    const colour = styleFor(groups[i]);
+    const shape = splitEncoding ? symbolStyleFor(symbolGroups![i]) : colour;
+    return {
+      color: colour.color,
+      symbol: shape.symbol,
+      outline: isStrokeOnly(shape.symbol) || !shape.filled,
+    };
+  }
 
   const ticks = (lo: number, hi: number, count = 6) => {
     const step = (hi - lo) / count;
@@ -119,7 +152,12 @@ export function PCAFigure({
   };
   const endDrag = () => { dragging.current = false; };
 
-  const hovered = hover != null ? { x: xs[hover], y: ys[hover], id: ids[hover], group: groups[hover] } : null;
+  const hovered = hover != null
+    ? {
+        x: xs[hover], y: ys[hover], id: ids[hover], group: groups[hover],
+        symbolGroup: splitEncoding ? symbolGroups![hover] : null,
+      }
+    : null;
 
   return (
     <svg
@@ -207,16 +245,15 @@ export function PCAFigure({
 
       {/* Points */}
       {scores.map((_, i) => {
-        const st = styleFor(groups[i]);
-        const stroke = isStrokeOnly(st.symbol) || !st.filled;
+        const { color, symbol, outline } = markFor(i);
         return (
           <path
             key={i}
-            d={symbolPath(st.symbol, hover === i ? 7 : 5)}
+            d={symbolPath(symbol, hover === i ? 7 : 5)}
             transform={`translate(${sx(xs[i])},${sy(ys[i])})`}
-            fill={stroke ? "none" : st.color}
-            stroke={st.color}
-            strokeWidth={stroke ? 1.8 : 0.8}
+            fill={outline ? "none" : color}
+            stroke={color}
+            strokeWidth={outline ? 1.8 : 0.8}
             opacity={hover == null || hover === i ? 0.95 : 0.45}
             style={{ cursor: "pointer" }}
             onMouseEnter={() => setHover(i)}
@@ -238,7 +275,10 @@ export function PCAFigure({
             <text x={8} y={30} fontSize={10} fill="hsl(var(--muted-foreground))">
               PC{pcX + 1} {hovered.x.toFixed(4)} · PC{pcY + 1} {hovered.y.toFixed(4)}
             </text>
-            <text x={8} y={40} fontSize={10} fill="hsl(var(--muted-foreground))">{styleFor(hovered.group).label}</text>
+            <text x={8} y={40} fontSize={10} fill="hsl(var(--muted-foreground))">
+              {[styleFor(hovered.group).label, hovered.symbolGroup && symbolStyleFor(hovered.symbolGroup).label]
+                .filter(Boolean).join(" · ")}
+            </text>
           </g>
         </g>
       )}
@@ -251,19 +291,69 @@ export function PCAFigure({
           style={{ cursor: "move" }}
         >
           <rect
-            width={150} height={uniqueGroups.length * 18 + 10} rx={4}
+            width={158}
+            height={legendRows * 18 + (splitEncoding ? 28 : 10)}
+            rx={4}
             fill="hsl(var(--card))" stroke="hsl(var(--border))" opacity={0.92}
           />
-          {uniqueGroups.map((g, i) => {
-            const st = styleFor(g);
-            const stroke = isStrokeOnly(st.symbol) || !st.filled;
-            return (
-              <g key={g} transform={`translate(14,${16 + i * 18})`}>
-                <path d={symbolPath(st.symbol, 5)} fill={stroke ? "none" : st.color} stroke={st.color} strokeWidth={stroke ? 1.8 : 0.8} />
-                <text x={14} y={4} fontSize={11} fill="hsl(var(--foreground))">{st.label}</text>
-              </g>
-            );
-          })}
+          {(() => {
+            // With one classifier the entries carry both colour and shape. With
+            // two, the colour block uses a neutral dot and the shape block a
+            // neutral outline, so neither channel implies the other.
+            let row = 0;
+            const out: React.ReactNode[] = [];
+
+            if (splitEncoding) {
+              out.push(
+                <text key="ch" x={10} y={14} fontSize={9} fontWeight={600} fill="hsl(var(--muted-foreground))">
+                  {activeLabel.toUpperCase()}
+                </text>
+              );
+              row++;
+            }
+            for (const g of uniqueGroups) {
+              const st = styleFor(g);
+              const outline = !splitEncoding && (isStrokeOnly(st.symbol) || !st.filled);
+              out.push(
+                <g key={`c-${g}`} transform={`translate(16,${16 + row * 18})`}>
+                  <path
+                    d={symbolPath(splitEncoding ? "circle" : st.symbol, 5)}
+                    fill={outline ? "none" : st.color}
+                    stroke={st.color}
+                    strokeWidth={outline ? 1.8 : 0.8}
+                  />
+                  <text x={14} y={4} fontSize={11} fill="hsl(var(--foreground))">{st.label}</text>
+                </g>
+              );
+              row++;
+            }
+
+            if (splitEncoding) {
+              out.push(
+                <text key="sh" x={10} y={16 + row * 18 + 2} fontSize={9} fontWeight={600} fill="hsl(var(--muted-foreground))">
+                  {(symbolBy ?? "").toUpperCase()}
+                </text>
+              );
+              row++;
+              for (const v of uniqueSymbolGroups) {
+                const st = symbolStyleFor(v);
+                const outline = isStrokeOnly(st.symbol) || !st.filled;
+                out.push(
+                  <g key={`s-${v}`} transform={`translate(16,${16 + row * 18})`}>
+                    <path
+                      d={symbolPath(st.symbol, 5)}
+                      fill={outline ? "none" : "hsl(var(--foreground))"}
+                      stroke="hsl(var(--foreground))"
+                      strokeWidth={outline ? 1.8 : 0.8}
+                    />
+                    <text x={14} y={4} fontSize={11} fill="hsl(var(--foreground))">{st.label}</text>
+                  </g>
+                );
+                row++;
+              }
+            }
+            return out;
+          })()}
         </g>
       )}
     </svg>
