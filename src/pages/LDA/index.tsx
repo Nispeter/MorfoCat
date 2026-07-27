@@ -76,7 +76,7 @@ export default function LDA() {
         </>
       }
     >
-      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600">Assign groups in Data Manager first (extract a classifier from the ID string).</p>}
+      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">Assign groups in Data Manager first (extract a classifier from the ID string).</p>}
       {errors["lda"] && <p className="mb-3 text-sm text-destructive">{errors["lda"]}</p>}
 
       {!lda ? (

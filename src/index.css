@@ -4,6 +4,7 @@
 
 @layer base {
   :root {
+    color-scheme: light;
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
@@ -26,7 +27,10 @@
     --radius: 0.5rem;
   }
 
+  /* Tells the browser to render native widgets (select popups, scrollbars,
+     autofill) with dark chrome — without it they come back white-on-white. */
   .dark {
+    color-scheme: dark;
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
     --card: 222.2 84% 4.9%;
@@ -50,6 +54,7 @@
 
   /* ── Dark Purple theme ────────────────────────────────────────────────────── */
   [data-theme="dark-purple"] {
+    color-scheme: dark;
     --background: 270 35% 6%;
     --foreground: 275 25% 95%;
     --card: 270 32% 9%;
@@ -61,7 +66,7 @@
     --secondary: 270 28% 16%;
     --secondary-foreground: 275 25% 95%;
     --muted: 270 28% 13%;
-    --muted-foreground: 270 18% 62%;
+    --muted-foreground: 272 22% 74%;
     --accent: 270 28% 16%;
     --accent-foreground: 275 25% 95%;
     --destructive: 0 55% 38%;
@@ -73,6 +78,7 @@
 
   /* ── Light Cyan theme ─────────────────────────────────────────────────────── */
   [data-theme="light-cyan"] {
+    color-scheme: light;
     --background: 186 40% 97%;
     --foreground: 195 55% 8%;
     --card: 0 0% 100%;
@@ -102,6 +108,23 @@
   body {
     @apply bg-background text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
+    /* Light text on a dark background renders too heavy without this. */
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Native form controls don't inherit theme colours on their own, and their
+     drop-down popups are drawn by the OS — theme them explicitly so options
+     stay readable on every theme. */
+  select,
+  textarea,
+  input[type="number"],
+  input[type="text"] {
+    @apply bg-background text-foreground;
+  }
+  select option,
+  select optgroup {
+    @apply bg-popover text-popover-foreground;
   }
 }
 
