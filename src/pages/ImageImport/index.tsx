@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDigitizerStore } from "@/store/digitizerStore";
@@ -192,23 +192,12 @@ export default function ImageImport() {
             <CardContent className="space-y-4">
               <div className="space-y-1">
                 <Label>Total landmarks per specimen</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={nLandmarks}
-                  onChange={(e) => setNLandmarks(Math.max(1, parseInt(e.target.value) || 1))}
-                />
+                <NumberInput min={1} value={nLandmarks} onChange={setNLandmarks} />
                 <p className="text-xs text-muted-foreground">Fixed + semilandmarks combined</p>
               </div>
               <div className="space-y-1">
                 <Label>Semilandmarks (last N points)</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  max={nLandmarks - 1}
-                  value={nSemi}
-                  onChange={(e) => setNSemi(Math.max(0, parseInt(e.target.value) || 0))}
-                />
+                <NumberInput min={0} max={nLandmarks - 1} value={nSemi} onChange={setNSemi} />
                 <p className="text-xs text-muted-foreground">
                   {nSemi > 0
                     ? `LM 1–${nLandmarks - nSemi} fixed · LM ${nLandmarks - nSemi + 1}–${nLandmarks} sliding`

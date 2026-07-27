@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
@@ -591,11 +592,11 @@ function ClassifiersCard({
           <div className="flex gap-2">
             <div className="flex-1 space-y-1">
               <Label className="text-xs">First char</Label>
-              <Input type="number" min={1} value={first} onChange={(e) => setFirst(Math.max(1, parseInt(e.target.value) || 1))} className="h-8" />
+              <NumberInput min={1} value={first} onChange={setFirst} className="h-8" />
             </div>
             <div className="flex-1 space-y-1">
               <Label className="text-xs">Last char</Label>
-              <Input type="number" min={1} value={last} onChange={(e) => setLast(Math.max(1, parseInt(e.target.value) || 1))} className="h-8" />
+              <NumberInput min={1} value={last} onChange={setLast} className="h-8" />
             </div>
           </div>
           {sampleIds.length > 0 && (
