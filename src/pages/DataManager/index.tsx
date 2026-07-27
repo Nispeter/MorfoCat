@@ -8,8 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { writeTPS } from "@/lib/ipc";
+import { writeTPS, procrustesFit } from "@/lib/ipc";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
+import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
@@ -76,8 +77,9 @@ export default function DataManager() {
     dataset, setDataset, toggleSpecimen, clear,
     activeClassifier, extractClassifier, setSpecimenClassifier,
     renameClassifier, deleteClassifier, setActiveClassifier, appendSpecimens,
-    subsetLandmarks, averageByClassifier,
+    subsetLandmarks, averageByClassifier, setAllLandmarks,
   } = useDatasetStore();
+  const [estimating, setEstimating] = useState(false);
   const clearAnalyses = useAnalysisStore((s) => s.clearAll);
   const { files: recentFiles, addRecentFile, removeRecentFile } = useRecentFilesStore();
   const [error, setError] = useState<string | null>(null);
@@ -168,6 +170,37 @@ export default function DataManager() {
     URL.revokeObjectURL(url);
     toast.success("Exported TPS file");
   };
+
+  // Fill missing landmarks by warping the consensus of the complete specimens
+  // onto each incomplete one (thin-plate spline).
+  const handleEstimateMissing = useCallback(async () => {
+    if (!dataset) return;
+    if (dataset.dimensions !== 2) {
+      toast.error("Estimation is 2D only", { description: "3D datasets are not supported yet." });
+      return;
+    }
+    const all = dataset.specimens.map((sp) => sp.landmarks);
+    const complete = all.filter((sp) => !sp.some(isMissingPoint));
+    if (complete.length < 3) {
+      toast.error("Not enough complete specimens", { description: "At least 3 specimens without missing landmarks are required." });
+      return;
+    }
+    setEstimating(true);
+    try {
+      const { consensus } = await procrustesFit(complete);
+      const res = estimateMissingLandmarks(all, consensus);
+      setAllLandmarks(res.landmarks);
+      toast.success(`Estimated ${res.filled} landmark${res.filled !== 1 ? "s" : ""}`, {
+        description: res.skipped.length
+          ? `${res.skipped.length} specimen(s) had too few observed landmarks and were left as-is.`
+          : "Re-run Procrustes Fit to update the alignment.",
+      });
+    } catch (e) {
+      toast.error("Estimation failed", { description: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setEstimating(false);
+    }
+  }, [dataset, setAllLandmarks]);
 
   const handleClear = () => {
     clear();
@@ -318,8 +351,11 @@ export default function DataManager() {
             <TransformCard
               nLandmarks={dataset.n_landmarks}
               classifiers={dataset.classifierNames ?? []}
+              missing={countMissing(dataset.specimens.map((s) => s.landmarks))}
+              estimating={estimating}
               onSubset={subsetLandmarks}
               onAverage={averageByClassifier}
+              onEstimateMissing={handleEstimateMissing}
             />
             <Card>
               <CardHeader className="pb-2">
@@ -515,12 +551,15 @@ function ClassifiersCard({
 
 /** Dataset-wide transforms: keep a landmark subset, or collapse to group averages. */
 function TransformCard({
-  nLandmarks, classifiers, onSubset, onAverage,
+  nLandmarks, classifiers, missing, estimating, onSubset, onAverage, onEstimateMissing,
 }: {
   nLandmarks: number;
   classifiers: string[];
+  missing: number;
+  estimating: boolean;
   onSubset: (keep: number[]) => { kept: number } | { error: string };
   onAverage: (name: string) => { groups: number } | { error: string };
+  onEstimateMissing: () => void;
 }) {
   const [subsetOpen, setSubsetOpen] = useState(false);
   const [keep, setKeep] = useState<number[]>([]);
@@ -573,6 +612,16 @@ function TransformCard({
               </select>
               <Button size="sm" variant="outline" className="h-8" onClick={applyAverage} title="Replace the sample with one averaged specimen per value">
                 <Sigma size={13} /> Average
+              </Button>
+            </div>
+          )}
+          {missing > 0 && (
+            <div className="space-y-1 border-t pt-2">
+              <p className="text-xs text-muted-foreground">
+                {missing} missing landmark{missing !== 1 ? "s" : ""} detected
+              </p>
+              <Button size="sm" variant="outline" className="w-full justify-start" disabled={estimating} onClick={onEstimateMissing}>
+                <Wand2 size={13} /> {estimating ? "Estimating…" : "Estimate missing"}
               </Button>
             </div>
           )}

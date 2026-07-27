@@ -58,6 +58,7 @@ interface DatasetState {
   clearSymmetry: () => void;
   swapLandmarks: (i: number, j: number) => void;
   subsetLandmarks: (keep: number[]) => { kept: number } | { error: string };
+  setAllLandmarks: (landmarks: number[][][]) => void;
   averageByClassifier: (name: string) => { groups: number } | { error: string };
   appendSpecimens: (specimens: Specimen[]) => { added: number } | { error: string };
   clear: () => void;
@@ -273,6 +274,22 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
     });
     return { kept: ordered.length };
   },
+
+  // Replace every specimen's coordinates in order (missing-landmark estimation).
+  setAllLandmarks: (landmarks) =>
+    set((s) => {
+      if (!s.dataset || landmarks.length !== s.dataset.specimens.length) return s;
+      return {
+        dataset: {
+          ...s.dataset,
+          specimens: s.dataset.specimens.map((sp, i) => ({ ...sp, landmarks: landmarks[i] })),
+        },
+        aligned: null,
+        consensus: null,
+        centroid_sizes: null,
+        procrustes_distances: null,
+      };
+    }),
 
   // Collapse the sample to one averaged specimen per classifier value
   // (MorphoJ's "average by …"). Only included specimens contribute.
