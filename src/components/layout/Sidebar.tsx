@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useNavStore } from "@/store/navStore";
+import { useDatasetStore } from "@/store/datasetStore";
+import { hasGroups } from "@/lib/groups";
 import { useT, type TranslationKey } from "@/lib/i18n";
 
 export type PageId =
@@ -20,32 +22,36 @@ export type PageId =
   | "phylogenetics" | "quant-genetics"
   | "export-all" | "settings";
 
+/** What a page needs before it can do anything useful. */
+type Requirement = "none" | "dataset" | "aligned" | "groups";
+
 interface NavItem {
   id: PageId;
   labelKey: TranslationKey;
   icon: React.ReactNode;
   group: string;
+  requires: Requirement;
 }
 
 const NAV: NavItem[] = [
-  { id: "image-import",   labelKey: "nav.imageImport",   icon: <Images size={18} />,            group: "Digitize" },
-  { id: "digitizer",      labelKey: "nav.digitizer",     icon: <MousePointerClick size={18} />, group: "Digitize" },
-  { id: "data",           labelKey: "nav.data",          icon: <Database size={18} />,          group: "Data" },
-  { id: "procrustes",     labelKey: "nav.procrustes",    icon: <GitMerge size={18} />,          group: "Core" },
-  { id: "outliers",       labelKey: "nav.outliers",      icon: <ScanSearch size={18} />,        group: "Core" },
-  { id: "covariance",     labelKey: "nav.covariance",    icon: <Grid3X3 size={18} />,           group: "Core" },
-  { id: "wireframe",      labelKey: "nav.wireframe",     icon: <Spline size={18} />,            group: "Core" },
-  { id: "pca",            labelKey: "nav.pca",           icon: <BarChart2 size={18} />,         group: "Multivariate" },
-  { id: "matrix-corr",    labelKey: "nav.matrixCorr",    icon: <Layers size={18} />,            group: "Multivariate" },
-  { id: "pls",            labelKey: "nav.pls",           icon: <Sigma size={18} />,             group: "Multivariate" },
-  { id: "regression",     labelKey: "nav.regression",    icon: <TrendingUp size={18} />,        group: "Multivariate" },
-  { id: "modularity",     labelKey: "nav.modularity",    icon: <Network size={18} />,           group: "Multivariate" },
-  { id: "cva",            labelKey: "nav.cva",           icon: <Activity size={18} />,          group: "Discriminant" },
-  { id: "lda",            labelKey: "nav.lda",           icon: <GitBranch size={18} />,         group: "Discriminant" },
-  { id: "phylogenetics",  labelKey: "nav.phylogenetics", icon: <GitBranch size={18} />,         group: "Comparative" },
-  { id: "quant-genetics", labelKey: "nav.quantGenetics", icon: <Dna size={18} />,               group: "Comparative" },
-  { id: "export-all",     labelKey: "nav.exportAll",     icon: <PackageOpen size={18} />,       group: "Tools" },
-  { id: "settings",       labelKey: "nav.settings",      icon: <Settings size={18} />,          group: "Tools" },
+  { id: "image-import",   labelKey: "nav.imageImport",   icon: <Images size={18} />,            group: "Digitize",     requires: "none" },
+  { id: "digitizer",      labelKey: "nav.digitizer",     icon: <MousePointerClick size={18} />, group: "Digitize",     requires: "none" },
+  { id: "data",           labelKey: "nav.data",          icon: <Database size={18} />,          group: "Data",         requires: "none" },
+  { id: "procrustes",     labelKey: "nav.procrustes",    icon: <GitMerge size={18} />,          group: "Core",         requires: "dataset" },
+  { id: "outliers",       labelKey: "nav.outliers",      icon: <ScanSearch size={18} />,        group: "Core",         requires: "aligned" },
+  { id: "covariance",     labelKey: "nav.covariance",    icon: <Grid3X3 size={18} />,           group: "Core",         requires: "aligned" },
+  { id: "wireframe",      labelKey: "nav.wireframe",     icon: <Spline size={18} />,            group: "Core",         requires: "dataset" },
+  { id: "pca",            labelKey: "nav.pca",           icon: <BarChart2 size={18} />,         group: "Multivariate", requires: "aligned" },
+  { id: "matrix-corr",    labelKey: "nav.matrixCorr",    icon: <Layers size={18} />,            group: "Multivariate", requires: "aligned" },
+  { id: "pls",            labelKey: "nav.pls",           icon: <Sigma size={18} />,             group: "Multivariate", requires: "aligned" },
+  { id: "regression",     labelKey: "nav.regression",    icon: <TrendingUp size={18} />,        group: "Multivariate", requires: "aligned" },
+  { id: "modularity",     labelKey: "nav.modularity",    icon: <Network size={18} />,           group: "Multivariate", requires: "aligned" },
+  { id: "cva",            labelKey: "nav.cva",           icon: <Activity size={18} />,          group: "Discriminant", requires: "groups" },
+  { id: "lda",            labelKey: "nav.lda",           icon: <GitBranch size={18} />,         group: "Discriminant", requires: "groups" },
+  { id: "phylogenetics",  labelKey: "nav.phylogenetics", icon: <GitBranch size={18} />,         group: "Comparative",  requires: "aligned" },
+  { id: "quant-genetics", labelKey: "nav.quantGenetics", icon: <Dna size={18} />,               group: "Comparative",  requires: "aligned" },
+  { id: "export-all",     labelKey: "nav.exportAll",     icon: <PackageOpen size={18} />,       group: "Tools",        requires: "dataset" },
+  { id: "settings",       labelKey: "nav.settings",      icon: <Settings size={18} />,          group: "Tools",        requires: "none" },
 ];
 
 export function Sidebar() {
@@ -53,6 +59,31 @@ export function Sidebar() {
   const [closedGroups, setClosedGroups] = useState<Set<string>>(new Set());
   const { activePage, navigate } = useNavStore();
   const t = useT();
+
+  const dataset = useDatasetStore((s) => s.dataset);
+  const aligned = useDatasetStore((s) => s.aligned);
+  const activeClassifier = useDatasetStore((s) => s.activeClassifier);
+  const hasDataset = !!dataset;
+  const hasAligned = !!aligned;
+  const hasGroupLabels = hasGroups(dataset?.specimens.filter((s) => s.include) ?? [], activeClassifier);
+
+  /** Why a page can't be opened yet, or null when it's ready. */
+  function blockedReason(req: Requirement): string | null {
+    if (req === "none") return null;
+    if (!hasDataset) return "Import a dataset in Data Manager first.";
+    if (req === "dataset") return null;
+    if (!hasAligned) return "Run Procrustes Fit first.";
+    if (req === "aligned") return null;
+    if (!hasGroupLabels) return "Assign groups in Data Manager first (extract a classifier).";
+    return null;
+  }
+
+  /** Pages that already hold a result get a dot, so progress is visible. */
+  function isDone(id: PageId): boolean {
+    if (id === "data") return hasDataset;
+    if (id === "procrustes") return hasAligned;
+    return false;
+  }
 
   const groups = [...new Set(NAV.map((n) => n.group))];
 
@@ -103,26 +134,49 @@ export function Sidebar() {
                   <div className="mb-0.5 h-px mx-1 bg-border/50" />
                 )}
 
-                {(!isGroupClosed || collapsed) && groupItems.map((item) => (
-                  <Tooltip key={item.id}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={activePage === item.id ? "default" : "ghost"}
-                        size={collapsed ? "icon" : "sm"}
-                        className={cn(
-                          "w-full justify-start gap-2",
-                          collapsed && "justify-center",
-                          activePage === item.id && "font-semibold"
-                        )}
-                        onClick={() => navigate(item.id)}
-                      >
-                        {item.icon}
-                        {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
-                      </Button>
-                    </TooltipTrigger>
-                    {collapsed && <TooltipContent side="right">{t(item.labelKey)}</TooltipContent>}
-                  </Tooltip>
-                ))}
+                {(!isGroupClosed || collapsed) && groupItems.map((item) => {
+                  const blocked = blockedReason(item.requires);
+                  const done = isDone(item.id);
+                  return (
+                    <Tooltip key={item.id}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={activePage === item.id ? "default" : "ghost"}
+                          size={collapsed ? "icon" : "sm"}
+                          // Left enabled on purpose: a truly disabled button
+                          // swallows hover, and the tooltip is what explains
+                          // why the page isn't ready.
+                          aria-disabled={!!blocked}
+                          className={cn(
+                            "relative w-full justify-start gap-2",
+                            collapsed && "justify-center",
+                            activePage === item.id && "font-semibold",
+                            blocked && "cursor-not-allowed opacity-40"
+                          )}
+                          onClick={() => { if (!blocked) navigate(item.id); }}
+                        >
+                          {item.icon}
+                          {!collapsed && <span className="truncate">{t(item.labelKey)}</span>}
+                          {done && (
+                            <span
+                              className={cn(
+                                "ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500",
+                                collapsed && "absolute right-1.5 top-1.5 ml-0"
+                              )}
+                            />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      {(collapsed || blocked) && (
+                        <TooltipContent side="right" className="max-w-56 text-xs">
+                          {collapsed && <span className="font-medium">{t(item.labelKey)}</span>}
+                          {collapsed && blocked && <br />}
+                          {blocked}
+                        </TooltipContent>
+                      )}
+                    </Tooltip>
+                  );
+                })}
               </div>
             );
           })}
