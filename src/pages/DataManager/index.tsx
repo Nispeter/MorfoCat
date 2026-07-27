@@ -269,11 +269,11 @@ export default function DataManager() {
       actions={
         <>
           <Button variant="outline" size="sm" onClick={handleOpenProject}>
-            <FolderOpen size={14} /> Open project
+            <FolderOpen size={14} /> {t("action.openProject")}
           </Button>
           {dataset && (
             <Button variant="outline" size="sm" onClick={handleSaveProject}>
-              <Save size={14} /> Save project
+              <Save size={14} /> {t("action.saveProject")}
             </Button>
           )}
           {dataset && (
@@ -290,13 +290,13 @@ export default function DataManager() {
               }}
             />
             <Button variant="outline" size="sm" onClick={() => appendInputRef.current?.click()}>
-              <Upload size={14} /> Add specimens
+              <Upload size={14} /> {t("action.addSpecimens")}
             </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
-              <Download size={14} /> Export TPS
+              <Download size={14} /> {t("action.exportTPS")}
             </Button>
             <Button variant="destructive" size="sm" onClick={handleClear}>
-              <Trash2 size={14} /> Clear
+              <Trash2 size={14} /> {t("action.clear")}
             </Button>
           </>
           )}

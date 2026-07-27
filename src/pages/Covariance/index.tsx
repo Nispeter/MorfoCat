@@ -78,7 +78,7 @@ export default function Covariance() {
           )}
           <Button size="sm" onClick={run} disabled={loading["covariance"]}>
             {loading["covariance"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
-            {loading["covariance"] ? "Computing…" : "Compute"}
+            {loading["covariance"] ? t("action.running") : t("action.compute")}
           </Button>
         </>
       }

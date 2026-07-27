@@ -162,10 +162,10 @@ export default function ImageImport() {
         <div className="flex flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={pickImages}>
-              <Images size={14} /> Pick Images…
+              <Images size={14} /> {t("action.pickFiles")}
             </Button>
             <Button variant="outline" size="sm" onClick={pickFolder}>
-              <FolderOpen size={14} /> Add Folder…
+              <FolderOpen size={14} /> {t("action.pickFolder2")}
             </Button>
             {images.length > 0 && (
               <>

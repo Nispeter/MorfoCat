@@ -116,8 +116,8 @@ export default function Outliers() {
               value={metric}
               onChange={(e) => setMetric(e.target.value as "procrustes" | "mahalanobis")}
             >
-              <option value="procrustes">Procrustes distance</option>
-              <option value="mahalanobis">Mahalanobis distance</option>
+              <option value="procrustes">{t("plot.procrustesDist")}</option>
+              <option value="mahalanobis">{t("plot.mahalanobisDist")}</option>
             </select>
           }
         >
