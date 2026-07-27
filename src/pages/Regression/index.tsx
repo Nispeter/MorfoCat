@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runRegression } from "@/lib/ipc";
@@ -121,9 +122,7 @@ export default function Regression() {
                 <TabsTrigger value="table">Coefficients</TabsTrigger>
               </TabsList>
               <TabsContent value="plot">
-                <Card>
-                  <CardHeader className="pb-2"><CardTitle className="text-sm">Shape ~ {useCS ? "log(Centroid Size)" : "Predictor"}</CardTitle></CardHeader>
-                  <CardContent>
+                <ChartFrame title={`Shape ~ ${useCS ? "log(Centroid Size)" : "Predictor"}`} filename="regression_plot">
                     <ResponsiveContainer width="100%" height={280}>
                       <ScatterChart margin={{ top: 8, right: 16, bottom: 24, left: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -137,8 +136,7 @@ export default function Regression() {
                         <Scatter data={chartData} fill="hsl(var(--primary))" opacity={0.75} />
                       </ScatterChart>
                     </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+                </ChartFrame>
               </TabsContent>
               <TabsContent value="table">
                 <Card>

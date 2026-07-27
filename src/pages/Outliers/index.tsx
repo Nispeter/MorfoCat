@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LandmarkViewer2D } from "@/components/landmark/LandmarkViewer2D";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { detectOutliers } from "@/lib/ipc";
@@ -90,9 +91,7 @@ export default function Outliers() {
 
         {errors["outliers"] && <p className="text-xs text-destructive">{errors["outliers"]}</p>}
 
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Z-scores of Procrustes Distances</CardTitle></CardHeader>
-          <CardContent>
+        <ChartFrame title="Z-scores of Procrustes Distances" filename="outlier_zscores">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 24, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -108,8 +107,7 @@ export default function Outliers() {
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        </ChartFrame>
 
         {flagged.length > 0 && (
           <Card>

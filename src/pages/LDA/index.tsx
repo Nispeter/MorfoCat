@@ -2,10 +2,10 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupScatterPlot } from "@/components/plots/GroupScatterPlot";
 import { ConfusionMatrix } from "@/components/plots/ConfusionMatrix";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Badge } from "@/components/ui/badge";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
@@ -95,33 +95,24 @@ export default function LDA() {
             </TabsList>
 
             <TabsContent value="scores">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">LD Score Plot</CardTitle></CardHeader>
-                <CardContent>
-                  <GroupScatterPlot scores={lda.ld_scores} groups={groups} xLabel="LD1" yLabel="LD2" ids={ids} />
-                  <div className="mt-3 text-xs text-muted-foreground">
-                    Explained variance: {lda.explained_variance_ratio.map((v, i) => `LD${i + 1}: ${(v * 100).toFixed(1)}%`).join(" · ")}
-                  </div>
-                </CardContent>
-              </Card>
+              <ChartFrame title="LD Score Plot" filename="lda_scores">
+                <GroupScatterPlot scores={lda.ld_scores} groups={groups} xLabel="LD1" yLabel="LD2" ids={ids} />
+                <div className="mt-3 text-xs text-muted-foreground">
+                  Explained variance: {lda.explained_variance_ratio.map((v, i) => `LD${i + 1}: ${(v * 100).toFixed(1)}%`).join(" · ")}
+                </div>
+              </ChartFrame>
             </TabsContent>
 
             <TabsContent value="cm">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Training Confusion Matrix</CardTitle></CardHeader>
-                <CardContent>
-                  <ConfusionMatrix matrix={lda.confusion_matrix} labels={lda.groups} title="Training set" />
-                </CardContent>
-              </Card>
+              <ChartFrame title="Training Confusion Matrix" filename="lda_confusion_matrix">
+                <ConfusionMatrix matrix={lda.confusion_matrix} labels={lda.groups} title="Training set" />
+              </ChartFrame>
             </TabsContent>
 
             <TabsContent value="loo">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Leave-One-Out Cross-Validation</CardTitle></CardHeader>
-                <CardContent>
-                  <ConfusionMatrix matrix={lda.loo_confusion_matrix} labels={lda.groups} title="LOO cross-validation" />
-                </CardContent>
-              </Card>
+              <ChartFrame title="Leave-One-Out Cross-Validation" filename="lda_loo_confusion_matrix">
+                <ConfusionMatrix matrix={lda.loo_confusion_matrix} labels={lda.groups} title="LOO cross-validation" />
+              </ChartFrame>
             </TabsContent>
           </Tabs>
         </>

@@ -9,6 +9,7 @@ import { ScreePlot } from "@/components/plots/ScreePlot";
 import { BiPlot } from "@/components/plots/BiPlot";
 import { ShapeGrid } from "@/components/plots/ShapeGrid";
 import { TpsGrid } from "@/components/plots/TpsGrid";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
@@ -102,42 +103,39 @@ export default function PCA() {
           </TabsList>
 
           <TabsContent value="scree">
-            <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Variance Explained</CardTitle></CardHeader>
-              <CardContent>
-                <ScreePlot pctVariance={pca.pct_variance} cumulativePct={pca.cumulative_pct} selectedPC={pcX} onSelectPC={setPcX} />
-                <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
-                  {pca.pct_variance.slice(0, 8).map((pct, i) => (
-                    <div key={i} className={`rounded border p-2 cursor-pointer transition-colors ${pcX === i ? "border-primary bg-primary/5" : "hover:bg-muted"}`} onClick={() => setPcX(i)}>
-                      <p className="font-medium">PC{i + 1}</p>
-                      <p className="text-muted-foreground">{pct.toFixed(2)}%</p>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <ChartFrame title="Variance Explained" filename="pca_scree">
+              <ScreePlot pctVariance={pca.pct_variance} cumulativePct={pca.cumulative_pct} selectedPC={pcX} onSelectPC={setPcX} />
+              <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                {pca.pct_variance.slice(0, 8).map((pct, i) => (
+                  <div key={i} className={`rounded border p-2 cursor-pointer transition-colors ${pcX === i ? "border-primary bg-primary/5" : "hover:bg-muted"}`} onClick={() => setPcX(i)}>
+                    <p className="font-medium">PC{i + 1}</p>
+                    <p className="text-muted-foreground">{pct.toFixed(2)}%</p>
+                  </div>
+                ))}
+              </div>
+            </ChartFrame>
           </TabsContent>
 
           <TabsContent value="biplot">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-3">
-                  Biplot
+            <ChartFrame
+              title="Biplot"
+              filename={`pca_biplot_pc${pcX + 1}_pc${pcY + 1}`}
+              controls={
+                <>
                   <span className="text-xs font-normal text-muted-foreground">PC axes:</span>
-                  <select className="text-xs border rounded px-1" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
+                  <select className="rounded border bg-background px-1 py-0.5 text-xs" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
                     {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                   </select>
-                  <span className="text-xs text-muted-foreground">vs</span>
-                  <select className="text-xs border rounded px-1" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
+                  <span className="text-xs font-normal text-muted-foreground">vs</span>
+                  <select className="rounded border bg-background px-1 py-0.5 text-xs" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
                     {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                   </select>
-                  <span className="ml-auto"><ClassifierSelect /></span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BiPlot scores={pca.scores} loadings={pca.loadings} groups={groups} pcX={pcX} pcY={pcY} pctVariance={pca.pct_variance} ids={ids} showLoadings={false} />
-              </CardContent>
-            </Card>
+                  <ClassifierSelect />
+                </>
+              }
+            >
+              <BiPlot scores={pca.scores} loadings={pca.loadings} groups={groups} pcX={pcX} pcY={pcY} pctVariance={pca.pct_variance} ids={ids} showLoadings={false} />
+            </ChartFrame>
           </TabsContent>
 
           <TabsContent value="shapes">
@@ -167,33 +165,27 @@ export default function PCA() {
           </TabsContent>
 
           <TabsContent value="grid">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-3">
-                  Transformation Grid along PC{pcX + 1}
-                  <span className="text-xs text-muted-foreground">Scale: ±{scale}SD</span>
-                  <input type="range" min={1} max={4} step={0.5} value={scale} onChange={(e) => setScale(+e.target.value)} className="w-24" />
-                  <span className="ml-auto text-xs font-normal text-muted-foreground">
-                    Grid: {gridDivisions}
-                  </span>
-                  <input type="range" min={6} max={24} step={2} value={gridDivisions} onChange={(e) => setGridDivisions(+e.target.value)} className="w-20" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex justify-around gap-6">
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">−{scale}SD</p>
-                  {deformedMinus && consensus && (
-                    <TpsGrid source={consensus} target={deformedMinus} edges={wireframe} divisions={gridDivisions} />
-                  )}
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">+{scale}SD</p>
-                  {deformedPlus && consensus && (
-                    <TpsGrid source={consensus} target={deformedPlus} edges={wireframe} divisions={gridDivisions} />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid grid-cols-2 gap-4">
+              {([["−", deformedMinus], ["+", deformedPlus]] as const).map(([sign, target]) => (
+                <ChartFrame
+                  key={sign}
+                  title={`PC${pcX + 1} at ${sign}${scale}SD`}
+                  filename={`pca_grid_pc${pcX + 1}_${sign === "+" ? "plus" : "minus"}${scale}sd`}
+                  controls={
+                    <>
+                      <span className="text-xs font-normal text-muted-foreground">Grid {gridDivisions}</span>
+                      <input type="range" min={6} max={24} step={2} value={gridDivisions} onChange={(e) => setGridDivisions(+e.target.value)} className="w-20" />
+                    </>
+                  }
+                >
+                  <div className="flex justify-center">
+                    {target && consensus && (
+                      <TpsGrid source={consensus} target={target} edges={wireframe} divisions={gridDivisions} width={360} height={300} />
+                    )}
+                  </div>
+                </ChartFrame>
+              ))}
+            </div>
           </TabsContent>
 
           <TabsContent value="table">

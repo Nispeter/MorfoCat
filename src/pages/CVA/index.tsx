@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GroupScatterPlot } from "@/components/plots/GroupScatterPlot";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDatasetStore } from "@/store/datasetStore";
@@ -100,19 +101,19 @@ export default function CVA() {
           </TabsList>
 
           <TabsContent value="scores">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
+            <ChartFrame
+              filename="cva_scores"
+              title={
+                <>
                   CV Score Plot
                   <Badge variant={cva.p_value < 0.05 ? "default" : "secondary"}>
                     p = {cva.p_value.toFixed(3)}
                   </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <GroupScatterPlot scores={cva.cv_scores} groups={groups} xLabel="CV1" yLabel="CV2" ids={ids} />
-              </CardContent>
-            </Card>
+                </>
+              }
+            >
+              <GroupScatterPlot scores={cva.cv_scores} groups={groups} xLabel="CV1" yLabel="CV2" ids={ids} />
+            </ChartFrame>
           </TabsContent>
 
           <TabsContent value="distances">

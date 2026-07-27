@@ -8,6 +8,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ShapeGrid } from "@/components/plots/ShapeGrid";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { LandmarkViewer2D } from "@/components/landmark/LandmarkViewer2D";
 import { LandmarkViewer3D } from "@/components/landmark/LandmarkViewer3D";
 import { useDatasetStore } from "@/store/datasetStore";
@@ -162,16 +163,16 @@ export default function ProcrustesFit() {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex justify-between">
-                    Procrustes Distances
-                    <select className="text-xs border rounded px-1" value={selectedSpec} onChange={(e) => setSelectedSpec(+e.target.value)}>
-                      {included.map((s, i) => <option key={i} value={i}>{s.id}</option>)}
-                    </select>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-[1fr_240px] gap-4">
+              <ChartFrame
+                title="Procrustes Distances"
+                filename="procrustes_distances"
+                controls={
+                  <select className="rounded border bg-background px-1 py-0.5 text-xs" value={selectedSpec} onChange={(e) => setSelectedSpec(+e.target.value)}>
+                    {included.map((s, i) => <option key={i} value={i}>{s.id}</option>)}
+                  </select>
+                }
+              >
+                <div className="grid grid-cols-[1fr_240px] gap-4">
                   <ResponsiveContainer width="100%" height={180}>
                     <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 20, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -189,8 +190,8 @@ export default function ProcrustesFit() {
                       <LandmarkViewer2D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} width={230} height={180} edges={wireframe} />
                     )}
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </ChartFrame>
 
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Shape Variation (PC1 extremes preview)</CardTitle></CardHeader>
