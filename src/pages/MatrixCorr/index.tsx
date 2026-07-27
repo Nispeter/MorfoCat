@@ -48,7 +48,7 @@ export default function MatrixCorr() {
 
   if (!aligned) return (
     <PanelLayout title={t("page.matrixCorr.title")}>
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 
@@ -91,13 +91,13 @@ export default function MatrixCorr() {
           <div className="flex gap-4">
             <Card className="flex-1">
               <CardContent className="pt-4 space-y-2">
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Matrix r</span><span className="font-mono font-semibold">{matrixCorr.r.toFixed(5)}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("mcorr.matrixR")}</span><span className="font-mono font-semibold">{matrixCorr.r.toFixed(5)}</span></div>
                 <div className="flex justify-between text-sm items-center"><span className="text-muted-foreground">p-value</span>
                   <Badge variant={matrixCorr.p_value < 0.05 ? "default" : "secondary"}>
                     {matrixCorr.p_value < 0.001 ? "< 0.001" : matrixCorr.p_value.toFixed(3)}
                   </Badge>
                 </div>
-                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Permutations</span><span className="font-mono">{matrixCorr.permutations}</span></div>
+                <div className="flex justify-between text-sm"><span className="text-muted-foreground">{t("plot.permutations")}</span><span className="font-mono">{matrixCorr.permutations}</span></div>
               </CardContent>
             </Card>
           </div>

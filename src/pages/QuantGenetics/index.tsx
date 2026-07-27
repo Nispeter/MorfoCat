@@ -64,7 +64,7 @@ export default function QuantGenetics() {
 
   if (!aligned) return (
     <PanelLayout title="Quantitative Genetics">
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 
@@ -75,25 +75,25 @@ export default function QuantGenetics() {
     <PanelLayout title={t("page.quantGenetics.title")} description={t("page.quantGenetics.desc")}>
       <Tabs defaultValue="gmatrix">
         <TabsList>
-          <TabsTrigger value="gmatrix">G Matrix</TabsTrigger>
-          <TabsTrigger value="selection">Selection Gradient</TabsTrigger>
+          <TabsTrigger value="gmatrix">{t("qg.gMatrix")}</TabsTrigger>
+          <TabsTrigger value="selection">{t("qg.selectionGradient")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="gmatrix">
           <div className="grid grid-cols-[260px_1fr] gap-4 mt-4">
             <div className="space-y-3">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Half-Sib Analysis</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t("qg.halfSib")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3 text-sm">
                   <div>
-                    <Label className="text-xs">Sire column name (in metadata)</Label>
+                    <Label className="text-xs">{t("qg.sireColumn")}</Label>
                     <Input value={sireCol} onChange={(e) => setSireCol(e.target.value)} placeholder="sire" className="text-xs h-8 mt-1" />
                   </div>
                   <div>
-                    <Label className="text-xs">Dam column name (optional)</Label>
+                    <Label className="text-xs">{t("qg.damColumn")}</Label>
                     <Input value={damCol} onChange={(e) => setDamCol(e.target.value)} placeholder="dam" className="text-xs h-8 mt-1" />
                   </div>
-                  <p className="text-xs text-muted-foreground">Requires family structure data. At least 2 sires needed.</p>
+                  <p className="text-xs text-muted-foreground">{t("qg.needFamily")}</p>
                   <Button size="sm" className="w-full" onClick={runG} disabled={loading["gMatrix"]}>
                     {loading["gMatrix"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
                     {loading["gMatrix"] ? t("action.running") : t("action.run") + " G"}
@@ -112,10 +112,10 @@ export default function QuantGenetics() {
               )}
             </div>
             <Card className="overflow-auto">
-              <CardHeader className="pb-2"><CardTitle className="text-sm">G Matrix Heatmap (first 30 variables)</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{t("qg.gHeatmap")}</CardTitle></CardHeader>
               <CardContent>
                 {!gCov.length ? (
-                  <p className="text-sm text-muted-foreground">Click Estimate G to compute.</p>
+                  <p className="text-sm text-muted-foreground">{t("qg.clickEstimate")}</p>
                 ) : (
                   <div className="overflow-auto">
                     <table className="border-collapse text-[9px]">
@@ -142,10 +142,10 @@ export default function QuantGenetics() {
           <div className="grid grid-cols-[260px_1fr] gap-4 mt-4">
             <div className="space-y-3">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Selection Gradient</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t("qg.selectionGradient")}</CardTitle></CardHeader>
                 <CardContent className="space-y-3">
                   <div>
-                    <Label className="text-xs">Fitness values (one per included specimen)</Label>
+                    <Label className="text-xs">{t("qg.fitnessValues")}</Label>
                     <textarea
                       value={fitnessStr}
                       onChange={(e) => setFitnessStr(e.target.value)}
@@ -172,7 +172,7 @@ export default function QuantGenetics() {
                     <p className="text-xs text-muted-foreground">Mean fitness: {selectionGradient.mean_fitness.toFixed(4)}</p>
                     <div className="overflow-auto max-h-72">
                       <table className="w-full text-xs">
-                        <thead className="border-b"><tr><th className="text-left p-2">Variable</th><th className="text-right p-2">β (gradient)</th><th className="text-right p-2">Response R</th></tr></thead>
+                        <thead className="border-b"><tr><th className="text-left p-2">{t("ui.variable")}</th><th className="text-right p-2">β (gradient)</th><th className="text-right p-2">{t("qg.responseR")}</th></tr></thead>
                         <tbody>
                           {selectionGradient.selection_gradient.slice(0, 20).map((b, i) => (
                             <tr key={i} className="border-b hover:bg-muted/30">

@@ -163,7 +163,7 @@ export default function ExportAll() {
           <Card className="flex flex-1 flex-col overflow-hidden">
             <CardHeader className="pb-2 pt-3">
               <CardTitle className="flex items-center justify-between text-sm">
-                <span>Available exports</span>
+                <span>{t("exp.availableExports")}</span>
                 <div className="flex items-center gap-2">
                   <Badge variant={readyKeys.length > 0 ? "default" : "secondary"}>
                     {readyKeys.length} / {analyses.length} ready
@@ -225,7 +225,7 @@ export default function ExportAll() {
         <div className="flex w-72 flex-col gap-3">
           <Card>
             <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm">Output Folder</CardTitle>
+              <CardTitle className="text-sm">{t("exp.outputFolder")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" size="sm" className="w-full" onClick={pickFolder}>
@@ -257,7 +257,7 @@ export default function ExportAll() {
           )}
 
           <Card>
-            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">How to use</CardTitle></CardHeader>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("exp.howToUse")}</CardTitle></CardHeader>
             <CardContent className="space-y-1 text-xs text-muted-foreground">
               <p>1. Run the analyses you need (GPA, PCA, CVA, etc.)</p>
               <p>2. Check the ones you want to export</p>

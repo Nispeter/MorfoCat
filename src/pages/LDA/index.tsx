@@ -68,7 +68,7 @@ export default function LDA() {
               <Download size={14} /> Export CSV
             </Button>
           )}
-          <ClassifierSelect label="Group by:" />
+          <ClassifierSelect label={t("plot.groupBy")} />
           <Button size="sm" onClick={run} disabled={loading["lda"] || !groupsAvailable}>
             {loading["lda"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             {loading["lda"] ? t("action.running") : t("action.run") + " LDA"}
@@ -91,10 +91,10 @@ export default function LDA() {
           </div>
           <Tabs defaultValue="scores">
             <TabsList>
-              <TabsTrigger value="scores">LD Scores</TabsTrigger>
-              <TabsTrigger value="cm">Confusion Matrix</TabsTrigger>
-              <TabsTrigger value="loo">LOO Confusion Matrix</TabsTrigger>
-              <TabsTrigger value="pairwise">Pairwise DFA</TabsTrigger>
+              <TabsTrigger value="scores">{t("lda.ldScores")}</TabsTrigger>
+              <TabsTrigger value="cm">{t("lda.confusion")}</TabsTrigger>
+              <TabsTrigger value="loo">{t("lda.looConfusion")}</TabsTrigger>
+              <TabsTrigger value="pairwise">{t("lda.pairwiseDFA")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="scores">
@@ -202,11 +202,11 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
               <tr>
                 <th className="p-2 text-left">{t("ui.pair")}</th>
                 <th className="p-2 text-right">n</th>
-                <th className="p-2 text-right">Procrustes d</th>
+                <th className="p-2 text-right">{t("lda.procrustesD")}</th>
                 <th className="p-2 text-right">p</th>
-                <th className="p-2 text-right">Mahalanobis d</th>
+                <th className="p-2 text-right">{t("lda.mahalanobisD")}</th>
                 <th className="p-2 text-right">p</th>
-                <th className="p-2 text-right">Correctly classified</th>
+                <th className="p-2 text-right">{t("lda.correctlyClassified")}</th>
               </tr>
             </thead>
             <tbody>

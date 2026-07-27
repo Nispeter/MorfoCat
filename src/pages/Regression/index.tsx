@@ -82,12 +82,12 @@ export default function Regression() {
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.options")}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
-                <Label>Use centroid size</Label>
+                <Label>{t("reg.useCentroidSize")}</Label>
                 <Switch checked={useCS} onCheckedChange={setUseCS} disabled={!centroid_sizes} />
               </div>
               {!centroid_sizes && <p className="text-xs text-muted-foreground">{t("ui.needCentroidSizes")}</p>}
               <div className="flex items-center justify-between gap-2">
-                <Label>Pooled within-group</Label>
+                <Label>{t("reg.pooled")}</Label>
                 <Switch checked={pooled} onCheckedChange={setPooled} />
               </div>
             </CardContent>
@@ -118,8 +118,8 @@ export default function Regression() {
           ) : (
             <Tabs defaultValue="plot">
               <TabsList>
-                <TabsTrigger value="plot">Regression Plot</TabsTrigger>
-                <TabsTrigger value="table">Coefficients</TabsTrigger>
+                <TabsTrigger value="plot">{t("reg.plot")}</TabsTrigger>
+                <TabsTrigger value="table">{t("reg.coefficients")}</TabsTrigger>
               </TabsList>
               <TabsContent value="plot">
                 <ChartFrame title={`Shape ~ ${useCS ? "log(Centroid Size)" : "Predictor"}`} filename="regression_plot">
@@ -143,7 +143,7 @@ export default function Regression() {
                   <CardHeader className="pb-2"><CardTitle className="text-sm">Regression Coefficients (intercept + slopes)</CardTitle></CardHeader>
                   <CardContent className="overflow-auto max-h-80">
                     <table className="text-xs w-full">
-                      <thead className="border-b"><tr><th className="text-left p-2">Term</th><th className="text-right p-2">Coefficient (mean)</th></tr></thead>
+                      <thead className="border-b"><tr><th className="text-left p-2">Term</th><th className="text-right p-2">{t("reg.coefficientMean")}</th></tr></thead>
                       <tbody>
                         {regression.coefficients.slice(0, 2).map((row, i) => (
                           <tr key={i} className="border-b hover:bg-muted/30">

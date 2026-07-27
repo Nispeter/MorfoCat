@@ -47,7 +47,7 @@ export default function TwoBlockPLS() {
 
   if (!aligned) return (
     <PanelLayout title="Two-Block PLS">
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 
@@ -62,7 +62,7 @@ export default function TwoBlockPLS() {
       description={t("page.pls.desc")}
       actions={
         <div className="flex items-center gap-2">
-          <label className="text-xs text-muted-foreground">Block split at LM:</label>
+          <label className="text-xs text-muted-foreground">{t("pls.blockSplit")}</label>
           <input type="number" min={1} max={n_lm - 1} value={split} onChange={(e) => setSplitIdx(+e.target.value)} className="w-16 text-xs border rounded px-2 py-1" />
           <TooltipProvider>
             <UITooltip>
@@ -101,8 +101,8 @@ export default function TwoBlockPLS() {
           </div>
           <Tabs defaultValue="scores">
             <TabsList>
-              <TabsTrigger value="scores">Block Scores (SV1)</TabsTrigger>
-              <TabsTrigger value="sv">Singular Values</TabsTrigger>
+              <TabsTrigger value="scores">{t("pls.blockScores")}</TabsTrigger>
+              <TabsTrigger value="sv">{t("pls.singularValues")}</TabsTrigger>
             </TabsList>
 
             <TabsContent value="scores">
@@ -121,11 +121,11 @@ export default function TwoBlockPLS() {
 
             <TabsContent value="sv">
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Singular Values & % Covariance</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t("pls.svCovariance")}</CardTitle></CardHeader>
                 <CardContent>
                   <table className="w-full text-sm">
                     <thead className="text-xs text-muted-foreground border-b">
-                      <tr><th className="text-left p-2">Axis</th><th className="text-right p-2">Singular Value</th><th className="text-right p-2">% Covariance</th></tr>
+                      <tr><th className="text-left p-2">Axis</th><th className="text-right p-2">{t("pls.singularValue")}</th><th className="text-right p-2">% Covariance</th></tr>
                     </thead>
                     <tbody>
                       {pls.singular_values.map((sv, i) => (

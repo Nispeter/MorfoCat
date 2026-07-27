@@ -79,7 +79,7 @@ export default function CVA() {
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
-          <ClassifierSelect label="Group by:" />
+          <ClassifierSelect label={t("plot.groupBy")} />
           <Button size="sm" onClick={run} disabled={loading["cva"] || !groupsAvailable}>
             {loading["cva"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             {loading["cva"] ? t("action.running") : t("action.run") + " CVA"}

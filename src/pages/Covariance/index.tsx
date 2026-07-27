@@ -90,7 +90,7 @@ export default function Covariance() {
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1">
-                  <Label>Pooled within-group</Label>
+                  <Label>{t("reg.pooled")}</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -125,8 +125,8 @@ export default function Covariance() {
 
         <Tabs defaultValue="matrix" className="overflow-auto">
           <TabsList>
-            <TabsTrigger value="matrix">Matrix</TabsTrigger>
-            <TabsTrigger value="compare">Compare groups</TabsTrigger>
+            <TabsTrigger value="matrix">{t("cov.matrix")}</TabsTrigger>
+            <TabsTrigger value="compare">{t("cov.compareGroups")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="matrix">
@@ -134,7 +134,7 @@ export default function Covariance() {
               <CardHeader className="pb-2"><CardTitle className="text-sm">Heatmap (first 30×30 variables)</CardTitle></CardHeader>
               <CardContent>
                 {!cov ? (
-                  <p className="text-sm text-muted-foreground">Click Compute to generate</p>
+                  <p className="text-sm text-muted-foreground">{t("cov.clickCompute")}</p>
                 ) : (
                   <div className="overflow-auto">
                     <table className="border-collapse text-[9px]">
@@ -260,7 +260,7 @@ function CompareGroupsCard({
                   <th className="p-2 text-right">r (with diag.)</th>
                   <th className="p-2 text-right">r (off-diag.)</th>
                   <th className="p-2 text-right">p</th>
-                  <th className="p-2 text-right">Random skewers</th>
+                  <th className="p-2 text-right">{t("cov.randomSkewers")}</th>
                   <th className="p-2 text-right">p</th>
                 </tr>
               </thead>

@@ -417,7 +417,7 @@ export default function Digitizer() {
       >
         <div className="flex h-full flex-col items-center justify-center gap-4">
           <MousePointerClick size={48} className="text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">No digitizing session active</p>
+          <p className="text-sm text-muted-foreground">{t("digi.noSession")}</p>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => navNavigate("image-import")}>
               <Import size={14} /> Start from Images
@@ -490,7 +490,7 @@ export default function Digitizer() {
             )}
             {!loadingImage && !imageDataUrl && current?.imagePath && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-400">
-                <p>Image not found:</p>
+                <p>{t("digi.imageNotFound")}</p>
                 <p className="font-mono text-xs">{current.imagePath}</p>
               </div>
             )}
@@ -565,12 +565,12 @@ export default function Digitizer() {
             <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.progress")}</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
-                <span className="text-muted-foreground">Fixed LM</span>
+                <span className="text-muted-foreground">{t("digi.fixedLm")}</span>
                 <span className="font-medium text-emerald-500">{placedFixed}/{nFixed}</span>
               </div>
               {nSemi > 0 && (
                 <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Semilandmarks</span>
+                  <span className="text-muted-foreground">{t("digi.semilandmarks")}</span>
                   <span className="font-medium text-amber-500">{placedSemi}/{nSemi}</span>
                 </div>
               )}
@@ -578,7 +578,7 @@ export default function Digitizer() {
                 <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${pct}%` }} />
               </div>
               <div className="flex items-center justify-between pt-1">
-                <span className="text-muted-foreground">All specimens</span>
+                <span className="text-muted-foreground">{t("digi.allSpecimens")}</span>
                 <span className="font-medium">{specimens.filter((sp) => sp.landmarks.length >= nLandmarks).length}/{specimens.length}</span>
               </div>
               <div className="flex items-center justify-between pt-1">
@@ -626,7 +626,7 @@ export default function Digitizer() {
 
           {/* Specimen overview */}
           <Card>
-            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">All Specimens</CardTitle></CardHeader>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("digi.allSpecimens")}</CardTitle></CardHeader>
             <CardContent className="p-0">
               <ScrollArea className="max-h-36">
                 <div className="space-y-0.5 px-3 pb-2">

@@ -137,7 +137,7 @@ export default function Wireframe() {
             <ScrollArea className="h-[380px]">
               <div className="space-y-1 px-3 pb-3">
                 {wireframe.length === 0 ? (
-                  <p className="px-1 py-2 text-xs text-muted-foreground">No links yet.</p>
+                  <p className="px-1 py-2 text-xs text-muted-foreground">{t("wf.noLinks")}</p>
                 ) : (
                   wireframe.map(([a, b], i) => (
                     <div key={i} className="flex items-center gap-2 rounded border px-2 py-1 text-xs">

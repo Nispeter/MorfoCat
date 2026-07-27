@@ -50,7 +50,7 @@ export default function Modularity() {
 
   if (!aligned) return (
     <PanelLayout title="Modularity">
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 
@@ -95,7 +95,7 @@ export default function Modularity() {
       <div className="grid grid-cols-[280px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Define Modules</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("mod.defineModules")}</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <p className="text-xs text-muted-foreground">Enter landmark numbers (1-indexed, comma or space separated) for each module.</p>
               {modules.map((m, i) => (
@@ -122,7 +122,7 @@ export default function Modularity() {
 
         <div className="space-y-4 overflow-auto">
           {!modularity ? (
-            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Define modules and click Test.</div>
+            <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("mod.defineHint")}</div>
           ) : (
             <>
               <div className="flex flex-wrap gap-3">

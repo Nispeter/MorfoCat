@@ -96,7 +96,7 @@ export default function Phylogenetics() {
 
   if (!aligned) return (
     <PanelLayout title="Phylogenetics">
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 
@@ -105,7 +105,7 @@ export default function Phylogenetics() {
       <div className="grid grid-cols-[300px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Newick Tree</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("phylo.newickTree")}</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <textarea
                 value={newick}
@@ -113,7 +113,7 @@ export default function Phylogenetics() {
                 placeholder={EXAMPLE_NEWICK}
                 className="w-full h-28 text-xs font-mono rounded border bg-muted p-2 resize-none"
               />
-              <p className="text-xs text-muted-foreground">Tip labels must match specimen IDs. Branch lengths required for PIC.</p>
+              <p className="text-xs text-muted-foreground">{t("phylo.tipHint")}</p>
               <Button size="sm" variant="ghost" className="text-xs" onClick={() => setNewick(EXAMPLE_NEWICK)}>
                 Load example
               </Button>
@@ -131,7 +131,7 @@ export default function Phylogenetics() {
           </div>
           <Button size="sm" variant="outline" className="w-full" onClick={runSignal} disabled={loading["phyloSignal"] || !newick}>
             {loading["phyloSignal"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
-            {loading["phyloSignal"] ? t("action.running") : "Phylogenetic signal"}
+            {loading["phyloSignal"] ? t("action.running") : t("phylo.signal")}
           </Button>
           {(errors["phylo"] || errors["pic"] || errors["phyloSignal"]) && (
             <p className="text-xs text-destructive">{errors["phylo"] || errors["pic"] || errors["phyloSignal"]}</p>
@@ -140,9 +140,9 @@ export default function Phylogenetics() {
 
         <Tabs defaultValue="mapping">
           <TabsList>
-            <TabsTrigger value="mapping">Shape Mapping</TabsTrigger>
-            <TabsTrigger value="pic">Independent Contrasts</TabsTrigger>
-            <TabsTrigger value="signal">Phylogenetic Signal</TabsTrigger>
+            <TabsTrigger value="mapping">{t("phylo.shapeMapping")}</TabsTrigger>
+            <TabsTrigger value="pic">{t("phylo.contrasts")}</TabsTrigger>
+            <TabsTrigger value="signal">{t("phylo.signal")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mapping">
@@ -160,7 +160,7 @@ export default function Phylogenetics() {
                   <p className="text-xs text-muted-foreground mb-2">Method: {phyloMapping.method}</p>
                   <div className="overflow-auto max-h-72">
                     <table className="w-full text-xs">
-                      <thead className="border-b"><tr><th className="text-left p-2">Node/Tip</th><th className="text-right p-2">Mean shape value</th></tr></thead>
+                      <thead className="border-b"><tr><th className="text-left p-2">{t("phylo.nodeTip")}</th><th className="text-right p-2">{t("phylo.meanShape")}</th></tr></thead>
                       <tbody>
                         {Object.entries(phyloMapping.node_values).map(([node, vals]) => (
                           <tr key={node} className="border-b hover:bg-muted/30">
@@ -191,7 +191,7 @@ export default function Phylogenetics() {
                 <CardContent>
                   <div className="overflow-auto max-h-72">
                     <table className="w-full text-xs">
-                      <thead className="border-b"><tr><th className="text-left p-2">Contrast #</th><th className="text-right p-2">Variance</th><th className="text-right p-2">Mean contrast</th></tr></thead>
+                      <thead className="border-b"><tr><th className="text-left p-2">Contrast #</th><th className="text-right p-2">{t("ui.variance")}</th><th className="text-right p-2">{t("phylo.meanContrast")}</th></tr></thead>
                       <tbody>
                         {pic.contrasts.map((c, i) => (
                           <tr key={i} className="border-b hover:bg-muted/30">
