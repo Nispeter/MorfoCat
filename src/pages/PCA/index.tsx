@@ -12,6 +12,8 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
 import { downloadCSV } from "@/lib/export";
+import { groupsOf } from "@/lib/groups";
+import { ClassifierSelect } from "@/components/layout/ClassifierSelect";
 import { Play, Loader2, Download } from "lucide-react";
 
 export default function PCA() {
@@ -24,8 +26,10 @@ export default function PCA() {
   const [pcY, setPcY] = useState(1);
   const [scale, setScale] = useState(2);
 
+  const active = useDatasetStore((s) => s.activeClassifier);
+  const wireframe = useDatasetStore((s) => s.wireframe);
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
-  const groups = included.map((s) => s.group ?? "all");
+  const groups = groupsOf(included, active);
   const ids = included.map((s) => s.id);
 
   const run = async () => {
@@ -124,6 +128,7 @@ export default function PCA() {
                   <select className="text-xs border rounded px-1" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
                     {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                   </select>
+                  <span className="ml-auto"><ClassifierSelect /></span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -144,15 +149,15 @@ export default function PCA() {
               <CardContent className="flex justify-around gap-6">
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-2">−{scale}SD</p>
-                  {deformedMinus && consensus && <ShapeGrid consensus={consensus} deformed={deformedMinus} />}
+                  {deformedMinus && consensus && <ShapeGrid consensus={consensus} deformed={deformedMinus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-2">Consensus</p>
-                  {consensus && <ShapeGrid consensus={consensus} />}
+                  {consensus && <ShapeGrid consensus={consensus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-2">+{scale}SD</p>
-                  {deformedPlus && consensus && <ShapeGrid consensus={consensus} deformed={deformedPlus} />}
+                  {deformedPlus && consensus && <ShapeGrid consensus={consensus} deformed={deformedPlus} edges={wireframe} />}
                 </div>
               </CardContent>
             </Card>

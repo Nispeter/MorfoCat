@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database, GitMerge, ScanSearch, BarChart2, Layers, TrendingUp,
   Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight, ChevronDown,
-  Cat, Grid3X3, Images, MousePointerClick, PackageOpen, Settings,
+  Cat, Grid3X3, Images, MousePointerClick, PackageOpen, Settings, Spline,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useNavStore } from "@/store/navStore";
@@ -14,7 +14,7 @@ import { useT, type TranslationKey } from "@/lib/i18n";
 
 export type PageId =
   | "data" | "image-import" | "digitizer"
-  | "procrustes" | "outliers" | "covariance"
+  | "procrustes" | "outliers" | "covariance" | "wireframe"
   | "pca" | "matrix-corr" | "pls" | "regression" | "modularity"
   | "cva" | "lda"
   | "phylogenetics" | "quant-genetics"
@@ -34,6 +34,7 @@ const NAV: NavItem[] = [
   { id: "procrustes",     labelKey: "nav.procrustes",    icon: <GitMerge size={18} />,          group: "Core" },
   { id: "outliers",       labelKey: "nav.outliers",      icon: <ScanSearch size={18} />,        group: "Core" },
   { id: "covariance",     labelKey: "nav.covariance",    icon: <Grid3X3 size={18} />,           group: "Core" },
+  { id: "wireframe",      labelKey: "nav.wireframe",     icon: <Spline size={18} />,            group: "Core" },
   { id: "pca",            labelKey: "nav.pca",           icon: <BarChart2 size={18} />,         group: "Multivariate" },
   { id: "matrix-corr",    labelKey: "nav.matrixCorr",    icon: <Layers size={18} />,            group: "Multivariate" },
   { id: "pls",            labelKey: "nav.pls",           icon: <Sigma size={18} />,             group: "Multivariate" },

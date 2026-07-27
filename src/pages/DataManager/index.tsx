@@ -1,17 +1,19 @@
-import { useCallback, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { writeTPS } from "@/lib/ipc";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
-import { Upload, Download, Trash2, Eye, EyeOff, Clock, X } from "lucide-react";
+import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check } from "lucide-react";
 
 function formatRelTime(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -67,11 +69,16 @@ function parseFile(name: string, content: string) {
 }
 
 export default function DataManager() {
-  const { dataset, setDataset, toggleSpecimen, clear } = useDatasetStore();
+  const {
+    dataset, setDataset, toggleSpecimen, clear,
+    activeClassifier, extractClassifier, setSpecimenClassifier,
+    renameClassifier, deleteClassifier, setActiveClassifier, appendSpecimens,
+  } = useDatasetStore();
   const clearAnalyses = useAnalysisStore((s) => s.clearAll);
   const { files: recentFiles, addRecentFile, removeRecentFile } = useRecentFilesStore();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const appendInputRef = useRef<HTMLInputElement>(null);
 
   const load = useCallback(
     async (name: string, content: string) => {
@@ -111,6 +118,32 @@ export default function DataManager() {
     [load]
   );
 
+  const appendFromFile = useCallback(
+    async (name: string, content: string) => {
+      try {
+        const { parsed } = parseFile(name, content);
+        const incoming: Specimen[] = parsed.specimens.map((sp, i) => ({
+          id: resolveId(sp.id, sp.image, i),
+          group: detectGroup(sp.image),
+          landmarks: sp.landmarks,
+          scale: sp.scale,
+          image: sp.image,
+          include: true,
+        }));
+        const res = appendSpecimens(incoming);
+        if ("error" in res) {
+          toast.error("Could not add specimens", { description: res.error });
+          return;
+        }
+        clearAnalyses();
+        toast.success(`Added ${res.added} specimen${res.added !== 1 ? "s" : ""}`, { description: `from ${name}` });
+      } catch (e) {
+        toast.error("Failed to read file", { description: e instanceof Error ? e.message : String(e) });
+      }
+    },
+    [appendSpecimens, clearAnalyses]
+  );
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: { "text/*": [".tps", ".nts", ".txt", ".dat"], "application/octet-stream": [".tps", ".nts"] },
@@ -145,6 +178,20 @@ export default function DataManager() {
       actions={
         dataset && (
           <>
+            <input
+              ref={appendInputRef}
+              type="file"
+              accept=".tps,.nts,.txt,.dat"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) await appendFromFile(file.name, await file.text());
+                e.target.value = "";
+              }}
+            />
+            <Button variant="outline" size="sm" onClick={() => appendInputRef.current?.click()}>
+              <Upload size={14} /> Add specimens
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExport}>
               <Download size={14} /> Export TPS
             </Button>
@@ -233,13 +280,19 @@ export default function DataManager() {
                     <tr>
                       <th className="px-4 py-2 text-left font-medium">Include</th>
                       <th className="px-4 py-2 text-left font-medium">ID</th>
-                      <th className="px-4 py-2 text-left font-medium">Group</th>
+                      <th className="px-4 py-2 text-left font-medium">{activeClassifier ?? "Group"}</th>
                       <th className="px-4 py-2 text-left font-medium">Scale</th>
                     </tr>
                   </thead>
                   <tbody>
                     {dataset.specimens.map((sp, i) => (
-                      <SpecimenRow key={i} specimen={sp} onToggle={() => toggleSpecimen(i)} />
+                      <SpecimenRow
+                        key={i}
+                        specimen={sp}
+                        active={activeClassifier}
+                        onToggle={() => toggleSpecimen(i)}
+                        onSetClassifier={(value) => activeClassifier && setSpecimenClassifier(i, activeClassifier, value)}
+                      />
                     ))}
                   </tbody>
                 </table>
@@ -249,6 +302,15 @@ export default function DataManager() {
 
           {/* Summary card */}
           <div className="flex flex-col gap-3">
+            <ClassifiersCard
+              names={dataset.classifierNames ?? []}
+              active={activeClassifier}
+              sampleIds={dataset.specimens.slice(0, 3).map((s) => s.id)}
+              onExtract={extractClassifier}
+              onActivate={setActiveClassifier}
+              onRename={renameClassifier}
+              onDelete={deleteClassifier}
+            />
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Dataset Summary</CardTitle>
@@ -299,7 +361,15 @@ export default function DataManager() {
   );
 }
 
-function SpecimenRow({ specimen, onToggle }: { specimen: Specimen; onToggle: () => void }) {
+function SpecimenRow({
+  specimen, active, onToggle, onSetClassifier,
+}: {
+  specimen: Specimen;
+  active: string | null;
+  onToggle: () => void;
+  onSetClassifier: (value: string) => void;
+}) {
+  const value = active ? specimen.classifiers?.[active] : specimen.group;
   return (
     <tr className={`border-b transition-colors hover:bg-muted/30 ${!specimen.include ? "opacity-50" : ""}`}>
       <td className="px-4 py-1.5">
@@ -309,7 +379,14 @@ function SpecimenRow({ specimen, onToggle }: { specimen: Specimen; onToggle: () 
       </td>
       <td className="px-4 py-1.5 font-mono text-xs">{specimen.id}</td>
       <td className="px-4 py-1.5">
-        {specimen.group ? (
+        {active ? (
+          <input
+            className="w-full max-w-[10rem] rounded border bg-transparent px-1.5 py-0.5 text-xs focus:border-primary focus:outline-none"
+            value={value ?? ""}
+            placeholder="—"
+            onChange={(e) => onSetClassifier(e.target.value)}
+          />
+        ) : specimen.group ? (
           <Badge variant="outline" className="text-xs">{specimen.group}</Badge>
         ) : (
           <span className="text-xs text-muted-foreground">—</span>
@@ -319,6 +396,110 @@ function SpecimenRow({ specimen, onToggle }: { specimen: Specimen; onToggle: () 
         {specimen.scale != null ? specimen.scale.toFixed(4) : "—"}
       </td>
     </tr>
+  );
+}
+
+function ClassifiersCard({
+  names, active, sampleIds, onExtract, onActivate, onRename, onDelete,
+}: {
+  names: string[];
+  active: string | null;
+  sampleIds: string[];
+  onExtract: (name: string, first: number, last: number) => void;
+  onActivate: (name: string | null) => void;
+  onRename: (oldName: string, newName: string) => void;
+  onDelete: (name: string) => void;
+}) {
+  const [name, setName] = useState("");
+  const [first, setFirst] = useState(1);
+  const [last, setLast] = useState(2);
+
+  const preview = sampleIds.map((id) => id.slice(Math.max(0, first - 1), last) || "—");
+
+  const submit = () => {
+    if (!name.trim()) {
+      toast.error("Give the classifier a name.");
+      return;
+    }
+    if (last < first) {
+      toast.error("Last character must be ≥ first.");
+      return;
+    }
+    onExtract(name, first, last);
+    toast.success(`Classifier "${name.trim()}" extracted`);
+    setName("");
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm flex items-center gap-1.5">
+          <Tags size={13} /> Classifiers
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {/* Existing classifiers */}
+        {names.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {names.map((n) => (
+              <div
+                key={n}
+                className={`group flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs ${
+                  active === n ? "border-primary bg-primary/10 text-primary" : "border-border"
+                }`}
+              >
+                <button onClick={() => onActivate(n)} className="flex items-center gap-1" title="Set active">
+                  {active === n && <Check size={11} />}
+                  {n}
+                </button>
+                <button
+                  onClick={() => {
+                    const nn = window.prompt(`Rename classifier "${n}" to:`, n);
+                    if (nn && nn.trim()) onRename(n, nn.trim());
+                  }}
+                  className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
+                  title="Rename"
+                >
+                  ✎
+                </button>
+                <button
+                  onClick={() => onDelete(n)}
+                  className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                  title="Delete"
+                >
+                  <X size={11} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Extract from ID */}
+        <div className="space-y-2 border-t pt-2">
+          <p className="text-xs text-muted-foreground">Extract from ID string</p>
+          <div className="space-y-1">
+            <Label className="text-xs">Name</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. site" className="h-8" />
+          </div>
+          <div className="flex gap-2">
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">First char</Label>
+              <Input type="number" min={1} value={first} onChange={(e) => setFirst(Math.max(1, parseInt(e.target.value) || 1))} className="h-8" />
+            </div>
+            <div className="flex-1 space-y-1">
+              <Label className="text-xs">Last char</Label>
+              <Input type="number" min={1} value={last} onChange={(e) => setLast(Math.max(1, parseInt(e.target.value) || 1))} className="h-8" />
+            </div>
+          </div>
+          {sampleIds.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Preview: <span className="font-mono text-foreground">{preview.join(", ")}</span>
+            </p>
+          )}
+          <Button size="sm" className="w-full" onClick={submit}>Extract classifier</Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

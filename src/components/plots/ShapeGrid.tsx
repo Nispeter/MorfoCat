@@ -8,9 +8,11 @@ interface ShapeGridProps {
   width?: number;
   height?: number;
   showWire?: boolean;
+  /** User-defined links (pairs of landmark indices). Falls back to a sequential ring when empty. */
+  edges?: [number, number][];
 }
 
-export function ShapeGrid({ consensus, deformed, width = 260, height = 220, showWire = true }: ShapeGridProps) {
+export function ShapeGrid({ consensus, deformed, width = 260, height = 220, showWire = true, edges }: ShapeGridProps) {
   if (!consensus?.length) return <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">No consensus shape</div>;
 
   const pad = 20;
@@ -32,11 +34,17 @@ export function ShapeGrid({ consensus, deformed, width = 260, height = 220, show
 
   return (
     <svg width={width} height={height} className="overflow-visible">
-      {/* Consensus wireframe (triangulate by connecting sequential landmarks) */}
-      {showWire && pts.map((p, i) => {
-        const next = pts[(i + 1) % pts.length];
-        return <line key={i} x1={p.cx} y1={p.cy} x2={next.cx} y2={next.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
-      })}
+      {/* Consensus wireframe: user-defined links if present, else a sequential ring */}
+      {showWire && (edges && edges.length > 0
+        ? edges.map(([a, b], i) => {
+            const p = pts[a], q = pts[b];
+            if (!p || !q) return null;
+            return <line key={i} x1={p.cx} y1={p.cy} x2={q.cx} y2={q.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
+          })
+        : pts.map((p, i) => {
+            const next = pts[(i + 1) % pts.length];
+            return <line key={i} x1={p.cx} y1={p.cy} x2={next.cx} y2={next.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
+          }))}
 
       {/* Deformation vectors */}
       {defPts && pts.map((p, i) => {

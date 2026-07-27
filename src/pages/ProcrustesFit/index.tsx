@@ -13,6 +13,7 @@ import { LandmarkViewer3D } from "@/components/landmark/LandmarkViewer3D";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { procrustesFit } from "@/lib/ipc";
+import { alignPrincipalAxes } from "@/lib/shape";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
 import { Play, Loader2, HelpCircle } from "lucide-react";
 
@@ -23,8 +24,10 @@ export default function ProcrustesFit() {
   const aligned = useDatasetStore((s) => s.aligned);
   const consensus = useDatasetStore((s) => s.consensus);
   const procDist = useDatasetStore((s) => s.procrustes_distances);
+  const wireframe = useDatasetStore((s) => s.wireframe);
 
   const [symmetry, setSymmetry] = useState(false);
+  const [alignPCs, setAlignPCs] = useState(true);
   const [selectedSpec, setSelectedSpec] = useState(0);
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
@@ -37,7 +40,10 @@ export default function ProcrustesFit() {
     try {
       const lms = included.map((s) => s.landmarks);
       const res = await procrustesFit(lms, symmetry);
-      setAligned(res.aligned, res.consensus, res.centroid_sizes, res.procrustes_distances);
+      const { consensus, aligned: alignedCoords } = alignPCs
+        ? alignPrincipalAxes(res.consensus, res.aligned)
+        : { consensus: res.consensus, aligned: res.aligned };
+      setAligned(alignedCoords, consensus, res.centroid_sizes, res.procrustes_distances);
       toast.success("GPA complete", { description: `${included.length} specimens aligned` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -85,6 +91,22 @@ export default function ProcrustesFit() {
                 </span>
                 <Switch id="sym" checked={symmetry} onCheckedChange={setSymmetry} />
               </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="flex items-center gap-1">
+                  <Label htmlFor="align-pcs">Align by principal axes</Label>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle size={12} className="text-muted-foreground cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-56 text-xs">
+                        Orients the aligned sample along the main axis of shape variation, so plots and shape drawings sit upright.
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+                <Switch id="align-pcs" checked={alignPCs} onCheckedChange={setAlignPCs} />
+              </div>
               <p className="text-xs text-muted-foreground">{included.length} specimens included</p>
             </CardContent>
           </Card>
@@ -119,7 +141,7 @@ export default function ProcrustesFit() {
                   {is3D ? (
                     <LandmarkViewer3D landmarks={consensus!} showLabels />
                   ) : (
-                    <LandmarkViewer2D landmarks={consensus!} showLabels />
+                    <LandmarkViewer2D landmarks={consensus!} showLabels edges={wireframe} />
                   )}
                 </CardContent>
               </Card>
@@ -148,7 +170,7 @@ export default function ProcrustesFit() {
                     {is3D ? (
                       <LandmarkViewer3D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} />
                     ) : (
-                      <LandmarkViewer2D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} width={230} height={180} />
+                      <LandmarkViewer2D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} width={230} height={180} edges={wireframe} />
                     )}
                   </div>
                 </CardContent>
@@ -157,7 +179,7 @@ export default function ProcrustesFit() {
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">Shape Variation (PC1 extremes preview)</CardTitle></CardHeader>
                 <CardContent className="flex gap-6">
-                  <ShapeGrid consensus={consensus!} />
+                  <ShapeGrid consensus={consensus!} edges={wireframe} />
                 </CardContent>
               </Card>
             </>

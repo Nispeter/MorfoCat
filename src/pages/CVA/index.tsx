@@ -12,6 +12,8 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runCVA } from "@/lib/ipc";
 import { downloadCSV } from "@/lib/export";
+import { groupsOf, hasGroups } from "@/lib/groups";
+import { ClassifierSelect } from "@/components/layout/ClassifierSelect";
 import { Play, Loader2, Download, HelpCircle } from "lucide-react";
 
 export default function CVA() {
@@ -21,10 +23,11 @@ export default function CVA() {
   const t = useT();
   const [permutations, setPermutations] = useState(999);
 
+  const active = useDatasetStore((s) => s.activeClassifier);
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
-  const groups = included.map((s) => s.group ?? "unassigned");
+  const groups = groupsOf(included, active);
   const ids = included.map((s) => s.id);
-  const hasGroups = included.some((s) => s.group);
+  const groupsAvailable = hasGroups(included, active);
 
   const run = async () => {
     if (!aligned) return;
@@ -75,14 +78,15 @@ export default function CVA() {
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
-          <Button size="sm" onClick={run} disabled={loading["cva"] || !hasGroups}>
+          <ClassifierSelect label="Group by:" />
+          <Button size="sm" onClick={run} disabled={loading["cva"] || !groupsAvailable}>
             {loading["cva"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             {loading["cva"] ? t("action.running") : t("action.run") + " CVA"}
           </Button>
         </div>
       }
     >
-      {!hasGroups && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">Assign groups to specimens in Data Manager first.</p>}
+      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">Assign groups to specimens in Data Manager first (extract a classifier from the ID string).</p>}
       {errors["cva"] && <p className="mb-3 text-sm text-destructive">{errors["cva"]}</p>}
 
       {!cva ? (

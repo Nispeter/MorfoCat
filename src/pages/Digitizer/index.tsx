@@ -7,6 +7,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import { useDigitizerStore, type LandmarkPoint } from "@/store/digitizerStore";
 import { useNavStore } from "@/store/navStore";
 import { useDatasetStore } from "@/store/datasetStore";
@@ -15,7 +20,7 @@ import { parseTPS, writeTPS } from "@/lib/parsers";
 import { readFileB64, writeTextFile } from "@/lib/ipc";
 import {
   ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
-  CheckCircle2, Circle, MousePointerClick, Import, Spline,
+  CheckCircle2, Circle, MousePointerClick, Import, Spline, Ruler,
 } from "lucide-react";
 
 // ── Canvas drawing ────────────────────────────────────────────────────────────
@@ -28,7 +33,8 @@ function drawCanvas(
   landmarks: LandmarkPoint[],
   nSemi: number,
   xform: React.MutableRefObject<Transform>,
-  showLine: boolean
+  showLine: boolean,
+  scalePts: { x: number; y: number }[] = []
 ) {
   const ctx = canvas.getContext("2d")!;
   const { width, height } = canvas;
@@ -47,6 +53,29 @@ function drawCanvas(
   xform.current = { scale, ox, oy };
 
   ctx.drawImage(img, ox, oy, iw, ih);
+
+  // Scale-reference measurement segment (cyan)
+  if (scalePts.length > 0) {
+    scalePts.forEach((pt) => {
+      ctx.beginPath();
+      ctx.arc(pt.x * scale + ox, pt.y * scale + oy, 5, 0, Math.PI * 2);
+      ctx.fillStyle = "#06b6d4";
+      ctx.fill();
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+    if (scalePts.length === 2) {
+      const [a, b] = scalePts;
+      ctx.beginPath();
+      ctx.moveTo(a.x * scale + ox, a.y * scale + oy);
+      ctx.lineTo(b.x * scale + ox, b.y * scale + oy);
+      ctx.strokeStyle = "#06b6d4";
+      ctx.lineWidth = 2;
+      ctx.setLineDash([]);
+      ctx.stroke();
+    }
+  }
 
   // Line through all landmarks in order — green for fixed, amber for semi
   if (showLine && landmarks.length >= 2) {
@@ -125,7 +154,7 @@ function extMime(path: string): string {
 export default function Digitizer() {
   const {
     specimens, currentIdx, nLandmarks, nSemi, sourceFile,
-    addLandmark, undoLandmark, clearSpecimen, navigate, setSession,
+    addLandmark, undoLandmark, clearSpecimen, setScale, navigate, setSession,
   } = useDigitizerStore();
 
   const navNavigate = useNavStore((s) => s.navigate);
@@ -136,9 +165,18 @@ export default function Digitizer() {
   const containerRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const xformRef = useRef<Transform>({ scale: 1, ox: 0, oy: 0 });
+  const scalePtsRef = useRef<{ x: number; y: number }[]>([]);
   const [imageDataUrl, setImageDataUrl] = useState<string | null>(null);
   const [loadingImage, setLoadingImage] = useState(false);
   const [showLine, setShowLine] = useState(true);
+  const [scaleMode, setScaleMode] = useState(false);
+  const [scalePts, setScalePts] = useState<{ x: number; y: number }[]>([]);
+  const [scaleDialog, setScaleDialog] = useState<{ pixelDist: number } | null>(null);
+  const [scaleLength, setScaleLength] = useState("");
+  const [scaleUnit, setScaleUnit] = useState("mm");
+
+  // Keep a ref in sync so the resize/image-load redraws show the measurement too
+  scalePtsRef.current = scalePts;
 
   const current = specimens[currentIdx];
   const isComplete = current ? current.landmarks.length >= nLandmarks : false;
@@ -156,7 +194,7 @@ export default function Digitizer() {
       if (!canvas) return;
       canvas.width = container.clientWidth;
       canvas.height = container.clientHeight;
-      if (imgRef.current) drawCanvas(canvas, imgRef.current, current?.landmarks ?? [], nSemi, xformRef, showLine);
+      if (imgRef.current) drawCanvas(canvas, imgRef.current, current?.landmarks ?? [], nSemi, xformRef, showLine, scalePtsRef.current);
     });
     ro.observe(container);
     return () => ro.disconnect();
@@ -189,18 +227,22 @@ export default function Digitizer() {
     img.onload = () => {
       imgRef.current = img;
       const canvas = canvasRef.current;
-      if (canvas) drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine);
+      if (canvas) drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine, scalePtsRef.current);
     };
     img.src = imageDataUrl;
   }, [imageDataUrl, showLine]);
 
-  // Redraw on landmark change (image already loaded)
+  // Redraw on landmark or scale-measurement change (image already loaded)
   useEffect(() => {
     const canvas = canvasRef.current;
     const img = imgRef.current;
     if (!canvas || !img) return;
-    drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine);
-  }, [current?.landmarks, nLandmarks, nSemi, showLine]);
+    drawCanvas(canvas, img, current?.landmarks ?? [], nSemi, xformRef, showLine, scalePts);
+  }, [current?.landmarks, nLandmarks, nSemi, showLine, scalePts]);
+
+  // Reset any in-progress measurement when leaving scale mode or switching specimen
+  useEffect(() => { setScalePts([]); }, [currentIdx]);
+  useEffect(() => { if (!scaleMode) setScalePts([]); }, [scaleMode]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -214,7 +256,7 @@ export default function Digitizer() {
   }, [currentIdx, navigate, undoLandmark]);
 
   const handleCanvasClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!current || isComplete) return;
+    if (!current) return;
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const px = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -224,6 +266,22 @@ export default function Digitizer() {
     const imgY = (py - oy) / scale;
     const img = imgRef.current;
     if (!img || imgX < 0 || imgX > img.naturalWidth || imgY < 0 || imgY > img.naturalHeight) return;
+
+    // Scale-measurement mode: collect two reference points, then ask for real length
+    if (scaleMode) {
+      const next = [...scalePts, { x: imgX, y: imgY }];
+      if (next.length >= 2) {
+        const [a, b] = next;
+        const pixelDist = Math.hypot(b.x - a.x, b.y - a.y);
+        setScalePts([a, b]);
+        setScaleDialog({ pixelDist });
+      } else {
+        setScalePts(next);
+      }
+      return;
+    }
+
+    if (isComplete) return;
     const pFixed = current.landmarks.filter((lm) => !lm.isSemi).length;
     const pSemi  = current.landmarks.filter((lm) =>  lm.isSemi).length;
     const canFixed = pFixed < nFixed;
@@ -232,7 +290,24 @@ export default function Digitizer() {
     const isSemi = e.shiftKey ? (canSemi ? true : false) : (canFixed ? false : canSemi);
     if (!canFixed && !canSemi) return;
     addLandmark(imgX, imgY, isSemi);
-  }, [current, isComplete, nFixed, nSemi, addLandmark]);
+  }, [current, isComplete, nFixed, nSemi, addLandmark, scaleMode, scalePts]);
+
+  // Confirm the scale dialog: compute units-per-pixel and store it
+  const confirmScale = useCallback(() => {
+    if (!scaleDialog) return;
+    const len = parseFloat(scaleLength);
+    if (!isFinite(len) || len <= 0) {
+      toast.error("Enter a positive reference length.");
+      return;
+    }
+    const scale = len / scaleDialog.pixelDist; // real units per pixel
+    setScale(scale, scaleUnit.trim() || "unit");
+    toast.success("Scale set", { description: `${scale.toPrecision(4)} ${scaleUnit.trim() || "unit"}/px` });
+    setScaleDialog(null);
+    setScaleLength("");
+    setScalePts([]);
+    setScaleMode(false);
+  }, [scaleDialog, scaleLength, scaleUnit, setScale]);
 
   // ── Open TPS for digitizing ─────────────────────────────────────────────────
   const handleOpenTPS = useCallback(async () => {
@@ -253,6 +328,7 @@ export default function Digitizer() {
           id: sp.id ?? String(i + 1),
           imagePath: imgPath,
           imageBase: imgBase ?? "",
+          scale: sp.scale ?? undefined,
           landmarks: sp.landmarks.map((pt, j) => ({
             x: pt[0],
             y: pt[1],
@@ -286,6 +362,7 @@ export default function Digitizer() {
       const tpsSpecimens = specimens.map((sp) => ({
         id: sp.id,
         image: sp.imageBase || undefined,
+        scale: sp.scale ?? undefined,
         landmarks: sp.landmarks.map((lm) => [lm.x, lm.y]),
         semiLandmarkIndices: nSemi > 0
           ? sp.landmarks.map((lm, i) => lm.isSemi ? i : -1).filter((i) => i >= 0)
@@ -307,11 +384,17 @@ export default function Digitizer() {
     }
     clearAnalyses();
     setDataset({
-      specimens: specimens.map((sp) => ({
-        id: sp.id,
-        landmarks: sp.landmarks.map((lm) => [lm.x, lm.y]),
-        include: true,
-      })),
+      specimens: specimens.map((sp) => {
+        // Apply metric scale (units per pixel) to coordinates when available,
+        // so centroid size and allometry are in real units.
+        const k = sp.scale ?? 1;
+        return {
+          id: sp.id,
+          landmarks: sp.landmarks.map((lm) => [lm.x * k, lm.y * k]),
+          scale: sp.scale ?? null,
+          include: true,
+        };
+      }),
       n_landmarks: nLandmarks,
       dimensions: 2,
       filename: sourceFile ? basename(sourceFile) : "digitized.tps",
@@ -418,15 +501,21 @@ export default function Digitizer() {
               onClick={handleCanvasClick}
             />
             {/* Mode badge */}
-            {!isComplete && (
+            {scaleMode ? (
+              <div className="absolute bottom-3 left-3">
+                <Badge variant="outline" className="text-xs bg-cyan-950/70 text-cyan-100 border-cyan-400/30">
+                  <Ruler size={11} className="mr-1" />
+                  {scalePts.length === 0 ? "Click the first reference point" : "Click the second reference point"}
+                </Badge>
+              </div>
+            ) : !isComplete ? (
               <div className="absolute bottom-3 left-3 flex gap-2">
                 <Badge variant="outline" className="text-xs bg-black/60 text-white border-white/20">
                   LM #{placed + 1} · {placedFixed < nFixed ? "click = fixed" : "click = semi"}
                   {nSemi > 0 && placedSemi < nSemi ? " · shift = semi" : ""}
                 </Badge>
               </div>
-            )}
-            {isComplete && (
+            ) : (
               <div className="absolute bottom-3 left-3">
                 <Badge className="bg-emerald-600 text-xs">
                   <CheckCircle2 size={11} className="mr-1" /> All {nLandmarks} landmarks placed
@@ -447,6 +536,14 @@ export default function Digitizer() {
               </Button>
               <Button variant="outline" size="sm" className="w-full text-destructive" onClick={clearSpecimen} disabled={placed === 0}>
                 <Trash2 size={13} /> Clear Specimen
+              </Button>
+              <Button
+                variant={scaleMode ? "default" : "outline"}
+                size="sm"
+                className="w-full"
+                onClick={() => setScaleMode((m) => !m)}
+              >
+                <Ruler size={13} /> {scaleMode ? "Cancel scale" : "Set Scale"}
               </Button>
               <div className="flex items-center justify-between py-0.5">
                 <div className="flex items-center gap-2 text-sm">
@@ -478,6 +575,16 @@ export default function Digitizer() {
               <div className="flex items-center justify-between pt-1">
                 <span className="text-muted-foreground">All specimens</span>
                 <span className="font-medium">{specimens.filter((sp) => sp.landmarks.length >= nLandmarks).length}/{specimens.length}</span>
+              </div>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-muted-foreground">Scale</span>
+                {current?.scale ? (
+                  <span className="font-medium text-cyan-500">
+                    {current.scale.toPrecision(3)} {current.scaleUnit ?? "unit"}/px
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground/70">not set</span>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -541,6 +648,55 @@ export default function Digitizer() {
           </Card>
         </div>
       </div>
+
+      {/* Scale reference dialog */}
+      <Dialog open={scaleDialog !== null} onOpenChange={(o) => { if (!o) { setScaleDialog(null); setScalePts([]); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Set scale</DialogTitle>
+            <DialogDescription>
+              Enter the real length of the segment you just measured
+              {scaleDialog ? ` (${scaleDialog.pixelDist.toFixed(1)} px).` : "."}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-end gap-3">
+            <div className="flex-1 space-y-1">
+              <Label htmlFor="scale-length">Reference length</Label>
+              <Input
+                id="scale-length"
+                type="number"
+                min={0}
+                step="any"
+                autoFocus
+                value={scaleLength}
+                onChange={(e) => setScaleLength(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmScale(); }}
+                placeholder="e.g. 10"
+              />
+            </div>
+            <div className="w-24 space-y-1">
+              <Label htmlFor="scale-unit">Unit</Label>
+              <Input
+                id="scale-unit"
+                value={scaleUnit}
+                onChange={(e) => setScaleUnit(e.target.value)}
+                placeholder="mm"
+              />
+            </div>
+          </div>
+          {scaleDialog && parseFloat(scaleLength) > 0 && (
+            <p className="text-xs text-muted-foreground">
+              = {(parseFloat(scaleLength) / scaleDialog.pixelDist).toPrecision(4)} {scaleUnit.trim() || "unit"}/px
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => { setScaleDialog(null); setScalePts([]); }}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={confirmScale}>Set scale</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </PanelLayout>
   );
 }

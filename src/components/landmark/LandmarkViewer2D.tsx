@@ -8,10 +8,12 @@ interface LandmarkViewer2DProps {
   showLabels?: boolean;
   width?: number;
   height?: number;
+  /** User-defined links (pairs of landmark indices). Falls back to a sequential ring when empty. */
+  edges?: [number, number][];
 }
 
 export function LandmarkViewer2D({
-  landmarks, consensus, specimenId, showLabels = true, width = 400, height = 340,
+  landmarks, consensus, specimenId, showLabels = true, width = 400, height = 340, edges,
 }: LandmarkViewer2DProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [zoom, setZoom] = useState<d3.ZoomTransform>(d3.zoomIdentity);
@@ -39,13 +41,19 @@ export function LandmarkViewer2D({
 
     const g = svg.append("g").attr("class", "zoom-g");
 
-    // Wireframe
+    // Wireframe: user-defined links if present, else a sequential ring
     if (landmarks.length > 1) {
-      for (let i = 0; i < landmarks.length; i++) {
-        const a = toSvg(landmarks[i][0], landmarks[i][1]);
-        const b = toSvg(landmarks[(i + 1) % landmarks.length][0], landmarks[(i + 1) % landmarks.length][1]);
+      const drawLink = (i0: number, i1: number) => {
+        if (!landmarks[i0] || !landmarks[i1]) return;
+        const a = toSvg(landmarks[i0][0], landmarks[i0][1]);
+        const b = toSvg(landmarks[i1][0], landmarks[i1][1]);
         g.append("line").attr("x1", a.cx).attr("y1", a.cy).attr("x2", b.cx).attr("y2", b.cy)
           .attr("stroke", "hsl(var(--muted-foreground))").attr("stroke-width", 0.7).attr("opacity", 0.4);
+      };
+      if (edges && edges.length > 0) {
+        edges.forEach(([a, b]) => drawLink(a, b));
+      } else {
+        for (let i = 0; i < landmarks.length; i++) drawLink(i, (i + 1) % landmarks.length);
       }
     }
 
@@ -76,7 +84,7 @@ export function LandmarkViewer2D({
         setZoom(event.transform);
       });
     svg.call(zoomBehavior).call(zoomBehavior.transform, zoom);
-  }, [landmarks, consensus, showLabels, width, height]);
+  }, [landmarks, consensus, showLabels, width, height, edges]);
 
   return (
     <div className="relative">

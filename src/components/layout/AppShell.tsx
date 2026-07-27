@@ -7,6 +7,7 @@ import Digitizer from "@/pages/Digitizer";
 import ProcrustesFit from "@/pages/ProcrustesFit";
 import Outliers from "@/pages/Outliers";
 import Covariance from "@/pages/Covariance";
+import Wireframe from "@/pages/Wireframe";
 import PCA from "@/pages/PCA";
 import MatrixCorr from "@/pages/MatrixCorr";
 import TwoBlockPLS from "@/pages/TwoBlockPLS";
@@ -26,6 +27,7 @@ const PAGE_MAP: Record<PageId, React.ComponentType> = {
   "procrustes":     ProcrustesFit,
   "outliers":       Outliers,
   "covariance":     Covariance,
+  "wireframe":      Wireframe,
   "pca":            PCA,
   "matrix-corr":    MatrixCorr,
   "pls":            TwoBlockPLS,

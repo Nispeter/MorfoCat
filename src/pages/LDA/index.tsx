@@ -11,6 +11,8 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runLDA } from "@/lib/ipc";
 import { downloadCSV } from "@/lib/export";
+import { groupsOf, hasGroups } from "@/lib/groups";
+import { ClassifierSelect } from "@/components/layout/ClassifierSelect";
 import { Play, Loader2, Download } from "lucide-react";
 
 export default function LDA() {
@@ -19,10 +21,11 @@ export default function LDA() {
   const { lda, setLDA, setLoading, setError, loading, errors } = useAnalysisStore();
   const t = useT();
 
+  const active = useDatasetStore((s) => s.activeClassifier);
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
-  const groups = included.map((s) => s.group ?? "unassigned");
+  const groups = groupsOf(included, active);
   const ids = included.map((s) => s.id);
-  const hasGroups = included.some((s) => s.group);
+  const groupsAvailable = hasGroups(included, active);
 
   const run = async () => {
     if (!aligned) return;
@@ -63,14 +66,15 @@ export default function LDA() {
               <Download size={14} /> Export CSV
             </Button>
           )}
-          <Button size="sm" onClick={run} disabled={loading["lda"] || !hasGroups}>
+          <ClassifierSelect label="Group by:" />
+          <Button size="sm" onClick={run} disabled={loading["lda"] || !groupsAvailable}>
             {loading["lda"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
             {loading["lda"] ? t("action.running") : t("action.run") + " LDA"}
           </Button>
         </>
       }
     >
-      {!hasGroups && <p className="mb-3 text-sm text-amber-600">Assign groups in Data Manager first.</p>}
+      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600">Assign groups in Data Manager first (extract a classifier from the ID string).</p>}
       {errors["lda"] && <p className="mb-3 text-sm text-destructive">{errors["lda"]}</p>}
 
       {!lda ? (

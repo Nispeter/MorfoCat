@@ -11,6 +11,10 @@ export interface DigitizerSpecimen {
   imagePath: string;
   imageBase: string;
   landmarks: LandmarkPoint[];
+  /** Real-world units per pixel (length / pixel distance of the reference). */
+  scale?: number;
+  /** Unit label for the scale, e.g. "mm". */
+  scaleUnit?: string;
 }
 
 interface DigitizerState {
@@ -31,6 +35,7 @@ interface DigitizerState {
   addLandmark: (x: number, y: number, isSemi: boolean) => void;
   undoLandmark: () => void;
   clearSpecimen: () => void;
+  setScale: (scale: number, unit: string) => void;
   navigate: (idx: number) => void;
   reset: () => void;
 }
@@ -68,6 +73,15 @@ export const useDigitizerStore = create<DigitizerState>((set) => ({
     set((s) => {
       const specimens = [...s.specimens];
       specimens[s.currentIdx] = { ...specimens[s.currentIdx], landmarks: [] };
+      return { specimens };
+    }),
+
+  setScale: (scale, unit) =>
+    set((s) => {
+      const sp = s.specimens[s.currentIdx];
+      if (!sp) return s;
+      const specimens = [...s.specimens];
+      specimens[s.currentIdx] = { ...sp, scale, scaleUnit: unit };
       return { specimens };
     }),
 

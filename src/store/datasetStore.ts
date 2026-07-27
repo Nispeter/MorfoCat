@@ -6,6 +6,8 @@ export interface Specimen {
   scale?: number | null;
   image?: string | null;
   group?: string;
+  /** Named classifiers extracted from the ID string (e.g. { site: "PR", material: "obsidian" }). */
+  classifiers?: Record<string, string>;
   include: boolean;
 }
 
@@ -14,6 +16,8 @@ export interface Dataset {
   n_landmarks: number;
   dimensions: number;
   filename: string;
+  /** Ordered list of defined classifier names. */
+  classifierNames?: string[];
 }
 
 interface DatasetState {
@@ -22,6 +26,10 @@ interface DatasetState {
   consensus: number[][] | null;
   centroid_sizes: number[] | null;
   procrustes_distances: number[] | null;
+  /** Name of the classifier currently used for grouping/coloring, or null. */
+  activeClassifier: string | null;
+  /** User-defined wireframe: pairs of 0-based landmark indices to connect. */
+  wireframe: [number, number][];
 
   setDataset: (ds: Dataset) => void;
   setAligned: (
@@ -32,17 +40,46 @@ interface DatasetState {
   ) => void;
   toggleSpecimen: (idx: number) => void;
   setGroup: (idx: number, group: string) => void;
+  extractClassifier: (name: string, first: number, last: number) => void;
+  setSpecimenClassifier: (idx: number, name: string, value: string) => void;
+  renameClassifier: (oldName: string, newName: string) => void;
+  deleteClassifier: (name: string) => void;
+  setActiveClassifier: (name: string | null) => void;
+  addLink: (a: number, b: number) => void;
+  removeLink: (index: number) => void;
+  clearWireframe: () => void;
+  swapLandmarks: (i: number, j: number) => void;
+  appendSpecimens: (specimens: Specimen[]) => { added: number } | { error: string };
   clear: () => void;
 }
 
-export const useDatasetStore = create<DatasetState>((set) => ({
+export const useDatasetStore = create<DatasetState>((set, get) => ({
   dataset: null,
   aligned: null,
   consensus: null,
   centroid_sizes: null,
   procrustes_distances: null,
+  activeClassifier: null,
+  wireframe: [],
 
-  setDataset: (ds) => set({ dataset: ds, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null }),
+  setDataset: (ds) => {
+    // Seed a "group" classifier from any auto-detected group so existing
+    // grouping keeps working and shows up in the classifier UI.
+    const hasGroup = ds.specimens.some((sp) => sp.group);
+    const specimens = ds.specimens.map((sp) =>
+      sp.group ? { ...sp, classifiers: { group: sp.group, ...(sp.classifiers ?? {}) } } : sp
+    );
+    const classifierNames = hasGroup ? ["group"] : [];
+    set({
+      dataset: { ...ds, specimens, classifierNames },
+      aligned: null,
+      consensus: null,
+      centroid_sizes: null,
+      procrustes_distances: null,
+      activeClassifier: hasGroup ? "group" : null,
+      wireframe: [],
+    });
+  },
 
   setAligned: (aligned, consensus, centroid_sizes, procrustes_distances) =>
     set({ aligned, consensus, centroid_sizes, procrustes_distances }),
@@ -63,6 +100,131 @@ export const useDatasetStore = create<DatasetState>((set) => ({
       return { dataset: { ...s.dataset, specimens } };
     }),
 
+  extractClassifier: (name, first, last) =>
+    set((s) => {
+      if (!s.dataset || !name.trim()) return s;
+      const key = name.trim();
+      const lo = Math.max(0, first - 1);
+      const specimens = s.dataset.specimens.map((sp) => ({
+        ...sp,
+        classifiers: { ...(sp.classifiers ?? {}), [key]: sp.id.slice(lo, last) },
+      }));
+      const classifierNames = s.dataset.classifierNames?.includes(key)
+        ? s.dataset.classifierNames
+        : [...(s.dataset.classifierNames ?? []), key];
+      return {
+        dataset: { ...s.dataset, specimens, classifierNames },
+        activeClassifier: s.activeClassifier ?? key,
+      };
+    }),
+
+  setSpecimenClassifier: (idx, name, value) =>
+    set((s) => {
+      if (!s.dataset) return s;
+      const specimens = [...s.dataset.specimens];
+      specimens[idx] = {
+        ...specimens[idx],
+        classifiers: { ...(specimens[idx].classifiers ?? {}), [name]: value },
+      };
+      return { dataset: { ...s.dataset, specimens } };
+    }),
+
+  renameClassifier: (oldName, newName) =>
+    set((s) => {
+      if (!s.dataset || !newName.trim() || oldName === newName) return s;
+      const key = newName.trim();
+      const specimens = s.dataset.specimens.map((sp) => {
+        if (!sp.classifiers || !(oldName in sp.classifiers)) return sp;
+        const { [oldName]: val, ...rest } = sp.classifiers;
+        return { ...sp, classifiers: { ...rest, [key]: val } };
+      });
+      const classifierNames = (s.dataset.classifierNames ?? []).map((n) => (n === oldName ? key : n));
+      return {
+        dataset: { ...s.dataset, specimens, classifierNames },
+        activeClassifier: s.activeClassifier === oldName ? key : s.activeClassifier,
+      };
+    }),
+
+  deleteClassifier: (name) =>
+    set((s) => {
+      if (!s.dataset) return s;
+      const specimens = s.dataset.specimens.map((sp) => {
+        if (!sp.classifiers || !(name in sp.classifiers)) return sp;
+        const { [name]: _drop, ...rest } = sp.classifiers;
+        return { ...sp, classifiers: rest };
+      });
+      const classifierNames = (s.dataset.classifierNames ?? []).filter((n) => n !== name);
+      return {
+        dataset: { ...s.dataset, specimens, classifierNames },
+        activeClassifier: s.activeClassifier === name ? (classifierNames[0] ?? null) : s.activeClassifier,
+      };
+    }),
+
+  setActiveClassifier: (name) => set({ activeClassifier: name }),
+
+  addLink: (a, b) =>
+    set((s) => {
+      if (a === b) return s;
+      const key = a < b ? `${a}-${b}` : `${b}-${a}`;
+      const exists = s.wireframe.some(([x, y]) => (x < y ? `${x}-${y}` : `${y}-${x}`) === key);
+      if (exists) return s;
+      return { wireframe: [...s.wireframe, [a, b]] };
+    }),
+
+  removeLink: (index) =>
+    set((s) => ({ wireframe: s.wireframe.filter((_, i) => i !== index) })),
+
+  clearWireframe: () => set({ wireframe: [] }),
+
+  // Swap two landmarks across every specimen. Keeps the wireframe consistent by
+  // remapping the swapped indices, and clears stale alignment so analyses re-run.
+  swapLandmarks: (i, j) =>
+    set((s) => {
+      if (!s.dataset || i === j) return s;
+      const specimens = s.dataset.specimens.map((sp) => {
+        const lms = [...sp.landmarks];
+        if (lms[i] && lms[j]) [lms[i], lms[j]] = [lms[j], lms[i]];
+        return { ...sp, landmarks: lms };
+      });
+      const remap = (n: number) => (n === i ? j : n === j ? i : n);
+      const wireframe = s.wireframe.map(([a, b]) => [remap(a), remap(b)] as [number, number]);
+      return {
+        dataset: { ...s.dataset, specimens },
+        wireframe,
+        aligned: null,
+        consensus: null,
+        centroid_sizes: null,
+        procrustes_distances: null,
+      };
+    }),
+
+  // Append specimens from another file. Requires the same landmark count.
+  appendSpecimens: (incoming) => {
+    const s = get();
+    if (!s.dataset) return { error: "No dataset loaded." };
+    const nLm = s.dataset.n_landmarks;
+    const mismatch = incoming.find((sp) => sp.landmarks.length !== nLm);
+    if (mismatch) {
+      return { error: `Landmark count differs (${mismatch.landmarks.length} vs ${nLm}). Files must share the same landmark scheme.` };
+    }
+    const existingIds = new Set(s.dataset.specimens.map((sp) => sp.id));
+    const merged = incoming.map((sp) => {
+      let id = sp.id;
+      let k = 2;
+      while (existingIds.has(id)) id = `${sp.id} (${k++})`;
+      existingIds.add(id);
+      return { ...sp, id };
+    });
+    set({
+      dataset: { ...s.dataset, specimens: [...s.dataset.specimens, ...merged] },
+      aligned: null,
+      consensus: null,
+      centroid_sizes: null,
+      procrustes_distances: null,
+    });
+    return { added: merged.length };
+  },
+
   clear: () =>
-    set({ dataset: null, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null }),
+    set({ dataset: null, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null, activeClassifier: null, wireframe: [] }),
 }));
