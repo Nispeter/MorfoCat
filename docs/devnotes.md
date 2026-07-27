@@ -1,19 +1,30 @@
 
-- add scale to digitalize
-- font on dark theme
-- add analysis variable tags 
-- add value graphs to the side of PCA
-- customize the side image on the PCA grags 
-- on image import select multiple images or select folder (auto selects everything on folder )
-- fix landmark selector to have minimum 0 characters but minimum 1 value 
-- biplot dropdowns bug on dark theme (image name on all variables)
-- interactive plotting (values on mouse)
-- plot axis max and mis for representativity 
-- outliers, find outliers graph with distance to procustes as lines in distance per image, with mahalanobis distance 
-- add code
-- define any numer of groups or variables then the graphs sould be colored by the group selected
-- gray out on sidebar the functionalities that are not complete 
-- standarize the screens for example a export button at top right
-- for data input then add a mark if data is loaded (maybe a dot)
-- add graphs at both axis to PCA, como la imagen de image.png la idea es que puedas customizar los clusters con colores y nombres, que existan referencias de forma en cada uno de los ejes y que puedas moverlo para exportarlo como imagen de alta calidad 
-- make sure the traductions are correct 
+## Open
+
+- add code  *(unclear what this meant — needs restating before it can be picked up)*
+- interactive plotting on the remaining recharts panels (PLS, modularity,
+  matrix correlation) — PCA, biplot and outliers already read out on hover
+- finish the i18n sweep: page titles, page-level actions and the plot controls
+  are translated, but inline card hints and toast text are still English only
+- customize the side image on the PCA graphs *(shape references are drawn from
+  the wireframe — a per-figure override for which drawing to use is still open)*
+
+## Done
+
+- add scale to digitalize — "Set Scale" in the Digitizer, written as `SCALE=` on TPS export
+- font on dark theme — `color-scheme` per theme, native selects themed, contrast raised
+- add analysis variable tags — classifiers extracted from the ID string
+- add value graphs to the side of PCA — shape references along both axes (Figure tab)
+- on image import select multiple images or select folder — "Add Folder…"
+- fix landmark selector to have minimum 0 characters but minimum 1 value — `NumberInput`
+- biplot dropdowns bug on dark theme — fixed by `color-scheme` + themed `option`
+- interactive plotting (values on mouse) — PCA figure, biplot and distance plot
+- plot axis max and min for representativity — auto / symmetric / manual in the Figure tab
+- outliers graph with Procrustes distance per image and Mahalanobis distance
+- define any number of groups or variables, graphs coloured by the selected group
+- gray out on sidebar the functionalities that are not ready (with the reason on hover)
+- standardize the screens — every chart sits in a `ChartFrame` with PNG/SVG export top right
+- for data input add a mark if data is loaded — dot on Data Manager and Procrustes Fit
+- add graphs at both axis to PCA (docs/image.png) — Figure tab: editable cluster
+  colours/names/symbols, shape references on both axes, draggable legend, PNG/SVG export
+- make sure the traductions are correct — Spanish terms corrected, coverage extended
