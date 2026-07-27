@@ -394,12 +394,15 @@ export default function Digitizer() {
           id: sp.id,
           landmarks: sp.landmarks.map((lm) => [lm.x * k, lm.y * k]),
           scale: sp.scale ?? null,
+          image: sp.imageBase || null,
           include: true,
         };
       }),
       n_landmarks: nLandmarks,
       dimensions: 2,
       filename: sourceFile ? basename(sourceFile) : "digitized.tps",
+      // Carried over so PCA figures can show the specimen photos.
+      imageDir: specimens[0]?.imagePath ? dirname(specimens[0].imagePath) : null,
     });
     toast.success("Dataset loaded from digitizer");
     navNavigate("data");

@@ -13,6 +13,9 @@ import { ChartFrame } from "@/components/plots/ChartFrame";
 import { PCAFigure } from "@/components/plots/PCAFigure";
 import { FigureStylePanel } from "@/components/plots/FigureStylePanel";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
+import { figureDomain, referenceSpecimens } from "@/lib/figure";
+import { useSpecimenImages } from "@/lib/useSpecimenImages";
+import { open } from "@tauri-apps/plugin-dialog";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
@@ -39,6 +42,52 @@ export default function PCA() {
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
   const groups = groupsOf(included, active);
   const ids = included.map((s) => s.id);
+
+  // Photos for the specimens the figure uses as axis references. Only those
+  // are read off disk — loading the whole sample would be wasteful.
+  const imageDir = dataset?.imageDir ?? null;
+  const setImageDir = useDatasetStore((s) => s.setImageDir);
+  const refSource = usePlotStyleStore((s) => s.refSource);
+  const refShapesX = usePlotStyleStore((s) => s.refShapesX);
+  const refShapesY = usePlotStyleStore((s) => s.refShapesY);
+  const axisMode = usePlotStyleStore((s) => s.axisMode);
+  const manualLimits = usePlotStyleStore((s) => s.manualLimits);
+
+  const refIndices = useMemo(() => {
+    if (refSource !== "photo" || !pca) return [];
+    const xs = pca.scores.map((s) => s[pcX] ?? 0);
+    const ys = pca.scores.map((s) => s[pcY] ?? 0);
+    const domain = figureDomain(xs, ys, axisMode, manualLimits);
+    return [
+      ...referenceSpecimens(pca.scores, pcX, refShapesX, domain.x[0], domain.x[1]),
+      ...referenceSpecimens(pca.scores, pcY, refShapesY, domain.y[0], domain.y[1]),
+    ].map((r) => r.index);
+  }, [refSource, pca, pcX, pcY, refShapesX, refShapesY, axisMode, manualLimits]);
+
+  const refPaths = useMemo(() => {
+    if (!imageDir) return [];
+    return [...new Set(refIndices)]
+      .map((i) => included[i]?.image)
+      .filter((name): name is string => !!name)
+      .map((name) => `${imageDir}/${name}`);
+  }, [refIndices, imageDir, included]);
+
+  const imageUrls = useSpecimenImages(refPaths);
+  const photos = useMemo(() => {
+    const out: Record<number, string> = {};
+    if (!imageDir) return out;
+    for (const i of new Set(refIndices)) {
+      const name = included[i]?.image;
+      const url = name ? imageUrls[`${imageDir}/${name}`] : undefined;
+      if (url) out[i] = url;
+    }
+    return out;
+  }, [refIndices, imageUrls, imageDir, included]);
+
+  const pickImageFolder = async () => {
+    const folder = await open({ directory: true, multiple: false });
+    if (folder && !Array.isArray(folder)) setImageDir(folder);
+  };
 
   // Keep the figure's per-group colours and symbols in step with the data.
   const groupKey = groups.join(" ");
@@ -178,14 +227,20 @@ export default function PCA() {
                   loadings={pca.loadings}
                   pctVariance={pca.pct_variance}
                   consensus={consensus}
+                  aligned={aligned}
                   wireframe={wireframe}
                   groups={groups}
                   ids={ids}
+                  photos={photos}
                   pcX={pcX}
                   pcY={pcY}
                 />
               </ChartFrame>
-              <FigureStylePanel groups={uniqueGroups} />
+              <FigureStylePanel
+                groups={uniqueGroups}
+                imageDir={imageDir}
+                onPickImageFolder={pickImageFolder}
+              />
             </div>
           </TabsContent>
 

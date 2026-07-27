@@ -1,16 +1,21 @@
 import { useMemo, useRef, useState } from "react";
 import { symbolPath, isStrokeOnly } from "@/lib/symbols";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
+import { figureDomain, referenceSpecimens } from "@/lib/figure";
 
 interface PCAFigureProps {
   scores: number[][];
   loadings: number[][];
   pctVariance: number[];
-  /** Mean shape the reference drawings deform away from. */
+  /** Mean shape the "average shape change" references deform away from. */
   consensus: number[][] | null;
+  /** Procrustes-aligned coordinates, used to draw real specimens as references. */
+  aligned: number[][][] | null;
   wireframe: [number, number][];
   groups: string[];
   ids: string[];
+  /** Photo for each specimen, keyed by its index in `scores`. */
+  photos: Record<number, string>;
   pcX: number;
   pcY: number;
   width?: number;
@@ -26,11 +31,11 @@ const REF_BOX = 96;
  * figure is a single SVG so it exports as one high-resolution image.
  */
 export function PCAFigure({
-  scores, loadings, pctVariance, consensus, wireframe, groups, ids,
+  scores, loadings, pctVariance, consensus, aligned, wireframe, groups, ids, photos,
   pcX, pcY, width = 900, height = 680,
 }: PCAFigureProps) {
   const {
-    styles, axisMode, manualLimits, refShapesX, refShapesY,
+    styles, axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds,
     legendPos, showLegend, setLegendPos,
   } = usePlotStyleStore();
 
@@ -44,27 +49,10 @@ export function PCAFigure({
   const xs = scores.map((s) => s[pcX] ?? 0);
   const ys = scores.map((s) => s[pcY] ?? 0);
 
-  const domain = useMemo(() => {
-    if (axisMode === "manual") {
-      return {
-        x: [manualLimits.xMin, manualLimits.xMax] as [number, number],
-        y: [manualLimits.yMin, manualLimits.yMax] as [number, number],
-      };
-    }
-    const pad = 0.12;
-    const span = (vals: number[]): [number, number] => {
-      const lo = Math.min(...vals), hi = Math.max(...vals);
-      const margin = (hi - lo) * pad || 0.01;
-      return [lo - margin, hi + margin];
-    };
-    if (axisMode === "symmetric") {
-      // Same magnitude either side of zero on both axes, so the spread of the
-      // sample is directly comparable between plots.
-      const m = Math.max(...xs.map(Math.abs), ...ys.map(Math.abs)) * (1 + pad) || 0.01;
-      return { x: [-m, m] as [number, number], y: [-m, m] as [number, number] };
-    }
-    return { x: span(xs), y: span(ys) };
-  }, [axisMode, manualLimits, xs, ys]);
+  const domain = useMemo(
+    () => figureDomain(xs, ys, axisMode, manualLimits),
+    [axisMode, manualLimits, xs.join(","), ys.join(",")]
+  );
 
   const sx = (v: number) =>
     MARGIN.left + ((v - domain.x[0]) / (domain.x[1] - domain.x[0] || 1)) * plotW;
@@ -82,11 +70,6 @@ export function PCAFigure({
   const xTicks = ticks(domain.x[0], domain.x[1]);
   const yTicks = ticks(domain.y[0], domain.y[1]);
 
-  // Reference shapes: the consensus pushed along one PC's loading vector by the
-  // PC score at that point on the axis, so each drawing sits under its value.
-  const refPoints = (n: number, lo: number, hi: number) =>
-    n <= 0 ? [] : Array.from({ length: n }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / n);
-
   const deform = (pc: number, amount: number): number[][] | null => {
     if (!consensus || !loadings.length) return null;
     const nDim = consensus[0].length;
@@ -94,6 +77,34 @@ export function PCAFigure({
       pt.map((v, d) => v + amount * (loadings[li * nDim + d]?.[pc] ?? 0))
     );
   };
+
+  /**
+   * What to draw at each reference slot along an axis. In `deformation` mode
+   * that's the mean shape pushed to that PC score; otherwise it's the real
+   * specimen that sits closest to that point on the axis.
+   */
+  function references(pc: number, count: number, lo: number, hi: number) {
+    if (refSource === "deformation") {
+      const positions = count <= 0 ? [] :
+        Array.from({ length: count }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / count);
+      return positions.map((position) => ({
+        key: `d${position}`,
+        at: position,
+        shape: deform(pc, position),
+        photo: undefined as string | undefined,
+        label: position.toFixed(2),
+        caption: undefined as string | undefined,
+      }));
+    }
+    return referenceSpecimens(scores, pc, count, lo, hi).map(({ position, index }) => ({
+      key: `s${position}-${index}`,
+      at: position,
+      shape: aligned?.[index] ?? null,
+      photo: refSource === "photo" ? photos[index] : undefined,
+      label: (scores[index]?.[pc] ?? position).toFixed(2),
+      caption: refShowIds ? ids[index] : undefined,
+    }));
+  }
 
   const onLegendDown = (e: React.PointerEvent) => {
     dragging.current = true;
@@ -164,29 +175,33 @@ export function PCAFigure({
         <tspan fontWeight={400} fontSize={12}>{`  ${(pctVariance[pcY] ?? 0).toFixed(2)}%`}</tspan>
       </text>
 
-      {/* Reference shapes below the x axis */}
-      {refPoints(refShapesX, domain.x[0], domain.x[1]).map((v, i) => (
+      {/* Reference drawings below the x axis */}
+      {references(pcX, refShapesX, domain.x[0], domain.x[1]).map((r) => (
         <RefShape
-          key={`rx${i}`}
-          shape={deform(pcX, v)}
+          key={`rx-${r.key}`}
+          shape={r.shape}
+          photo={r.photo}
           edges={wireframe}
-          cx={sx(v)}
+          cx={sx(r.at)}
           cy={MARGIN.top + plotH + 60 + REF_BOX / 2}
           size={REF_BOX}
-          label={v.toFixed(2)}
+          label={r.label}
+          caption={r.caption}
         />
       ))}
 
-      {/* Reference shapes left of the y axis */}
-      {refPoints(refShapesY, domain.y[0], domain.y[1]).map((v, i) => (
+      {/* Reference drawings left of the y axis */}
+      {references(pcY, refShapesY, domain.y[0], domain.y[1]).map((r) => (
         <RefShape
-          key={`ry${i}`}
-          shape={deform(pcY, v)}
+          key={`ry-${r.key}`}
+          shape={r.shape}
+          photo={r.photo}
           edges={wireframe}
           cx={MARGIN.left - 66 - REF_BOX / 2}
-          cy={sy(v)}
+          cy={sy(r.at)}
           size={REF_BOX}
-          label={v.toFixed(2)}
+          label={r.label}
+          caption={r.caption}
         />
       ))}
 
@@ -255,17 +270,47 @@ export function PCAFigure({
   );
 }
 
-/** One small shape drawing with its PC value underneath. */
+/**
+ * One reference drawing with its PC value underneath — either the specimen's
+ * photo or its wireframe. A photo that failed to load falls back to the
+ * wireframe rather than leaving a hole in the figure.
+ */
 function RefShape({
-  shape, edges, cx, cy, size, label,
+  shape, photo, edges, cx, cy, size, label, caption,
 }: {
   shape: number[][] | null;
+  photo?: string;
   edges: [number, number][];
   cx: number;
   cy: number;
   size: number;
   label: string;
+  caption?: string;
 }) {
+  const labelY = cy + size / 2 + 2;
+  if (photo) {
+    return (
+      <g>
+        <image
+          href={photo}
+          x={cx - size / 2}
+          y={cy - size / 2}
+          width={size}
+          height={size}
+          preserveAspectRatio="xMidYMid meet"
+        />
+        <text x={cx} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--foreground))">
+          {label}
+        </text>
+        {caption && (
+          <text x={cx} y={labelY + 11} textAnchor="middle" fontSize={9} fill="hsl(var(--muted-foreground))">
+            {caption}
+          </text>
+        )}
+      </g>
+    );
+  }
+
   if (!shape?.length) return null;
 
   const pad = 6;
@@ -291,9 +336,14 @@ function RefShape({
       {shape.map((p, i) => (
         <circle key={i} cx={px(p[0])} cy={py(p[1])} r={1.6} fill="hsl(var(--primary))" />
       ))}
-      <text x={cx} y={cy + size / 2 + 2} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--foreground))">
+      <text x={cx} y={labelY} textAnchor="middle" fontSize={11} fontWeight={600} fill="hsl(var(--foreground))">
         {label}
       </text>
+      {caption && (
+        <text x={cx} y={labelY + 11} textAnchor="middle" fontSize={9} fill="hsl(var(--muted-foreground))">
+          {caption}
+        </text>
+      )}
     </g>
   );
 }

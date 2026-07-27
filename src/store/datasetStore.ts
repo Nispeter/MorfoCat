@@ -18,6 +18,8 @@ export interface Dataset {
   filename: string;
   /** Ordered list of defined classifier names. */
   classifierNames?: string[];
+  /** Folder holding the specimen images, so `Specimen.image` can be resolved. */
+  imageDir?: string | null;
 }
 
 interface DatasetState {
@@ -49,6 +51,7 @@ interface DatasetState {
   renameClassifier: (oldName: string, newName: string) => void;
   deleteClassifier: (name: string) => void;
   setActiveClassifier: (name: string | null) => void;
+  setImageDir: (dir: string | null) => void;
   addLink: (a: number, b: number) => void;
   removeLink: (index: number) => void;
   clearWireframe: () => void;
@@ -189,6 +192,9 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
     }),
 
   setActiveClassifier: (name) => set({ activeClassifier: name }),
+
+  setImageDir: (dir) =>
+    set((s) => (s.dataset ? { dataset: { ...s.dataset, imageDir: dir } } : s)),
 
   addLink: (a, b) =>
     set((s) => {

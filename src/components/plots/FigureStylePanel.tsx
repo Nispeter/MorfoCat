@@ -4,16 +4,23 @@ import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { usePlotStyleStore, type AxisMode } from "@/store/plotStyleStore";
+import { usePlotStyleStore, type AxisMode, type RefSource } from "@/store/plotStyleStore";
 import { SYMBOL_KINDS, symbolPath, isStrokeOnly, type SymbolKind } from "@/lib/symbols";
-import { Palette, RotateCcw } from "lucide-react";
+import { Palette, RotateCcw, FolderOpen } from "lucide-react";
 
 /** Controls for how the PCA figure looks: group appearance, axes, references. */
-export function FigureStylePanel({ groups }: { groups: string[] }) {
+export function FigureStylePanel({
+  groups, imageDir, onPickImageFolder,
+}: {
+  groups: string[];
+  imageDir: string | null;
+  onPickImageFolder: () => void;
+}) {
   const {
     styles, setStyle, resetStyles,
     axisMode, setAxisMode, manualLimits, setManualLimits,
     refShapesX, refShapesY, setRefShapes,
+    refSource, setRefSource, refShowIds, setRefShowIds,
     showLegend, setShowLegend,
   } = usePlotStyleStore();
 
@@ -126,6 +133,36 @@ export function FigureStylePanel({ groups }: { groups: string[] }) {
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm">Shape references</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-xs">
+          <select
+            className="w-full rounded border bg-background px-1.5 py-1"
+            value={refSource}
+            onChange={(e) => setRefSource(e.target.value as RefSource)}
+          >
+            <option value="wireframe">Closest specimen — wireframe</option>
+            <option value="photo">Closest specimen — photo</option>
+            <option value="deformation">Average shape change</option>
+          </select>
+          <p className="text-muted-foreground">
+            {refSource === "deformation"
+              ? "The mean shape pushed along the axis — the overall trend rather than any one specimen."
+              : "The specimen that sits closest to each point on the axis, so the drawings show shapes that really exist."}
+          </p>
+
+          {refSource === "photo" && (
+            <div className="space-y-1 rounded border bg-muted/30 p-2">
+              <Button size="sm" variant="outline" className="h-7 w-full text-xs" onClick={onPickImageFolder}>
+                <FolderOpen size={12} /> {imageDir ? "Change image folder…" : "Choose image folder…"}
+              </Button>
+              {imageDir ? (
+                <p className="break-all text-[10px] text-muted-foreground">{imageDir}</p>
+              ) : (
+                <p className="text-[10px] text-muted-foreground">
+                  Point at the folder holding the specimen images. Without it the wireframe is drawn instead.
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs">Along PC on x</Label>
             <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
@@ -134,6 +171,12 @@ export function FigureStylePanel({ groups }: { groups: string[] }) {
             <Label className="text-xs">Along PC on y</Label>
             <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
           </div>
+          {refSource !== "deformation" && (
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs">Show specimen IDs</Label>
+              <Switch checked={refShowIds} onCheckedChange={setRefShowIds} />
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 pt-1">
             <Label className="text-xs">Legend</Label>
             <Switch checked={showLegend} onCheckedChange={setShowLegend} />
