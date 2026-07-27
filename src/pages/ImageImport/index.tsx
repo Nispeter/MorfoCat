@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +30,7 @@ function dirname(p: string) {
 }
 
 export default function ImageImport() {
+  const t = useT();
   const [images, setImages] = useState<ImageEntry[]>([]);
   const [nLandmarks, setNLandmarks] = useState(10);
   const [nSemi, setNSemi] = useState(0);
@@ -152,8 +154,8 @@ export default function ImageImport() {
 
   return (
     <PanelLayout
-      title="Image Import"
-      description="Create a TPS template from PNG/JPG images, then place landmarks in the Digitizer"
+      title={t("page.imageImport.title")}
+      description={t("page.imageImport.desc")}
     >
       <div className="flex h-full gap-4">
         {/* Left: image list */}

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -152,6 +153,7 @@ function extMime(path: string): string {
 }
 
 export default function Digitizer() {
+  const t = useT();
   const {
     specimens, currentIdx, nLandmarks, nSemi, sourceFile,
     addLandmark, undoLandmark, clearSpecimen, setScale, navigate, setSession,
@@ -407,8 +409,8 @@ export default function Digitizer() {
   if (specimens.length === 0) {
     return (
       <PanelLayout
-        title="Landmark Digitizer"
-        description="Place landmarks on images and export as TPS"
+        title={t("page.digitizer.title")}
+        description={t("page.digitizer.desc")}
       >
         <div className="flex h-full flex-col items-center justify-center gap-4">
           <MousePointerClick size={48} className="text-muted-foreground" />
@@ -433,7 +435,7 @@ export default function Digitizer() {
 
   return (
     <PanelLayout
-      title="Landmark Digitizer"
+      title={t("page.digitizer.title")}
       description={`${specimens.length} specimens · ${nLandmarks} landmarks${nSemi > 0 ? ` (${nSemi} semi)` : ""}`}
       actions={
         <>

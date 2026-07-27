@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -129,9 +130,7 @@ export default function Modularity() {
                 <StatBadge label="CR" value={modularity.cr_statistic.toFixed(4)} p={modularity.p_value_cr} />
                 <Badge variant="secondary">{modularity.n_modules} modules · {modularity.permutations} permutations</Badge>
               </div>
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Null Distribution (RV coefficient)</CardTitle></CardHeader>
-                <CardContent>
+              <ChartFrame title="Null Distribution (RV coefficient)" filename="modularity_null">
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={bins} margin={{ top: 4, right: 4, bottom: 20, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -142,8 +141,7 @@ export default function Modularity() {
                       <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.7} radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              </ChartFrame>
             </>
           )}
         </div>

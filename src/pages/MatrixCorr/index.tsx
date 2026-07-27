@@ -3,7 +3,8 @@ import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
@@ -46,7 +47,7 @@ export default function MatrixCorr() {
   };
 
   if (!aligned) return (
-    <PanelLayout title="Matrix Correlation">
+    <PanelLayout title={t("page.matrixCorr.title")}>
       <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
     </PanelLayout>
   );
@@ -55,8 +56,8 @@ export default function MatrixCorr() {
 
   return (
     <PanelLayout
-      title="Matrix Correlation"
-      description="Correlation between two covariance matrices with permutation test"
+      title={t("page.matrixCorr.title")}
+      description={t("page.matrixCorr.desc")}
       actions={
         <div className="flex items-center gap-2">
           <TooltipProvider>
@@ -101,9 +102,7 @@ export default function MatrixCorr() {
             </Card>
           </div>
 
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Null Distribution (permutation test)</CardTitle></CardHeader>
-            <CardContent>
+          <ChartFrame title="Null Distribution (permutation test)" filename="matrix_correlation_null">
               <ResponsiveContainer width="100%" height={200}>
                 <BarChart data={binned} margin={{ top: 4, right: 4, bottom: 20, left: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -114,8 +113,7 @@ export default function MatrixCorr() {
                   <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.7} radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </CardContent>
-          </Card>
+          </ChartFrame>
         </div>
       )}
     </PanelLayout>

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -76,6 +77,7 @@ function parseFile(name: string, content: string) {
 }
 
 export default function DataManager() {
+  const t = useT();
   const {
     dataset, setDataset, toggleSpecimen, clear,
     activeClassifier, extractClassifier, setSpecimenClassifier,
@@ -262,8 +264,8 @@ export default function DataManager() {
 
   return (
     <PanelLayout
-      title="Data Manager"
-      description="Import TPS, NTS, or Morphologika landmark files"
+      title={t("page.data.title")}
+      description={t("page.data.desc")}
       actions={
         <>
           <Button variant="outline" size="sm" onClick={handleOpenProject}>

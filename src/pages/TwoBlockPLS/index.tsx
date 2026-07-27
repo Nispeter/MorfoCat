@@ -4,6 +4,7 @@ import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -105,9 +106,7 @@ export default function TwoBlockPLS() {
             </TabsList>
 
             <TabsContent value="scores">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Block 1 × Block 2 Scores (first singular axis)</CardTitle></CardHeader>
-                <CardContent>
+              <ChartFrame title="Block 1 × Block 2 Scores (first singular axis)" filename="pls_scores">
                   <ResponsiveContainer width="100%" height={280}>
                     <ScatterChart margin={{ top: 8, right: 16, bottom: 24, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -117,8 +116,7 @@ export default function TwoBlockPLS() {
                       <Scatter data={scoresData} fill="hsl(var(--primary))" opacity={0.8} />
                     </ScatterChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
+              </ChartFrame>
             </TabsContent>
 
             <TabsContent value="sv">

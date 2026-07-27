@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
+import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,6 +24,7 @@ type ExportKey =
   | "matrixCorr";
 
 export default function ExportAll() {
+  const t = useT();
   const dataset = useDatasetStore((s) => s.dataset);
   const aligned = useDatasetStore((s) => s.aligned);
   const centroid_sizes = useDatasetStore((s) => s.centroid_sizes);
@@ -137,8 +139,8 @@ export default function ExportAll() {
 
   return (
     <PanelLayout
-      title="Export Results"
-      description="Select which analyses to write as CSV files"
+      title={t("page.exportAll.title")}
+      description={t("page.exportAll.desc")}
       actions={
         <Button
           onClick={handleExport}
