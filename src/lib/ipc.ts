@@ -352,11 +352,22 @@ export const runSelectionGradient = (aligned: number[][][], fitness: number[]) =
 export const readFileB64 = (path: string): Promise<string> =>
   invoke<string>("read_file_b64", { path });
 
-/** Read a file as UTF-8 text (the Rust side only hands back base64 bytes). */
+/**
+ * Read a file as text (the Rust side only hands back base64 bytes).
+ *
+ * TPS files written on Windows are often Latin-1 rather than UTF-8 — usually in
+ * an `IMAGE=` path with an accented folder name — so a strict UTF-8 decode is
+ * tried first and Latin-1 is used when it fails, instead of littering the text
+ * with replacement characters.
+ */
 export const readTextFile = async (path: string): Promise<string> => {
   const b64 = await readFileB64(path);
   const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-  return new TextDecoder("utf-8").decode(bytes);
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder("windows-1252").decode(bytes);
+  }
 };
 
 export const writeTextFile = (path: string, content: string): Promise<void> =>

@@ -36,6 +36,27 @@ export function writeTPS(specimens: TpsSpecimen[]): string {
   return lines.join("\n");
 }
 
+const DECIMAL_COMMA = /^[-+]?\d+,\d+$/;
+
+/**
+ * Read one TPS coordinate line.
+ *
+ * Whitespace is the usual separator, but a comma may be either the decimal mark
+ * (a European locale wrote the file) or the separator itself, so the two cases
+ * are told apart by how the line splits.
+ */
+function parseCoordLine(line: string): number[] {
+  let tokens = line.split(/\s+/).filter(Boolean);
+  if (tokens.length === 1 && tokens[0].includes(",")) {
+    // A single token such as "1460,2579" — the comma separates x from y.
+    tokens = tokens[0].split(",");
+  } else if (tokens.length > 0 && tokens.every((tok) => DECIMAL_COMMA.test(tok))) {
+    // "1460,00000 2579,00000" — the comma is the decimal mark.
+    tokens = tokens.map((tok) => tok.replace(",", "."));
+  }
+  return tokens.map(Number);
+}
+
 export function parseTPS(content: string): ParsedDataset {
   type Specimen = { landmarks: number[][]; id: string | null; scale: number | null; image: string | null };
 
@@ -67,6 +88,11 @@ export function parseTPS(content: string): ParsedDataset {
         delete pending.image;
         lmCount = parseInt(val, 10);
         collected = 0;
+      } else if (key === "POINTS") {
+        // A curve's points follow. tpsDig writes outlines this way, with LM=0
+        // and one POINTS= block per curve; they are the only coordinates such
+        // a file has, so treat them as landmarks.
+        if (current !== null) lmCount += parseInt(val, 10) || 0;
       } else if (key === "ID") {
         if (current !== null) current.id = val;
         else pending.id = val;
@@ -74,7 +100,7 @@ export function parseTPS(content: string): ParsedDataset {
         if (current !== null) current.image = val;
         else pending.image = val;
       } else if (key === "SCALE") {
-        const f = parseFloat(val);
+        const f = parseFloat(DECIMAL_COMMA.test(val) ? val.replace(",", ".") : val);
         if (!isNaN(f)) {
           if (current !== null) current.scale = f;
           else pending.scale = f;
@@ -82,8 +108,8 @@ export function parseTPS(content: string): ParsedDataset {
       }
       // silently skip CURVES and other keys
     } else if (current !== null && collected < lmCount) {
-      const coords = line.split(/\s+/).map(Number);
-      if (coords.some(isNaN)) continue;
+      const coords = parseCoordLine(line);
+      if (coords.length === 0 || coords.some(isNaN)) continue;
       current.landmarks.push(coords);
       collected++;
     }
@@ -94,14 +120,18 @@ export function parseTPS(content: string): ParsedDataset {
   if (specimens.length === 0) throw new Error("No specimens found in TPS file.");
 
   const nLm = specimens[0].landmarks.length;
-  if (nLm === 0) throw new Error("First specimen has no landmark coordinates.");
-  const dim = specimens[0].landmarks[0].length;
 
   for (let i = 0; i < specimens.length; i++) {
     if (specimens[i].landmarks.length !== nLm) {
       throw new Error(`Specimen ${i} has ${specimens[i].landmarks.length} landmarks; expected ${nLm}.`);
     }
   }
+
+  // A TpsUtil template lists images with LM=0 and no coordinates at all. That
+  // is a valid file — it is what the digitizer is meant to fill in — so it is
+  // returned rather than rejected, and callers needing coordinates check
+  // n_landmarks themselves.
+  const dim = nLm > 0 ? specimens[0].landmarks[0].length : 2;
 
   return {
     specimens: specimens.map((sp) => ({

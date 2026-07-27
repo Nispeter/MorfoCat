@@ -9,16 +9,17 @@ import { Switch } from "@/components/ui/switch";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { useDigitizerStore, type LandmarkPoint } from "@/store/digitizerStore";
+import { useDigitizerStore, type LandmarkPoint, type DigitizerSpecimen } from "@/store/digitizerStore";
 import { useNavStore } from "@/store/navStore";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { parseTPS, writeTPS } from "@/lib/parsers";
-import { readFileB64, writeTextFile } from "@/lib/ipc";
+import { readFileB64, readTextFile, writeTextFile } from "@/lib/ipc";
 import {
   ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
   CheckCircle2, Circle, MousePointerClick, Import, Spline, Ruler,
@@ -53,13 +54,18 @@ function drawCanvas(
   const oy = (height - ih) / 2;
   xform.current = { scale, ox, oy };
 
+  // Landmarks are stored in TPS coordinates (origin bottom-left, y upwards);
+  // the canvas has its origin top-left, so y is flipped on the way out.
+  const px = (x: number) => x * scale + ox;
+  const py = (y: number) => (img.naturalHeight - y) * scale + oy;
+
   ctx.drawImage(img, ox, oy, iw, ih);
 
   // Scale-reference measurement segment (cyan)
   if (scalePts.length > 0) {
     scalePts.forEach((pt) => {
       ctx.beginPath();
-      ctx.arc(pt.x * scale + ox, pt.y * scale + oy, 5, 0, Math.PI * 2);
+      ctx.arc(px(pt.x), py(pt.y), 5, 0, Math.PI * 2);
       ctx.fillStyle = "#06b6d4";
       ctx.fill();
       ctx.strokeStyle = "white";
@@ -69,8 +75,8 @@ function drawCanvas(
     if (scalePts.length === 2) {
       const [a, b] = scalePts;
       ctx.beginPath();
-      ctx.moveTo(a.x * scale + ox, a.y * scale + oy);
-      ctx.lineTo(b.x * scale + ox, b.y * scale + oy);
+      ctx.moveTo(px(a.x), py(a.y));
+      ctx.lineTo(px(b.x), py(b.y));
       ctx.strokeStyle = "#06b6d4";
       ctx.lineWidth = 2;
       ctx.setLineDash([]);
@@ -85,8 +91,8 @@ function drawCanvas(
       const curr = landmarks[j];
       const isSemiSeg = prev.isSemi || curr.isSemi;
       ctx.beginPath();
-      ctx.moveTo(prev.x * scale + ox, prev.y * scale + oy);
-      ctx.lineTo(curr.x * scale + ox, curr.y * scale + oy);
+      ctx.moveTo(px(prev.x), py(prev.y));
+      ctx.lineTo(px(curr.x), py(curr.y));
       ctx.strokeStyle = isSemiSeg ? "rgba(245,158,11,0.75)" : "rgba(34,197,94,0.75)";
       ctx.lineWidth = 1.5;
       ctx.setLineDash([]);
@@ -99,8 +105,8 @@ function drawCanvas(
   if (semiPts.length >= 2) {
     ctx.beginPath();
     semiPts.forEach((lm, j) => {
-      const cx = lm.x * scale + ox;
-      const cy = lm.y * scale + oy;
+      const cx = px(lm.x);
+      const cy = py(lm.y);
       j === 0 ? ctx.moveTo(cx, cy) : ctx.lineTo(cx, cy);
     });
     ctx.strokeStyle = "rgba(251,191,36,0.5)";
@@ -112,8 +118,8 @@ function drawCanvas(
 
   // Draw each landmark
   landmarks.forEach((lm, i) => {
-    const cx = lm.x * scale + ox;
-    const cy = lm.y * scale + oy;
+    const cx = px(lm.x);
+    const cy = py(lm.y);
     const isSemi = nSemi > 0 && lm.isSemi;
 
     ctx.beginPath();
@@ -176,6 +182,13 @@ export default function Digitizer() {
   const [scaleDialog, setScaleDialog] = useState<{ pixelDist: number } | null>(null);
   const [scaleLength, setScaleLength] = useState("");
   const [scaleUnit, setScaleUnit] = useState("mm");
+  // A template opened from TpsUtil, waiting for the user to say how many
+  // landmarks each specimen should get.
+  const [template, setTemplate] = useState<
+    { specimens: DigitizerSpecimen[]; dir: string; filePath: string } | null
+  >(null);
+  const [templateLandmarks, setTemplateLandmarks] = useState(10);
+  const [templateSemi, setTemplateSemi] = useState(0);
 
   // Keep a ref in sync so the resize/image-load redraws show the measurement too
   scalePtsRef.current = scalePts;
@@ -264,10 +277,12 @@ export default function Digitizer() {
     const px = (e.clientX - rect.left) * (canvas.width / rect.width);
     const py = (e.clientY - rect.top) * (canvas.height / rect.height);
     const { scale, ox, oy } = xformRef.current;
-    const imgX = (px - ox) / scale;
-    const imgY = (py - oy) / scale;
     const img = imgRef.current;
-    if (!img || imgX < 0 || imgX > img.naturalWidth || imgY < 0 || imgY > img.naturalHeight) return;
+    const imgX = (px - ox) / scale;
+    const canvasY = (py - oy) / scale;
+    if (!img || imgX < 0 || imgX > img.naturalWidth || canvasY < 0 || canvasY > img.naturalHeight) return;
+    // Store in TPS coordinates (y upwards), the convention the rest of the app uses.
+    const imgY = img.naturalHeight - canvasY;
 
     // Scale-measurement mode: collect two reference points, then ask for real length
     if (scaleMode) {
@@ -319,22 +334,22 @@ export default function Digitizer() {
     if (!result || Array.isArray(result)) return;
     const filePath = result as string;
     try {
-      const b64 = await readFileB64(filePath);
-      const content = atob(b64);
-      const parsed = parseTPS(content);
+      const parsed = parseTPS(await readTextFile(filePath));
       const dir = dirname(filePath);
       const digiSpecimens = parsed.specimens.map((sp, i) => {
-        const imgBase = sp.image ?? null;
+        // TpsUtil writes absolute paths; only the file name is useful here,
+        // since the images sit next to the TPS file.
+        const imgBase = sp.image ? basename(sp.image) : null;
         const imgPath = imgBase ? (dir ? `${dir}/${imgBase}` : imgBase) : "";
         return {
           id: sp.id ?? String(i + 1),
           imagePath: imgPath,
           imageBase: imgBase ?? "",
           scale: sp.scale ?? undefined,
-          landmarks: sp.landmarks.map((pt, j) => ({
+          landmarks: sp.landmarks.map((pt) => ({
             x: pt[0],
             y: pt[1],
-            isSemi: j >= (parsed.n_landmarks - 0), // preserve existing, no semi info in plain TPS
+            isSemi: false, // plain TPS carries no semilandmark information
           })),
         };
       });
@@ -344,6 +359,14 @@ export default function Digitizer() {
           description: "Landmark coordinates were loaded but images cannot be displayed without IMAGE= fields.",
         });
       }
+
+      // A TpsUtil template lists the images but has no coordinates yet, so ask
+      // how many landmarks to place before starting the session.
+      if (parsed.n_landmarks === 0) {
+        setTemplate({ specimens: digiSpecimens, dir, filePath });
+        return;
+      }
+
       setSession(digiSpecimens, parsed.n_landmarks, 0, dir, filePath);
       toast.success(`Loaded ${basename(filePath)}`, {
         description: `${parsed.specimens.length} specimens · ${parsed.n_landmarks} landmarks`,
@@ -653,6 +676,48 @@ export default function Digitizer() {
           </Card>
         </div>
       </div>
+
+      {/* Landmark count for a template that has none yet */}
+      <Dialog open={template !== null} onOpenChange={(o) => { if (!o) setTemplate(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("digi.templateTitle")}</DialogTitle>
+            <DialogDescription>
+              {template
+                ? t("digi.templateDesc").replace("{n}", String(template.specimens.length))
+                : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label>{t("imgimp.totalLandmarks")}</Label>
+              <NumberInput min={1} value={templateLandmarks} onChange={setTemplateLandmarks} />
+            </div>
+            <div className="space-y-1">
+              <Label>{t("imgimp.semilandmarks")}</Label>
+              <NumberInput min={0} max={templateLandmarks - 1} value={templateSemi} onChange={setTemplateSemi} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setTemplate(null)}>
+              {t("action.cancel")}
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                if (!template) return;
+                setSession(template.specimens, templateLandmarks, templateSemi, template.dir, template.filePath);
+                toast.success(`${t("action.loadDataset")} · ${basename(template.filePath)}`, {
+                  description: `${template.specimens.length} ${t("status.specimens")} · ${templateLandmarks} ${t("ui.landmarks")}`,
+                });
+                setTemplate(null);
+              }}
+            >
+              {t("digi.startDigitizing")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Scale reference dialog */}
       <Dialog open={scaleDialog !== null} onOpenChange={(o) => { if (!o) { setScaleDialog(null); setScalePts([]); } }}>

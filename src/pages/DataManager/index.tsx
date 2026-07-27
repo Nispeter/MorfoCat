@@ -97,6 +97,11 @@ export default function DataManager() {
       setError(null);
       try {
         const { parsed, format } = parseFile(name, content);
+        if (parsed.n_landmarks === 0) {
+          throw new Error(
+            "This file is a digitizing template — it lists images but has no landmark coordinates yet. Open it in the Landmark Digitizer to place them."
+          );
+        }
         const specimens: Specimen[] = parsed.specimens.map((sp, i) => ({
           id: resolveId(sp.id, sp.image, i),
           group: detectGroup(sp.image),

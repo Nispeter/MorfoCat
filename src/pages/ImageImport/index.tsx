@@ -123,10 +123,13 @@ export default function ImageImport() {
     try {
       // Compute relative image paths (relative to TPS file location)
       const tpsDir = dirname(savePath);
+      // Written as a TpsUtil-style template: images listed, no coordinates yet.
+      // Reopening it asks for the landmark count rather than loading a sample
+      // of specimens all sitting at the origin.
       const specimens = images.map((img, i) => ({
         id: String(i + 1),
         image: img.base, // store just the basename — user is expected to keep images in same folder
-        landmarks: Array.from({ length: nLandmarks }, () => [0, 0] as number[]),
+        landmarks: [] as number[][],
       }));
 
       const content = writeTPS(specimens);

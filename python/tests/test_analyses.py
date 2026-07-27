@@ -617,3 +617,60 @@ class TestMahalanobisOutliers:
         aligned = [[[0.0, 0.0], [1.0, 0.0]], [[0.0, 0.1], [1.0, 0.0]]]
         res = detect_outliers(aligned)
         assert res["mahalanobis_distances"] == [0.0, 0.0]
+
+
+# ── TPS files as digitizers actually write them ───────────────────────────────
+
+class TestTPSRealWorldQuirks:
+    def test_decimal_comma_is_read_as_decimal_mark(self):
+        """A European locale writes 1460,00000 where 1460.00000 is meant."""
+        content = "LM=3\n1460,00000 2579,00000\n1322,50000 2507,25000\n1308,00000 2446,00000\nID=a\n"
+        parsed = parse_tps(content)
+        assert parsed["specimens"][0]["landmarks"][1] == [1322.5, 2507.25]
+
+    def test_decimal_comma_in_scale(self):
+        content = "LM=3\n1,0 2,0\n3,0 4,0\n5,0 6,0\nSCALE=0,001707\n"
+        parsed = parse_tps(content)
+        assert parsed["specimens"][0]["scale"] == pytest.approx(0.001707)
+
+    def test_comma_as_coordinate_separator(self):
+        content = "LM=3\n1460,2579\n1322,2507\n1308,2446\n"
+        parsed = parse_tps(content)
+        assert parsed["specimens"][0]["landmarks"][0] == [1460.0, 2579.0]
+
+    def test_curve_points_are_read_as_landmarks(self):
+        """tpsDig saves outlines as LM=0 + CURVES/POINTS blocks."""
+        content = (
+            "LM=0\nCURVES=1\nPOINTS=3\n"
+            "1.0 2.0\n3.0 4.0\n5.0 6.0\n"
+            "IMAGE=a.jpg\n"
+        )
+        parsed = parse_tps(content)
+        assert parsed["n_landmarks"] == 3
+        assert parsed["specimens"][0]["landmarks"][2] == [5.0, 6.0]
+
+    def test_several_curves_accumulate(self):
+        content = (
+            "LM=0\nCURVES=2\nPOINTS=2\n1.0 2.0\n3.0 4.0\n"
+            "POINTS=2\n5.0 6.0\n7.0 8.0\nIMAGE=a.jpg\n"
+        )
+        parsed = parse_tps(content)
+        assert parsed["n_landmarks"] == 4
+
+    def test_landmarks_and_curve_points_combine(self):
+        content = "LM=1\n0.0 0.0\nCURVES=1\nPOINTS=2\n1.0 1.0\n2.0 2.0\n"
+        parsed = parse_tps(content)
+        assert parsed["n_landmarks"] == 3
+
+    def test_template_with_no_coordinates_is_accepted(self):
+        """A TpsUtil template lists images with LM=0 — the digitizer fills it in."""
+        content = "LM=0\nIMAGE=a.jpg\nLM=0\nIMAGE=b.jpg\n"
+        parsed = parse_tps(content)
+        assert parsed["n_landmarks"] == 0
+        assert len(parsed["specimens"]) == 2
+        assert parsed["specimens"][1]["image"] == "b.jpg"
+
+    def test_inconsistent_landmark_counts_still_rejected(self):
+        content = "LM=2\n1.0 2.0\n3.0 4.0\nLM=1\n5.0 6.0\n"
+        with pytest.raises(ValueError):
+            parse_tps(content)

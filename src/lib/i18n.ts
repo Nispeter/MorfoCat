@@ -279,6 +279,9 @@ const en = {
   "digi.undo":             "Undo (Ctrl+Z)",
   "digi.clearSpecimen":    "Clear Specimen",
   "digi.connectLine":      "Connect line",
+  "digi.templateTitle":   "Digitizing template",
+  "digi.templateDesc":    "This file lists {n} images but has no landmarks yet. Choose how many to place on each.",
+  "digi.startDigitizing": "Start digitizing",
 
   "qg.gMatrix":              "G Matrix",
   "qg.gHeatmap":             "G Matrix Heatmap (first 30 variables)",
@@ -601,6 +604,9 @@ const es: Record<keyof typeof en, string> = {
   "digi.undo":             "Deshacer (Ctrl+Z)",
   "digi.clearSpecimen":    "Limpiar espécimen",
   "digi.connectLine":      "Unir con línea",
+  "digi.templateTitle":   "Plantilla de digitalización",
+  "digi.templateDesc":    "Este archivo lista {n} imágenes pero todavía no tiene landmarks. Elegí cuántos colocar en cada una.",
+  "digi.startDigitizing": "Empezar a digitalizar",
 
   "qg.gMatrix":              "Matriz G",
   "qg.gHeatmap":             "Mapa de calor de la matriz G (primeras 30 variables)",

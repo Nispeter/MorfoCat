@@ -5,10 +5,36 @@ Handles both orderings that exist in the wild:
       LM=n  /  coords  /  IMAGE=  /  *ID=  /  SCALE=
   - Metadata before coordinates (some digitizers):
       IMAGE=  /  *ID=  /  SCALE=  /  LM=n  /  coords
+
+Also handles two quirks of files exported by tpsDig:
+  - Outlines saved as curves rather than landmarks, written as
+      LM=0  /  CURVES=n  /  POINTS=m  /  m coordinate lines
+    (repeated once per curve).
+  - Decimal commas, on machines with a European locale: "1460,00000".
 """
 from __future__ import annotations
 import re
 from typing import Any
+
+_DECIMAL_COMMA = re.compile(r"^[-+]?\d+,\d+$")
+
+
+def _parse_coords(line: str) -> list[float]:
+    """
+    Read one coordinate line.
+
+    Whitespace is the usual separator, but a comma may be either the decimal
+    mark (a European locale wrote the file) or the separator itself, so the two
+    cases are told apart by how the line splits.
+    """
+    tokens = line.split()
+    if len(tokens) == 1 and "," in tokens[0]:
+        # A single token such as "1460,2579" — the comma separates x from y.
+        tokens = tokens[0].split(",")
+    elif tokens and all(_DECIMAL_COMMA.match(tok) for tok in tokens):
+        # "1460,00000 2579,00000" — the comma is the decimal mark.
+        tokens = [tok.replace(",", ".") for tok in tokens]
+    return [float(tok) for tok in tokens]
 
 
 def parse_tps(content: str) -> dict[str, Any]:
@@ -43,6 +69,13 @@ def parse_tps(content: str) -> dict[str, Any]:
                 lm_count = int(val)
                 collected = 0
 
+            elif key == "POINTS":
+                # A curve's points follow. tpsDig writes outlines this way, with
+                # LM=0 and one POINTS= block per curve; they are the only
+                # coordinates such a file has, so treat them as landmarks.
+                if current is not None:
+                    lm_count += int(val)
+
             elif key == "ID":
                 if current is not None:
                     current["id"] = val
@@ -57,7 +90,7 @@ def parse_tps(content: str) -> dict[str, Any]:
 
             elif key == "SCALE":
                 try:
-                    f = float(val)
+                    f = float(val.replace(",", ".") if _DECIMAL_COMMA.match(val) else val)
                     if current is not None:
                         current["scale"] = f
                     else:
@@ -68,8 +101,7 @@ def parse_tps(content: str) -> dict[str, Any]:
             # silently skip CURVES and other unknown keys
 
         elif current is not None and collected < lm_count:
-            coords = [float(v) for v in line.split()]
-            current["landmarks"].append(coords)
+            current["landmarks"].append(_parse_coords(line))
             collected += 1
 
     if current is not None:
@@ -79,14 +111,17 @@ def parse_tps(content: str) -> dict[str, Any]:
         raise ValueError("No specimens found in TPS file.")
 
     n_lm = len(specimens[0]["landmarks"])
-    if n_lm == 0:
-        raise ValueError("First specimen has no landmark coordinates.")
-    dim = len(specimens[0]["landmarks"][0])
     for i, sp in enumerate(specimens):
         if len(sp["landmarks"]) != n_lm:
             raise ValueError(
                 f"Specimen {i} has {len(sp['landmarks'])} landmarks; expected {n_lm}."
             )
+
+    # A TpsUtil template lists images with LM=0 and no coordinates at all. That
+    # is a valid file — it is what the digitizer is meant to fill in — so it is
+    # returned rather than rejected, and callers that need coordinates check
+    # n_landmarks themselves.
+    dim = len(specimens[0]["landmarks"][0]) if n_lm else 2
 
     return {
         "specimens": [
