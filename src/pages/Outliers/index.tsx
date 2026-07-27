@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { LandmarkViewer2D } from "@/components/landmark/LandmarkViewer2D";
 import { ChartFrame } from "@/components/plots/ChartFrame";
+import { DistancePlot } from "@/components/plots/DistancePlot";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { detectOutliers } from "@/lib/ipc";
@@ -22,6 +23,7 @@ export default function Outliers() {
   const { outliers, setOutliers, setLoading, setError, loading, errors } = useAnalysisStore();
   const t = useT();
   const [threshold, setThreshold] = useState(3);
+  const [metric, setMetric] = useState<"procrustes" | "mahalanobis">("procrustes");
   const [reviewIdx, setReviewIdx] = useState<number | null>(null);
   const nLm = dataset?.n_landmarks ?? 0;
   const [swapA, setSwapA] = useState(0);
@@ -63,10 +65,24 @@ export default function Outliers() {
     id: included[i]?.id ?? `sp_${i}`,
     z: +z.toFixed(3),
     d: +(outliers.procrustes_distances[i]).toFixed(5),
+    md: outliers.mahalanobis_distances?.[i] ?? 0,
     idx: i,
   })) ?? [];
 
   const flagged = chartData.filter((d) => Math.abs(d.z) > threshold);
+
+  const distanceData = chartData.map((d) => ({
+    id: d.id,
+    idx: d.idx,
+    procrustes: outliers?.procrustes_distances[d.idx] ?? 0,
+    mahalanobis: d.md,
+    flagged: Math.abs(d.z) > threshold,
+  }));
+  // The z-score cut-off, expressed back in Procrustes distance units, so the
+  // stem plot and the z-score chart flag the same specimens.
+  const distanceThreshold = metric === "procrustes" && outliers
+    ? outliers.mean_distance + threshold * outliers.std_distance
+    : undefined;
 
   return (
     <PanelLayout
@@ -90,6 +106,33 @@ export default function Outliers() {
         </div>
 
         {errors["outliers"] && <p className="text-xs text-destructive">{errors["outliers"]}</p>}
+
+        <ChartFrame
+          title="Distance from the mean shape"
+          filename={`outlier_${metric}_distances`}
+          controls={
+            <select
+              className="rounded border bg-background px-1 py-0.5 text-xs font-normal"
+              value={metric}
+              onChange={(e) => setMetric(e.target.value as "procrustes" | "mahalanobis")}
+            >
+              <option value="procrustes">Procrustes distance</option>
+              <option value="mahalanobis">Mahalanobis distance</option>
+            </select>
+          }
+        >
+          <DistancePlot
+            data={distanceData}
+            metric={metric}
+            threshold={distanceThreshold}
+            onSelect={setReviewIdx}
+          />
+          <p className="mt-1 text-xs text-muted-foreground">
+            One line per specimen — click a line to review its landmarks.
+            {metric === "mahalanobis" &&
+              " Mahalanobis distance weights each direction of shape change by how much the sample normally varies in it."}
+          </p>
+        </ChartFrame>
 
         <ChartFrame title="Z-scores of Procrustes Distances" filename="outlier_zscores">
             <ResponsiveContainer width="100%" height={260}>
@@ -115,7 +158,7 @@ export default function Outliers() {
             <CardContent>
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground">
-                  <tr><th className="text-left pb-2">ID</th><th className="text-right pb-2">Z-score</th><th className="text-right pb-2">Procrustean dist.</th><th className="text-right pb-2">Action</th></tr>
+                  <tr><th className="text-left pb-2">ID</th><th className="text-right pb-2">Z-score</th><th className="text-right pb-2">Procrustean dist.</th><th className="text-right pb-2">Mahalanobis</th><th className="text-right pb-2">Action</th></tr>
                 </thead>
                 <tbody>
                   {flagged.map((d) => (
@@ -123,6 +166,7 @@ export default function Outliers() {
                       <td className="py-1.5 font-mono text-xs">{d.id}</td>
                       <td className="py-1.5 text-right font-mono text-xs text-destructive">{d.z.toFixed(3)}</td>
                       <td className="py-1.5 text-right font-mono text-xs">{d.d.toExponential(3)}</td>
+                      <td className="py-1.5 text-right font-mono text-xs">{d.md.toFixed(3)}</td>
                       <td className="py-1.5 text-right">
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="outline" className="h-6 px-2 text-xs"

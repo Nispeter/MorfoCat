@@ -64,6 +64,8 @@ export interface OutlierResult {
   mean_distance: number;
   std_distance: number;
   z_scores: number[];
+  /** Distance from the mean shape scaled by how much the sample varies. */
+  mahalanobis_distances: number[];
 }
 
 export const detectOutliers = (aligned: number[][][]) =>

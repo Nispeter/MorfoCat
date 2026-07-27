@@ -585,3 +585,35 @@ class TestNewickParsing:
         i, j, k = tips.index("A"), tips.index("B"), tips.index("C")
         assert C[i, j] == pytest.approx(1.0)   # A and B share the inner branch
         assert C[i, k] == pytest.approx(0.0)   # A and C only share the root
+
+
+# ── Mahalanobis outlier distances ─────────────────────────────────────────────
+
+class TestMahalanobisOutliers:
+    def test_one_distance_per_specimen(self):
+        rng = np.random.default_rng(0)
+        aligned = rng.standard_normal((15, 4, 2)).tolist()
+        res = detect_outliers(aligned)
+        assert len(res["mahalanobis_distances"]) == 15
+
+    def test_distances_are_non_negative(self):
+        rng = np.random.default_rng(1)
+        aligned = rng.standard_normal((15, 4, 2)).tolist()
+        res = detect_outliers(aligned)
+        assert all(d >= 0 for d in res["mahalanobis_distances"])
+
+    def test_flags_a_specimen_that_is_odd_in_a_low_variance_direction(self):
+        """A shift along an almost-invariant axis is small in Procrustes terms
+        but large in Mahalanobis terms — the reason for having both."""
+        rng = np.random.default_rng(2)
+        base = rng.standard_normal((20, 4, 2))
+        base[:, 3, 1] *= 0.001          # landmark 4's y barely varies
+        base[0, 3, 1] += 0.02           # …except in specimen 0
+        res = detect_outliers(base.tolist())
+        md = res["mahalanobis_distances"]
+        assert md[0] == max(md)
+
+    def test_too_few_specimens_returns_zeros(self):
+        aligned = [[[0.0, 0.0], [1.0, 0.0]], [[0.0, 0.1], [1.0, 0.0]]]
+        res = detect_outliers(aligned)
+        assert res["mahalanobis_distances"] == [0.0, 0.0]
