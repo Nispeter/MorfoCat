@@ -1,30 +1,61 @@
+# devnotes
 
-## Open
+## Pendiente
 
-- add code  *(unclear what this meant — needs restating before it can be picked up)*
-- interactive plotting on the remaining recharts panels (PLS, modularity,
-  matrix correlation) — PCA, biplot and outliers already read out on hover
-- finish the i18n sweep: page titles, page-level actions and the plot controls
-  are translated, but inline card hints and toast text are still English only
-- customize the side image on the PCA graphs *(shape references are drawn from
-  the wireframe — a per-figure override for which drawing to use is still open)*
+- **add code** — no quedó claro a qué se refería; hay que reformularlo antes de tomarlo.
+- **Probar todo por GUI.** Todo lo de abajo pasa `tsc`, `vite build`, `cargo check` y los
+  60 tests de Python, pero nada se manejó todavía dentro de la app.
+  Correr `npm run tauri dev` y recorrer los flujos reales antes de distribuir.
+- Interactividad (valores al pasar el mouse) en los paneles que siguen con recharts:
+  PLS, modularidad, correlación de matrices. PCA, biplot y atípicos ya la tienen.
+- Terminar la traducción: títulos de página, acciones y controles de gráficos están
+  traducidos, pero los textos dentro de las tarjetas y los toasts siguen sólo en inglés.
 
-## Done
+## Notas para quien siga
 
-- add scale to digitalize — "Set Scale" in the Digitizer, written as `SCALE=` on TPS export
-- font on dark theme — `color-scheme` per theme, native selects themed, contrast raised
-- add analysis variable tags — classifiers extracted from the ID string
-- add value graphs to the side of PCA — shape references along both axes (Figure tab)
-- on image import select multiple images or select folder — "Add Folder…"
-- fix landmark selector to have minimum 0 characters but minimum 1 value — `NumberInput`
-- biplot dropdowns bug on dark theme — fixed by `color-scheme` + themed `option`
-- interactive plotting (values on mouse) — PCA figure, biplot and distance plot
-- plot axis max and min for representativity — auto / symmetric / manual in the Figure tab
-- outliers graph with Procrustes distance per image and Mahalanobis distance
-- define any number of groups or variables, graphs coloured by the selected group
-- gray out on sidebar the functionalities that are not ready (with the reason on hover)
-- standardize the screens — every chart sits in a `ChartFrame` with PNG/SVG export top right
-- for data input add a mark if data is loaded — dot on Data Manager and Procrustes Fit
-- add graphs at both axis to PCA (docs/image.png) — Figure tab: editable cluster
-  colours/names/symbols, shape references on both axes, draggable legend, PNG/SVG export
-- make sure the traductions are correct — Spanish terms corrected, coverage extended
+- El repo tiene **finales de línea mezclados** (unos archivos LF, otros CRLF). Si editás
+  con scripts, escribí bytes y respetá el salto de línea propio del archivo —
+  `Path.write_text` en Windows los duplica.
+- Fixture de clasificadores con IDs codificados: `python/tests/test_data.tps` (usa `*ID=`).
+- Preferencia de UX: mantener la interfaz simple y clara, sin exponer detalles internos.
+- La señal filogenética trae su propio parser de Newick, así que ese camino **no**
+  depende de ete3 (el mapeo ancestral y los contrastes sí lo siguen usando).
+
+## Hecho
+
+**Digitalización y datos**
+- Escala en el digitalizador ("Set Scale"), se escribe como `SCALE=` al exportar TPS
+- Importar una carpeta entera de imágenes ("Add Folder…")
+- Selector de landmarks que se puede vaciar mientras se escribe (`NumberInput`)
+- Clasificadores extraídos del ID; los gráficos colorean por el clasificador activo
+- Subconjunto de landmarks, promediar por clasificador, estimar landmarks faltantes (TPS)
+- Unir archivos ("Add specimens") y proyectos `.morfocat.json` (guardar/abrir)
+
+**Análisis**
+- Pares simétricos y línea media para simetría de objeto (llegan a la GPA de Python)
+- Alinear por ejes principales
+- Grilla de transformación TPS en el ACP
+- DFA pareado con validación cruzada (pestaña en ADL)
+- Comparación de matrices de covarianza entre grupos (pestaña en Covarianza)
+- Señal filogenética multivariada Kmult (pestaña en Filogenética)
+- Distancia de Mahalanobis por espécimen, junto a la de Procrustes
+
+**Gráficos**
+- Figura de ACP tipo publicación (`docs/image.png`): colores, nombres y símbolos
+  editables por grupo, referencias de forma en ambos ejes, leyenda arrastrable
+- Las referencias de cada eje muestran el **espécimen real más cercano** a ese punto,
+  como wireframe o como foto (se elige la carpeta de imágenes en el panel)
+- Límites de eje: automático / simétrico / manual
+- Valores al pasar el mouse en la figura de ACP, el biplot y el gráfico de distancias
+- Gráfico de distancias con una línea por espécimen, clic para revisar sus landmarks
+- Export PNG/SVG en la esquina superior derecha de cada gráfico (`ChartFrame`)
+- Deformación de forma a un valor exacto de CP, además de ±DE
+
+**Interfaz**
+- `color-scheme` por tema: se arreglan los desplegables ilegibles en tema oscuro
+- Contraste de texto subido en el tema oscuro morado
+- El sidebar atenúa las páginas que todavía no se pueden usar y explica por qué al pasar
+  el mouse; punto verde en Gestor de Datos y Ajuste de Procrustes cuando ya hay resultado
+- Títulos de página unificados vía i18n
+- Términos en español corregidos (`ACVa`→`AVC`, "Análisis Canónico de Variantes"→
+  "Análisis de Variables Canónicas", "Regresar forma sobre…"→"Regresión de la forma sobre…")
