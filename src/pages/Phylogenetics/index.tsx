@@ -8,7 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
-import { runPhyloMapping, runIndependentContrasts } from "@/lib/ipc";
+import { ChartFrame } from "@/components/plots/ChartFrame";
+import { runPhyloMapping, runIndependentContrasts, runPhylogeneticSignal } from "@/lib/ipc";
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine,
+  Tooltip as RechartTooltip, ResponsiveContainer,
+} from "recharts";
 import { Play, Loader2 } from "lucide-react";
 
 const EXAMPLE_NEWICK = "((A:1,B:1):1,(C:1,D:1):1);";
@@ -16,12 +21,25 @@ const EXAMPLE_NEWICK = "((A:1,B:1):1,(C:1,D:1):1);";
 export default function Phylogenetics() {
   const aligned = useDatasetStore((s) => s.aligned);
   const dataset = useDatasetStore((s) => s.dataset);
-  const { phyloMapping, pic, setPhyloMapping, setPIC, setLoading, setError, loading, errors } = useAnalysisStore();
+  const {
+    phyloMapping, pic, phyloSignal,
+    setPhyloMapping, setPIC, setPhyloSignal,
+    setLoading, setError, loading, errors,
+  } = useAnalysisStore();
   const t = useT();
   const [newick, setNewick] = useState("");
 
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
   const ids = included.map((s) => s.id);
+
+  const signalHistogram = phyloSignal ? histogram(phyloSignal.null_distribution) : [];
+  // Snap the observed-K marker to the nearest histogram bin so it lines up
+  // with the categorical x-axis.
+  const nearestBin = phyloSignal && signalHistogram.length
+    ? signalHistogram.reduce((best, b) =>
+        Math.abs(b.mid - phyloSignal.k_mult) < Math.abs(best.mid - phyloSignal.k_mult) ? b : best
+      ).bin
+    : undefined;
 
   const runMapping = async () => {
     if (!aligned || !newick.trim()) return;
@@ -54,6 +72,25 @@ export default function Phylogenetics() {
       toast.error("Independent contrasts failed", { description: msg });
     } finally {
       setLoading("pic", false);
+    }
+  };
+
+  const runSignal = async () => {
+    if (!aligned || !newick.trim()) return;
+    setLoading("phyloSignal", true);
+    setError("phyloSignal", null);
+    try {
+      const res = await runPhylogeneticSignal(aligned, newick.trim(), ids);
+      setPhyloSignal(res);
+      toast.success("Phylogenetic signal computed", {
+        description: `K = ${res.k_mult.toFixed(3)} · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}`,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError("phyloSignal", msg);
+      toast.error("Phylogenetic signal failed", { description: msg });
+    } finally {
+      setLoading("phyloSignal", false);
     }
   };
 
@@ -92,8 +129,12 @@ export default function Phylogenetics() {
               {loading["pic"] ? t("action.running") : "PIC"}
             </Button>
           </div>
-          {(errors["phylo"] || errors["pic"]) && (
-            <p className="text-xs text-destructive">{errors["phylo"] || errors["pic"]}</p>
+          <Button size="sm" variant="outline" className="w-full" onClick={runSignal} disabled={loading["phyloSignal"] || !newick}>
+            {loading["phyloSignal"] ? <Loader2 size={12} className="animate-spin" /> : <Play size={12} />}
+            {loading["phyloSignal"] ? t("action.running") : "Phylogenetic signal"}
+          </Button>
+          {(errors["phylo"] || errors["pic"] || errors["phyloSignal"]) && (
+            <p className="text-xs text-destructive">{errors["phylo"] || errors["pic"] || errors["phyloSignal"]}</p>
           )}
         </div>
 
@@ -101,6 +142,7 @@ export default function Phylogenetics() {
           <TabsList>
             <TabsTrigger value="mapping">Shape Mapping</TabsTrigger>
             <TabsTrigger value="pic">Independent Contrasts</TabsTrigger>
+            <TabsTrigger value="signal">Phylogenetic Signal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="mapping">
@@ -165,8 +207,69 @@ export default function Phylogenetics() {
               </Card>
             )}
           </TabsContent>
+
+          <TabsContent value="signal">
+            {!phyloSignal ? (
+              <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
+                Click "Phylogenetic signal" to test whether shape follows the tree.
+              </div>
+            ) : (
+              <ChartFrame
+                filename="phylogenetic_signal"
+                title={
+                  <>
+                    Phylogenetic Signal (K<sub>mult</sub>)
+                    <Badge variant={phyloSignal.p_value < 0.05 ? "default" : "secondary"}>
+                      p = {phyloSignal.p_value < 0.001 ? "< 0.001" : phyloSignal.p_value.toFixed(3)}
+                    </Badge>
+                  </>
+                }
+              >
+                <div className="mb-3 flex gap-6 text-sm">
+                  <div>
+                    <p className="text-xs text-muted-foreground">K</p>
+                    <p className="font-mono text-lg">{phyloSignal.k_mult.toFixed(4)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tips</p>
+                    <p className="font-mono text-lg">{phyloSignal.n_tips}</p>
+                  </div>
+                  <p className="max-w-md self-center text-xs text-muted-foreground">
+                    K near 1 means shape varies just as Brownian evolution along this tree predicts.
+                    Below 1 is less resemblance among close relatives than expected; above 1 is more.
+                  </p>
+                </div>
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={signalHistogram} margin={{ top: 4, right: 8, bottom: 20, left: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                    <XAxis dataKey="bin" tick={{ fontSize: 10 }} label={{ value: "K under random tip assignment", position: "insideBottom", offset: -6, fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 10 }} />
+                    <RechartTooltip />
+                    <ReferenceLine x={nearestBin} stroke="hsl(var(--destructive))" strokeWidth={2} label={{ value: "observed", fontSize: 10 }} />
+                    <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.75} radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartFrame>
+            )}
+          </TabsContent>
         </Tabs>
       </div>
     </PanelLayout>
   );
+}
+
+/** Bin the permutation null distribution for display. */
+function histogram(values: number[], bins = 24): Array<{ bin: string; mid: number; count: number }> {
+  if (!values.length) return [];
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const width = (max - min) / bins || 1;
+  const counts = new Array(bins).fill(0);
+  for (const v of values) {
+    counts[Math.min(bins - 1, Math.floor((v - min) / width))]++;
+  }
+  return counts.map((count, i) => {
+    const mid = min + width * (i + 0.5);
+    return { bin: mid.toFixed(2), mid, count };
+  });
 }
