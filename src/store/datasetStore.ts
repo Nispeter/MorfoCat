@@ -30,6 +30,10 @@ interface DatasetState {
   activeClassifier: string | null;
   /** User-defined wireframe: pairs of 0-based landmark indices to connect. */
   wireframe: [number, number][];
+  /** Bilaterally paired landmarks (0-based) used when object symmetry is enabled. */
+  symPairs: [number, number][];
+  /** Midline landmarks (0-based) — reflected onto themselves under object symmetry. */
+  midlineLms: number[];
 
   setDataset: (ds: Dataset) => void;
   setAligned: (
@@ -48,6 +52,10 @@ interface DatasetState {
   addLink: (a: number, b: number) => void;
   removeLink: (index: number) => void;
   clearWireframe: () => void;
+  addSymPair: (a: number, b: number) => void;
+  removeSymPair: (index: number) => void;
+  toggleMidline: (i: number) => void;
+  clearSymmetry: () => void;
   swapLandmarks: (i: number, j: number) => void;
   appendSpecimens: (specimens: Specimen[]) => { added: number } | { error: string };
   clear: () => void;
@@ -61,6 +69,8 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
   procrustes_distances: null,
   activeClassifier: null,
   wireframe: [],
+  symPairs: [],
+  midlineLms: [],
 
   setDataset: (ds) => {
     // Seed a "group" classifier from any auto-detected group so existing
@@ -78,6 +88,8 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
       procrustes_distances: null,
       activeClassifier: hasGroup ? "group" : null,
       wireframe: [],
+      symPairs: [],
+      midlineLms: [],
     });
   },
 
@@ -176,6 +188,32 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
 
   clearWireframe: () => set({ wireframe: [] }),
 
+  // A landmark belongs to at most one symmetric pair and cannot also be midline.
+  addSymPair: (a, b) =>
+    set((s) => {
+      if (a === b) return s;
+      const taken = new Set(s.symPairs.flat());
+      if (taken.has(a) || taken.has(b)) return s;
+      return {
+        symPairs: [...s.symPairs, [a, b]],
+        midlineLms: s.midlineLms.filter((m) => m !== a && m !== b),
+      };
+    }),
+
+  removeSymPair: (index) =>
+    set((s) => ({ symPairs: s.symPairs.filter((_, i) => i !== index) })),
+
+  toggleMidline: (i) =>
+    set((s) => {
+      if (s.midlineLms.includes(i)) {
+        return { midlineLms: s.midlineLms.filter((m) => m !== i) };
+      }
+      if (s.symPairs.some(([a, b]) => a === i || b === i)) return s;
+      return { midlineLms: [...s.midlineLms, i].sort((x, y) => x - y) };
+    }),
+
+  clearSymmetry: () => set({ symPairs: [], midlineLms: [] }),
+
   // Swap two landmarks across every specimen. Keeps the wireframe consistent by
   // remapping the swapped indices, and clears stale alignment so analyses re-run.
   swapLandmarks: (i, j) =>
@@ -226,5 +264,5 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
   },
 
   clear: () =>
-    set({ dataset: null, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null, activeClassifier: null, wireframe: [] }),
+    set({ dataset: null, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null, activeClassifier: null, wireframe: [], symPairs: [], midlineLms: [] }),
 }));

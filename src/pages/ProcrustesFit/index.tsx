@@ -26,6 +26,9 @@ export default function ProcrustesFit() {
   const procDist = useDatasetStore((s) => s.procrustes_distances);
   const wireframe = useDatasetStore((s) => s.wireframe);
 
+  const symPairs = useDatasetStore((s) => s.symPairs);
+  const midlineLms = useDatasetStore((s) => s.midlineLms);
+
   const [symmetry, setSymmetry] = useState(false);
   const [alignPCs, setAlignPCs] = useState(true);
   const [selectedSpec, setSelectedSpec] = useState(0);
@@ -35,11 +38,22 @@ export default function ProcrustesFit() {
 
   const run = async () => {
     if (!dataset) return;
+    if (symmetry && symPairs.length === 0) {
+      toast.error("Add at least one symmetric landmark pair", {
+        description: "Object symmetry needs to know which landmarks mirror each other.",
+      });
+      return;
+    }
     setLoading("procrustes", true);
     setError("procrustes", null);
     try {
       const lms = included.map((s) => s.landmarks);
-      const res = await procrustesFit(lms, symmetry);
+      const res = await procrustesFit(
+        lms,
+        symmetry,
+        symmetry ? symPairs.map(([a, b]) => [a, b]) : undefined,
+        symmetry && midlineLms.length ? midlineLms : undefined
+      );
       const { consensus, aligned: alignedCoords } = alignPCs
         ? alignPrincipalAxes(res.consensus, res.aligned)
         : { consensus: res.consensus, aligned: res.aligned };
@@ -110,6 +124,8 @@ export default function ProcrustesFit() {
               <p className="text-xs text-muted-foreground">{included.length} specimens included</p>
             </CardContent>
           </Card>
+
+          {symmetry && <SymmetryCard nLandmarks={dataset.n_landmarks} />}
           {errors["procrustes"] && (
             <p className="rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive">
               {errors["procrustes"]}
@@ -187,6 +203,127 @@ export default function ProcrustesFit() {
         </div>
       </div>
     </PanelLayout>
+  );
+}
+
+/**
+ * Pick which landmarks mirror each other (and which sit on the midline) so
+ * object symmetry knows how to reflect a specimen onto itself.
+ */
+function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
+  const symPairs = useDatasetStore((s) => s.symPairs);
+  const midlineLms = useDatasetStore((s) => s.midlineLms);
+  const addSymPair = useDatasetStore((s) => s.addSymPair);
+  const removeSymPair = useDatasetStore((s) => s.removeSymPair);
+  const toggleMidline = useDatasetStore((s) => s.toggleMidline);
+  const clearSymmetry = useDatasetStore((s) => s.clearSymmetry);
+
+  const [left, setLeft] = useState(0);
+  const [right, setRight] = useState(1);
+
+  const paired = new Set(symPairs.flat());
+  const free = Array.from({ length: nLandmarks }, (_, i) => i).filter(
+    (i) => !paired.has(i) && !midlineLms.includes(i)
+  );
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Symmetric landmarks</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3 text-xs">
+        <p className="text-muted-foreground">
+          Pair each landmark on one side with its mirror on the other side.
+        </p>
+
+        <div className="flex items-center gap-1.5">
+          <select
+            className="flex-1 rounded border bg-background px-1.5 py-1"
+            value={left}
+            onChange={(e) => setLeft(+e.target.value)}
+          >
+            {Array.from({ length: nLandmarks }, (_, i) => (
+              <option key={i} value={i} disabled={paired.has(i) || midlineLms.includes(i)}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+          <span className="text-muted-foreground">↔</span>
+          <select
+            className="flex-1 rounded border bg-background px-1.5 py-1"
+            value={right}
+            onChange={(e) => setRight(+e.target.value)}
+          >
+            {Array.from({ length: nLandmarks }, (_, i) => (
+              <option key={i} value={i} disabled={paired.has(i) || midlineLms.includes(i)}>
+                {i + 1}
+              </option>
+            ))}
+          </select>
+          <Button
+            size="sm"
+            className="h-7 px-2"
+            disabled={left === right || paired.has(left) || paired.has(right)}
+            onClick={() => {
+              addSymPair(left, right);
+              const next = free.filter((i) => i !== left && i !== right);
+              if (next.length >= 2) { setLeft(next[0]); setRight(next[1]); }
+            }}
+          >
+            Add
+          </Button>
+        </div>
+
+        {symPairs.length > 0 && (
+          <div className="flex flex-wrap gap-1">
+            {symPairs.map(([a, b], i) => (
+              <span key={i} className="flex items-center gap-1 rounded-full border px-2 py-0.5">
+                {a + 1} ↔ {b + 1}
+                <button
+                  onClick={() => removeSymPair(i)}
+                  className="text-muted-foreground hover:text-destructive"
+                  title="Remove pair"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="space-y-1 border-t pt-2">
+          <p className="text-muted-foreground">Midline landmarks (click to toggle)</p>
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: nLandmarks }, (_, i) => {
+              const isMid = midlineLms.includes(i);
+              const isPaired = paired.has(i);
+              return (
+                <button
+                  key={i}
+                  disabled={isPaired}
+                  onClick={() => toggleMidline(i)}
+                  className={`h-6 w-6 rounded border transition-colors ${
+                    isMid
+                      ? "border-primary bg-primary/15 text-primary"
+                      : isPaired
+                        ? "opacity-30"
+                        : "hover:bg-muted"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {(symPairs.length > 0 || midlineLms.length > 0) && (
+          <Button size="sm" variant="ghost" className="h-6 w-full text-xs" onClick={clearSymmetry}>
+            Clear all
+          </Button>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
