@@ -61,6 +61,19 @@ interface DatasetState {
   setAllLandmarks: (landmarks: number[][][]) => void;
   averageByClassifier: (name: string) => { groups: number } | { error: string };
   appendSpecimens: (specimens: Specimen[]) => { added: number } | { error: string };
+  loadProject: (p: {
+    dataset: Dataset;
+    activeClassifier: string | null;
+    wireframe: [number, number][];
+    symPairs: [number, number][];
+    midlineLms: number[];
+    alignment: {
+      aligned: number[][][];
+      consensus: number[][];
+      centroid_sizes: number[];
+      procrustes_distances: number[];
+    } | null;
+  }) => void;
   clear: () => void;
 }
 
@@ -357,6 +370,21 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
     });
     return { added: merged.length };
   },
+
+  // Restore a saved project wholesale — no seeding or auto-detection, the file
+  // already holds exactly what the user had.
+  loadProject: (p) =>
+    set({
+      dataset: p.dataset,
+      activeClassifier: p.activeClassifier,
+      wireframe: p.wireframe,
+      symPairs: p.symPairs,
+      midlineLms: p.midlineLms,
+      aligned: p.alignment?.aligned ?? null,
+      consensus: p.alignment?.consensus ?? null,
+      centroid_sizes: p.alignment?.centroid_sizes ?? null,
+      procrustes_distances: p.alignment?.procrustes_distances ?? null,
+    }),
 
   clear: () =>
     set({ dataset: null, aligned: null, consensus: null, centroid_sizes: null, procrustes_distances: null, activeClassifier: null, wireframe: [], symPairs: [], midlineLms: [] }),

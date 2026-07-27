@@ -270,6 +270,13 @@ export const runSelectionGradient = (aligned: number[][][], fitness: number[]) =
 export const readFileB64 = (path: string): Promise<string> =>
   invoke<string>("read_file_b64", { path });
 
+/** Read a file as UTF-8 text (the Rust side only hands back base64 bytes). */
+export const readTextFile = async (path: string): Promise<string> => {
+  const b64 = await readFileB64(path);
+  const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+  return new TextDecoder("utf-8").decode(bytes);
+};
+
 export const writeTextFile = (path: string, content: string): Promise<void> =>
   invoke<void>("write_text_file", { path, content });
 

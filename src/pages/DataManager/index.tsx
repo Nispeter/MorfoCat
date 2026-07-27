@@ -8,7 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { writeTPS, procrustesFit } from "@/lib/ipc";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc";
+import { buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION } from "@/lib/project";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
@@ -17,7 +19,7 @@ import { useRecentFilesStore } from "@/store/recentFilesStore";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma } from "lucide-react";
+import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma, Save, FolderOpen } from "lucide-react";
 
 function formatRelTime(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -77,7 +79,7 @@ export default function DataManager() {
     dataset, setDataset, toggleSpecimen, clear,
     activeClassifier, extractClassifier, setSpecimenClassifier,
     renameClassifier, deleteClassifier, setActiveClassifier, appendSpecimens,
-    subsetLandmarks, averageByClassifier, setAllLandmarks,
+    subsetLandmarks, averageByClassifier, setAllLandmarks, loadProject,
   } = useDatasetStore();
   const [estimating, setEstimating] = useState(false);
   const clearAnalyses = useAnalysisStore((s) => s.clearAll);
@@ -202,6 +204,55 @@ export default function DataManager() {
     }
   }, [dataset, setAllLandmarks]);
 
+  // ── Projects ────────────────────────────────────────────────────────────────
+  const handleSaveProject = useCallback(async () => {
+    const s = useDatasetStore.getState();
+    if (!s.dataset) return;
+    const path = await saveDialog({
+      defaultPath: defaultProjectName(s.dataset.filename),
+      filters: [{ name: "MorfoCat project", extensions: [PROJECT_EXTENSION, "json"] }],
+    });
+    if (!path) return;
+    try {
+      const project = buildProject({
+        dataset: s.dataset,
+        activeClassifier: s.activeClassifier,
+        wireframe: s.wireframe,
+        symPairs: s.symPairs,
+        midlineLms: s.midlineLms,
+        alignment: s.aligned && s.consensus && s.centroid_sizes && s.procrustes_distances
+          ? {
+              aligned: s.aligned,
+              consensus: s.consensus,
+              centroid_sizes: s.centroid_sizes,
+              procrustes_distances: s.procrustes_distances,
+            }
+          : null,
+      });
+      await writeTextFile(path, JSON.stringify(project));
+      toast.success("Project saved", { description: path });
+    } catch (e) {
+      toast.error("Could not save project", { description: e instanceof Error ? e.message : String(e) });
+    }
+  }, []);
+
+  const handleOpenProject = useCallback(async () => {
+    const picked = await openDialog({
+      filters: [{ name: "MorfoCat project", extensions: [PROJECT_EXTENSION, "json"] }],
+    });
+    if (!picked || Array.isArray(picked)) return;
+    try {
+      const project = parseProject(await readTextFile(picked));
+      clearAnalyses();
+      loadProject(project);
+      toast.success("Project opened", {
+        description: `${project.dataset.specimens.length} specimens · ${project.dataset.n_landmarks} landmarks`,
+      });
+    } catch (e) {
+      toast.error("Could not open project", { description: e instanceof Error ? e.message : String(e) });
+    }
+  }, [clearAnalyses, loadProject]);
+
   const handleClear = () => {
     clear();
     clearAnalyses();
@@ -213,7 +264,16 @@ export default function DataManager() {
       title="Data Manager"
       description="Import TPS, NTS, or Morphologika landmark files"
       actions={
-        dataset && (
+        <>
+          <Button variant="outline" size="sm" onClick={handleOpenProject}>
+            <FolderOpen size={14} /> Open project
+          </Button>
+          {dataset && (
+            <Button variant="outline" size="sm" onClick={handleSaveProject}>
+              <Save size={14} /> Save project
+            </Button>
+          )}
+          {dataset && (
           <>
             <input
               ref={appendInputRef}
@@ -236,7 +296,8 @@ export default function DataManager() {
               <Trash2 size={14} /> Clear
             </Button>
           </>
-        )
+          )}
+        </>
       }
     >
       {!dataset ? (
