@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 import { PanelLayout } from "@/components/layout/PanelLayout";
@@ -10,6 +10,9 @@ import { BiPlot } from "@/components/plots/BiPlot";
 import { ShapeGrid } from "@/components/plots/ShapeGrid";
 import { TpsGrid } from "@/components/plots/TpsGrid";
 import { ChartFrame } from "@/components/plots/ChartFrame";
+import { PCAFigure } from "@/components/plots/PCAFigure";
+import { FigureStylePanel } from "@/components/plots/FigureStylePanel";
+import { usePlotStyleStore } from "@/store/plotStyleStore";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
@@ -36,6 +39,12 @@ export default function PCA() {
   const included = dataset?.specimens.filter((s) => s.include) ?? [];
   const groups = groupsOf(included, active);
   const ids = included.map((s) => s.id);
+
+  // Keep the figure's per-group colours and symbols in step with the data.
+  const groupKey = groups.join(" ");
+  const uniqueGroups = useMemo(() => [...new Set(groupKey.split(" "))], [groupKey]);
+  const ensureGroups = usePlotStyleStore((s) => s.ensureGroups);
+  useEffect(() => { ensureGroups(uniqueGroups); }, [uniqueGroups, ensureGroups]);
 
   const run = async () => {
     if (!aligned) return;
@@ -104,6 +113,7 @@ export default function PCA() {
           <TabsList>
             <TabsTrigger value="scree">Scree Plot</TabsTrigger>
             <TabsTrigger value="biplot">Biplot</TabsTrigger>
+            <TabsTrigger value="figure">Figure</TabsTrigger>
             <TabsTrigger value="shapes">Shape Deformation</TabsTrigger>
             <TabsTrigger value="grid">Transformation Grid</TabsTrigger>
             <TabsTrigger value="table">PC Scores</TabsTrigger>
@@ -143,6 +153,40 @@ export default function PCA() {
             >
               <BiPlot scores={pca.scores} loadings={pca.loadings} groups={groups} pcX={pcX} pcY={pcY} pctVariance={pca.pct_variance} ids={ids} showLoadings={false} />
             </ChartFrame>
+          </TabsContent>
+
+          <TabsContent value="figure">
+            <div className="grid grid-cols-[1fr_250px] gap-4">
+              <ChartFrame
+                title={`PC${pcX + 1} vs PC${pcY + 1}`}
+                filename={`pca_figure_pc${pcX + 1}_pc${pcY + 1}`}
+                controls={
+                  <>
+                    <select className="rounded border bg-background px-1 py-0.5 text-xs font-normal" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
+                      {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
+                    </select>
+                    <span className="text-xs font-normal text-muted-foreground">vs</span>
+                    <select className="rounded border bg-background px-1 py-0.5 text-xs font-normal" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
+                      {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
+                    </select>
+                    <ClassifierSelect />
+                  </>
+                }
+              >
+                <PCAFigure
+                  scores={pca.scores}
+                  loadings={pca.loadings}
+                  pctVariance={pca.pct_variance}
+                  consensus={consensus}
+                  wireframe={wireframe}
+                  groups={groups}
+                  ids={ids}
+                  pcX={pcX}
+                  pcY={pcY}
+                />
+              </ChartFrame>
+              <FigureStylePanel groups={uniqueGroups} />
+            </div>
           </TabsContent>
 
           <TabsContent value="shapes">

@@ -1,0 +1,146 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { NumberInput } from "@/components/ui/number-input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { usePlotStyleStore, type AxisMode } from "@/store/plotStyleStore";
+import { SYMBOL_KINDS, symbolPath, isStrokeOnly, type SymbolKind } from "@/lib/symbols";
+import { Palette, RotateCcw } from "lucide-react";
+
+/** Controls for how the PCA figure looks: group appearance, axes, references. */
+export function FigureStylePanel({ groups }: { groups: string[] }) {
+  const {
+    styles, setStyle, resetStyles,
+    axisMode, setAxisMode, manualLimits, setManualLimits,
+    refShapesX, refShapesY, setRefShapes,
+    showLegend, setShowLegend,
+  } = usePlotStyleStore();
+
+  return (
+    <div className="space-y-3">
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-1.5 text-sm">
+            <Palette size={13} /> Groups
+            <Button size="sm" variant="ghost" className="ml-auto h-6 px-1.5 text-xs" onClick={resetStyles} title="Back to default colours and symbols">
+              <RotateCcw size={11} />
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {groups.length === 0 && (
+            <p className="text-xs text-muted-foreground">
+              Extract a classifier in Data Manager to colour the plot by group.
+            </p>
+          )}
+          {groups.map((g) => {
+            const st = styles[g];
+            if (!st) return null;
+            const stroke = isStrokeOnly(st.symbol) || !st.filled;
+            return (
+              <div key={g} className="space-y-1.5 border-b pb-2 last:border-0 last:pb-0">
+                <div className="flex items-center gap-1.5">
+                  <svg width={18} height={18} viewBox="-9 -9 18 18" className="shrink-0">
+                    <path d={symbolPath(st.symbol, 6)} fill={stroke ? "none" : st.color} stroke={st.color} strokeWidth={stroke ? 1.8 : 0.8} />
+                  </svg>
+                  <Input
+                    className="h-7 flex-1 text-xs"
+                    value={st.label}
+                    onChange={(e) => setStyle(g, { label: e.target.value })}
+                    title={`Legend name for "${g}"`}
+                  />
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="color"
+                    value={st.color}
+                    onChange={(e) => setStyle(g, { color: e.target.value })}
+                    className="h-7 w-8 cursor-pointer rounded border bg-background"
+                    title="Colour"
+                  />
+                  <select
+                    className="h-7 flex-1 rounded border bg-background px-1 text-xs"
+                    value={st.symbol}
+                    onChange={(e) => setStyle(g, { symbol: e.target.value as SymbolKind })}
+                  >
+                    {SYMBOL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                  </select>
+                  <button
+                    onClick={() => setStyle(g, { filled: !st.filled })}
+                    disabled={isStrokeOnly(st.symbol)}
+                    className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
+                    title="Filled or open symbol"
+                  >
+                    {st.filled ? "solid" : "open"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Axes</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-xs">
+          <select
+            className="w-full rounded border bg-background px-1.5 py-1"
+            value={axisMode}
+            onChange={(e) => setAxisMode(e.target.value as AxisMode)}
+          >
+            <option value="auto">Fit to the data</option>
+            <option value="symmetric">Symmetric around zero</option>
+            <option value="manual">Set min and max</option>
+          </select>
+          <p className="text-muted-foreground">
+            {axisMode === "symmetric"
+              ? "Equal range either side of zero on both axes — spread stays comparable between plots."
+              : axisMode === "manual"
+                ? "Fixed limits, so several plots can share one scale."
+                : "Limits follow the range of the scores."}
+          </p>
+          {axisMode === "manual" && (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-0.5">
+                <Label className="text-[10px]">X min</Label>
+                <NumberInput className="h-7 text-xs" allowDecimal value={manualLimits.xMin} onChange={(xMin) => setManualLimits({ xMin })} />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-[10px]">X max</Label>
+                <NumberInput className="h-7 text-xs" allowDecimal value={manualLimits.xMax} onChange={(xMax) => setManualLimits({ xMax })} />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-[10px]">Y min</Label>
+                <NumberInput className="h-7 text-xs" allowDecimal value={manualLimits.yMin} onChange={(yMin) => setManualLimits({ yMin })} />
+              </div>
+              <div className="space-y-0.5">
+                <Label className="text-[10px]">Y max</Label>
+                <NumberInput className="h-7 text-xs" allowDecimal value={manualLimits.yMax} onChange={(yMax) => setManualLimits({ yMax })} />
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">Shape references</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-xs">
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs">Along PC on x</Label>
+            <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs">Along PC on y</Label>
+            <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
+          </div>
+          <div className="flex items-center justify-between gap-2 pt-1">
+            <Label className="text-xs">Legend</Label>
+            <Switch checked={showLegend} onCheckedChange={setShowLegend} />
+          </div>
+          <p className="text-muted-foreground">Drag the legend to move it inside the plot.</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
