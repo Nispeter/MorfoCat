@@ -309,7 +309,7 @@ export default function DataManager() {
           {recentFiles.length > 0 && (
             <div className="w-full max-w-lg">
               <p className="mb-2 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Clock size={11} /> Recent files
+                <Clock size={11} /> {t("data.recentFiles")}
               </p>
               <div className="flex flex-col gap-1">
                 {recentFiles.map((rf) => (
@@ -326,7 +326,7 @@ export default function DataManager() {
                     <button
                       className="shrink-0 text-muted-foreground hover:text-foreground"
                       onClick={() => removeRecentFile(rf.name)}
-                      title="Remove from recents"
+                      title={t("data.removeRecent")}
                     >
                       <X size={12} />
                     </button>
@@ -346,14 +346,14 @@ export default function DataManager() {
             <input {...getInputProps()} />
             <Upload size={32} className="mb-3 text-muted-foreground" />
             {isDragActive ? (
-              <p className="text-sm font-medium">Drop the file here…</p>
+              <p className="text-sm font-medium">{t("data.dropHere")}</p>
             ) : (
               <>
-                <p className="text-sm font-medium">Drop a landmark file or click to browse</p>
-                <p className="mt-1 text-xs text-muted-foreground">Supports .tps · .nts · Morphologika (.txt)</p>
+                <p className="text-sm font-medium">{t("data.dropFile")}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{t("data.supports")}</p>
               </>
             )}
-            {loading && <p className="mt-2 text-xs text-primary">Parsing…</p>}
+            {loading && <p className="mt-2 text-xs text-primary">{t("data.parsing")}</p>}
           </div>
           {error && (
             <p className="max-w-lg rounded border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -379,10 +379,10 @@ export default function DataManager() {
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 border-b bg-card text-xs text-muted-foreground">
                     <tr>
-                      <th className="px-4 py-2 text-left font-medium">Include</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("ui.include")}</th>
                       <th className="px-4 py-2 text-left font-medium">ID</th>
                       <th className="px-4 py-2 text-left font-medium">{activeClassifier ?? "Group"}</th>
-                      <th className="px-4 py-2 text-left font-medium">Scale</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("ui.scale")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -423,19 +423,19 @@ export default function DataManager() {
             />
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Dataset Summary</CardTitle>
+                <CardTitle className="text-sm">{t("data.summary")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-1 text-sm">
-                <Row label="File" value={dataset.filename} />
-                <Row label="Specimens" value={dataset.specimens.length} />
-                <Row label="Included" value={dataset.specimens.filter((s) => s.include).length} />
-                <Row label="Landmarks" value={dataset.n_landmarks} />
-                <Row label="Dimensions" value={dataset.dimensions} />
+                <Row label={t("data.file")} value={dataset.filename} />
+                <Row label={t("ui.specimens")} value={dataset.specimens.length} />
+                <Row label={t("status.included")} value={dataset.specimens.filter((s) => s.include).length} />
+                <Row label={t("ui.landmarks")} value={dataset.n_landmarks} />
+                <Row label={t("data.dimensions")} value={dataset.dimensions} />
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Next Steps</CardTitle>
+                <CardTitle className="text-sm">{t("data.nextSteps")}</CardTitle>
               </CardHeader>
               <CardContent className="text-xs text-muted-foreground space-y-1">
                 <p>1. Run <strong>Procrustes Fit</strong> to align landmarks</p>
@@ -447,7 +447,7 @@ export default function DataManager() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm flex items-center gap-1.5">
-                    <Clock size={12} /> Recent
+                    <Clock size={12} /> {t("data.recent")}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-1">
@@ -520,6 +520,7 @@ function ClassifiersCard({
   onRename: (oldName: string, newName: string) => void;
   onDelete: (name: string) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [first, setFirst] = useState(1);
   const [last, setLast] = useState(2);
@@ -544,7 +545,7 @@ function ClassifiersCard({
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-sm flex items-center gap-1.5">
-          <Tags size={13} /> Classifiers
+          <Tags size={13} /> {t("data.classifiers")}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
@@ -558,7 +559,7 @@ function ClassifiersCard({
                   active === n ? "border-primary bg-primary/10 text-primary" : "border-border"
                 }`}
               >
-                <button onClick={() => onActivate(n)} className="flex items-center gap-1" title="Set active">
+                <button onClick={() => onActivate(n)} className="flex items-center gap-1" title={t("data.setActive")}>
                   {active === n && <Check size={11} />}
                   {n}
                 </button>
@@ -568,14 +569,14 @@ function ClassifiersCard({
                     if (nn && nn.trim()) onRename(n, nn.trim());
                   }}
                   className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-foreground"
-                  title="Rename"
+                  title={t("data.rename")}
                 >
                   ✎
                 </button>
                 <button
                   onClick={() => onDelete(n)}
                   className="text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
-                  title="Delete"
+                  title={t("data.delete")}
                 >
                   <X size={11} />
                 </button>
@@ -586,27 +587,27 @@ function ClassifiersCard({
 
         {/* Extract from ID */}
         <div className="space-y-2 border-t pt-2">
-          <p className="text-xs text-muted-foreground">Extract from ID string</p>
+          <p className="text-xs text-muted-foreground">{t("data.extractFromId")}</p>
           <div className="space-y-1">
-            <Label className="text-xs">Name</Label>
+            <Label className="text-xs">{t("data.name")}</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. site" className="h-8" />
           </div>
           <div className="flex gap-2">
             <div className="flex-1 space-y-1">
-              <Label className="text-xs">First char</Label>
+              <Label className="text-xs">{t("data.firstChar")}</Label>
               <NumberInput min={1} value={first} onChange={setFirst} className="h-8" />
             </div>
             <div className="flex-1 space-y-1">
-              <Label className="text-xs">Last char</Label>
+              <Label className="text-xs">{t("data.lastChar")}</Label>
               <NumberInput min={1} value={last} onChange={setLast} className="h-8" />
             </div>
           </div>
           {sampleIds.length > 0 && (
             <p className="text-xs text-muted-foreground">
-              Preview: <span className="font-mono text-foreground">{preview.join(", ")}</span>
+              {t("data.previewLabel")} <span className="font-mono text-foreground">{preview.join(", ")}</span>
             </p>
           )}
-          <Button size="sm" className="w-full" onClick={submit}>Extract classifier</Button>
+          <Button size="sm" className="w-full" onClick={submit}>{t("data.extractBtn")}</Button>
         </div>
       </CardContent>
     </Card>
@@ -625,6 +626,7 @@ function TransformCard({
   onAverage: (name: string) => { groups: number } | { error: string };
   onEstimateMissing: () => void;
 }) {
+  const t = useT();
   const [subsetOpen, setSubsetOpen] = useState(false);
   const [keep, setKeep] = useState<number[]>([]);
   const [avgBy, setAvgBy] = useState(classifiers[0] ?? "");
@@ -658,12 +660,12 @@ function TransformCard({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm flex items-center gap-1.5">
-            <Wand2 size={13} /> Transform
+            <Wand2 size={13} /> {t("data.transform")}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <Button size="sm" variant="outline" className="w-full justify-start" onClick={openSubset}>
-            <Scissors size={13} /> Choose landmarks…
+            <Scissors size={13} /> {t("data.chooseLandmarks")}
           </Button>
           {classifiers.length > 0 && (
             <div className="flex gap-1.5">
@@ -674,18 +676,18 @@ function TransformCard({
               >
                 {classifiers.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              <Button size="sm" variant="outline" className="h-8" onClick={applyAverage} title="Replace the sample with one averaged specimen per value">
-                <Sigma size={13} /> Average
+              <Button size="sm" variant="outline" className="h-8" onClick={applyAverage} title={t("data.averageHint")}>
+                <Sigma size={13} /> {t("data.average")}
               </Button>
             </div>
           )}
           {missing > 0 && (
             <div className="space-y-1 border-t pt-2">
               <p className="text-xs text-muted-foreground">
-                {missing} missing landmark{missing !== 1 ? "s" : ""} detected
+                {missing} {t("data.missingFound")}
               </p>
               <Button size="sm" variant="outline" className="w-full justify-start" disabled={estimating} onClick={onEstimateMissing}>
-                <Wand2 size={13} /> {estimating ? "Estimating…" : "Estimate missing"}
+                <Wand2 size={13} /> {estimating ? t("action.running") : t("data.estimateMissing")}
               </Button>
             </div>
           )}
@@ -695,9 +697,9 @@ function TransformCard({
       <Dialog open={subsetOpen} onOpenChange={setSubsetOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Choose landmarks</DialogTitle>
+            <DialogTitle>{t("data.chooseLmTitle")}</DialogTitle>
             <DialogDescription>
-              Unselected landmarks are removed from every specimen. Links and symmetric pairs are renumbered.
+              {t("data.chooseLmDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-wrap gap-1">
@@ -717,14 +719,14 @@ function TransformCard({
             })}
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <button className="underline" onClick={() => setKeep(Array.from({ length: nLandmarks }, (_, i) => i))}>Select all</button>
-            <button className="underline" onClick={() => setKeep([])}>Select none</button>
-            <span className="ml-auto">{keep.length} of {nLandmarks} kept</span>
+            <button className="underline" onClick={() => setKeep(Array.from({ length: nLandmarks }, (_, i) => i))}>{t("ui.selectAll")}</button>
+            <button className="underline" onClick={() => setKeep([])}>{t("ui.selectNone")}</button>
+            <span className="ml-auto">{keep.length} {t("data.of")} {nLandmarks} {t("data.kept")}</span>
           </div>
           <DialogFooter>
-            <Button size="sm" variant="outline" onClick={() => setSubsetOpen(false)}>Cancel</Button>
+            <Button size="sm" variant="outline" onClick={() => setSubsetOpen(false)}>{t("action.cancel")}</Button>
             <Button size="sm" disabled={keep.length < 3 || keep.length === nLandmarks} onClick={applySubset}>
-              Apply
+              {t("ui.apply")}
             </Button>
           </DialogFooter>
         </DialogContent>

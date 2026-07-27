@@ -79,13 +79,13 @@ export default function Regression() {
       <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Options</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.options")}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <Label>Use centroid size</Label>
                 <Switch checked={useCS} onCheckedChange={setUseCS} disabled={!centroid_sizes} />
               </div>
-              {!centroid_sizes && <p className="text-xs text-muted-foreground">Run Procrustes Fit to get centroid sizes.</p>}
+              {!centroid_sizes && <p className="text-xs text-muted-foreground">{t("ui.needCentroidSizes")}</p>}
               <div className="flex items-center justify-between gap-2">
                 <Label>Pooled within-group</Label>
                 <Switch checked={pooled} onCheckedChange={setPooled} />
@@ -171,9 +171,10 @@ function StatRow({ label, value }: { label: string; value: string | number }) {
 }
 
 function NeedsProcrustes({ title }: { title: string }) {
+  const t = useT();
   return (
     <PanelLayout title={title}>
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 }

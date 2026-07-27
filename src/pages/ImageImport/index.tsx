@@ -171,7 +171,7 @@ export default function ImageImport() {
               <>
                 <span className="text-sm text-muted-foreground">{images.length} image{images.length !== 1 ? "s" : ""} selected</span>
                 <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setImages([])}>
-                  Clear
+                  {t("action.clear")}
                 </Button>
               </>
             )}
@@ -180,7 +180,7 @@ export default function ImageImport() {
           {images.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 text-muted-foreground">
               <Images size={36} />
-              <p className="text-sm">No images yet — pick individual files, or add a whole folder at once</p>
+              <p className="text-sm">{t("imgimp.noImages")}</p>
             </div>
           ) : (
             <Card className="flex flex-1 flex-col overflow-hidden">
@@ -193,8 +193,8 @@ export default function ImageImport() {
                     <thead className="sticky top-0 border-b bg-card text-xs text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 text-left">#</th>
-                        <th className="px-3 py-2 text-left">Filename</th>
-                        <th className="px-3 py-2 text-left">Full path</th>
+                        <th className="px-3 py-2 text-left">{t("ui.filename")}</th>
+                        <th className="px-3 py-2 text-left">{t("ui.fullPath")}</th>
                         <th className="px-3 py-2" />
                       </tr>
                     </thead>
@@ -223,16 +223,16 @@ export default function ImageImport() {
         <div className="flex w-72 flex-col gap-3">
           <Card>
             <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm">Landmark Configuration</CardTitle>
+              <CardTitle className="text-sm">{t("imgimp.config")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
-                <Label>Total landmarks per specimen</Label>
+                <Label>{t("imgimp.totalLandmarks")}</Label>
                 <NumberInput min={1} value={nLandmarks} onChange={setNLandmarks} />
                 <p className="text-xs text-muted-foreground">Fixed + semilandmarks combined</p>
               </div>
               <div className="space-y-1">
-                <Label>Semilandmarks (last N points)</Label>
+                <Label>{t("imgimp.semilandmarks")}</Label>
                 <NumberInput min={0} max={nLandmarks - 1} value={nSemi} onChange={setNSemi} />
                 <p className="text-xs text-muted-foreground">
                   {nSemi > 0
@@ -245,7 +245,7 @@ export default function ImageImport() {
 
           <Card>
             <CardHeader className="pb-2 pt-3">
-              <CardTitle className="text-sm">Output TPS File</CardTitle>
+              <CardTitle className="text-sm">{t("imgimp.outputTps")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" size="sm" className="w-full" onClick={pickSavePath}>

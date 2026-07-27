@@ -76,7 +76,7 @@ export default function LDA() {
         </>
       }
     >
-      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">Assign groups in Data Manager first (extract a classifier from the ID string).</p>}
+      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">{t("ui.needGroups")}</p>}
       {errors["lda"] && <p className="mb-3 text-sm text-destructive">{errors["lda"]}</p>}
 
       {!lda ? (
@@ -133,6 +133,7 @@ export default function LDA() {
  * how well a discriminant function trained without a specimen classifies it.
  */
 function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: string[] }) {
+  const t = useT();
   const { pairwiseDFA, setPairwiseDFA, setLoading, setError, loading, errors } = useAnalysisStore();
   const [permutations, setPermutations] = useState(999);
 
@@ -174,7 +175,7 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
                 <Download size={12} /> CSV
               </Button>
             )}
-            <span className="text-xs font-normal text-muted-foreground">Permutations</span>
+            <span className="text-xs font-normal text-muted-foreground">{t("plot.permutations")}</span>
             <select
               className="rounded border bg-background px-1 py-0.5 text-xs font-normal"
               value={permutations}
@@ -199,7 +200,7 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
           <table className="w-full text-xs">
             <thead className="border-b text-muted-foreground">
               <tr>
-                <th className="p-2 text-left">Pair</th>
+                <th className="p-2 text-left">{t("ui.pair")}</th>
                 <th className="p-2 text-right">n</th>
                 <th className="p-2 text-right">Procrustes d</th>
                 <th className="p-2 text-right">p</th>
@@ -233,9 +234,10 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
 }
 
 function NeedsProcrustes({ title }: { title: string }) {
+  const t = useT();
   return (
     <PanelLayout title={title}>
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 }

@@ -263,6 +263,22 @@ const en = {
   "fig.showIds":           "Show specimen IDs",
   "fig.legend":            "Legend",
   "fig.dragLegend":        "Drag the legend to move it inside the plot.",
+
+  "cva.scores":            "CV Scores",
+  "cva.distances":         "Mahalanobis Distances",
+  "cva.pairwise":          "Pairwise Mahalanobis Distances",
+  "cva.eigenvalues":       "Eigenvalues & Variance",
+  "imgimp.config":         "Landmark Configuration",
+  "imgimp.totalLandmarks": "Total landmarks per specimen",
+  "imgimp.semilandmarks":  "Semilandmarks (last N points)",
+  "imgimp.outputTps":      "Output TPS File",
+  "imgimp.noImages":       "No images yet — pick individual files, or add a whole folder at once",
+  "digi.setScale":         "Set scale",
+  "digi.refLength":        "Reference length",
+  "digi.unit":             "Unit",
+  "digi.undo":             "Undo (Ctrl+Z)",
+  "digi.clearSpecimen":    "Clear Specimen",
+  "digi.connectLine":      "Connect line",
 } as const;
 
 const es: Record<keyof typeof en, string> = {
@@ -517,6 +533,22 @@ const es: Record<keyof typeof en, string> = {
   "fig.showIds":           "Mostrar los ID de los especímenes",
   "fig.legend":            "Leyenda",
   "fig.dragLegend":        "Arrastrá la leyenda para moverla dentro del gráfico.",
+
+  "cva.scores":            "Puntajes de VC",
+  "cva.distances":         "Distancias de Mahalanobis",
+  "cva.pairwise":          "Distancias de Mahalanobis por pares",
+  "cva.eigenvalues":       "Autovalores y Varianza",
+  "imgimp.config":         "Configuración de landmarks",
+  "imgimp.totalLandmarks": "Landmarks totales por espécimen",
+  "imgimp.semilandmarks":  "Semilandmarks (últimos N puntos)",
+  "imgimp.outputTps":      "Archivo TPS de salida",
+  "imgimp.noImages":       "Todavía no hay imágenes — elegí archivos sueltos o agregá una carpeta entera",
+  "digi.setScale":         "Fijar escala",
+  "digi.refLength":        "Longitud de referencia",
+  "digi.unit":             "Unidad",
+  "digi.undo":             "Deshacer (Ctrl+Z)",
+  "digi.clearSpecimen":    "Limpiar espécimen",
+  "digi.connectLine":      "Unir con línea",
 };
 
 export type TranslationKey = keyof typeof en;

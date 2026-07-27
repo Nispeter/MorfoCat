@@ -48,7 +48,7 @@ export default function Covariance() {
   if (!aligned) {
     return (
       <PanelLayout title={t("page.covariance.title")}>
-        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
       </PanelLayout>
     );
   }
@@ -86,7 +86,7 @@ export default function Covariance() {
       <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Options</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.options")}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1">
@@ -182,6 +182,7 @@ function CompareGroupsCard({
   groups: string[];
   available: boolean;
 }) {
+  const t = useT();
   const { covComparison, setCovComparison, setLoading, setError, loading, errors } = useAnalysisStore();
   const [permutations, setPermutations] = useState(999);
 
@@ -223,7 +224,7 @@ function CompareGroupsCard({
                 <Download size={12} /> CSV
               </Button>
             )}
-            <span className="text-xs font-normal text-muted-foreground">Permutations</span>
+            <span className="text-xs font-normal text-muted-foreground">{t("plot.permutations")}</span>
             <select
               className="rounded border bg-background px-1 py-0.5 text-xs font-normal"
               value={permutations}
@@ -254,7 +255,7 @@ function CompareGroupsCard({
             <table className="w-full text-xs">
               <thead className="border-b text-muted-foreground">
                 <tr>
-                  <th className="p-2 text-left">Pair</th>
+                  <th className="p-2 text-left">{t("ui.pair")}</th>
                   <th className="p-2 text-right">n</th>
                   <th className="p-2 text-right">r (with diag.)</th>
                   <th className="p-2 text-right">r (off-diag.)</th>

@@ -7,6 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { usePlotStyleStore, type AxisMode, type RefSource } from "@/store/plotStyleStore";
 import { SYMBOL_KINDS, symbolPath, isStrokeOnly, type SymbolKind } from "@/lib/symbols";
 import { Palette, RotateCcw, FolderOpen } from "lucide-react";
+import { useT } from "@/lib/i18n";
 
 /** Controls for how the PCA figure looks: group appearance, axes, references. */
 export function FigureStylePanel({
@@ -30,6 +31,7 @@ export function FigureStylePanel({
     showLegend, setShowLegend,
   } = usePlotStyleStore();
 
+  const t = useT();
   const splitEncoding = !!symbolBy;
   const otherClassifiers = classifiers.filter((c) => c !== activeClassifier);
 
@@ -38,8 +40,8 @@ export function FigureStylePanel({
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-1.5 text-sm">
-            <Palette size={13} /> Groups
-            <Button size="sm" variant="ghost" className="ml-auto h-6 px-1.5 text-xs" onClick={resetStyles} title="Back to default colours and symbols">
+            <Palette size={13} /> {t("fig.groups")}
+            <Button size="sm" variant="ghost" className="ml-auto h-6 px-1.5 text-xs" onClick={resetStyles} title={t("fig.resetStyles")}>
               <RotateCcw size={11} />
             </Button>
           </CardTitle>
@@ -47,7 +49,7 @@ export function FigureStylePanel({
         <CardContent className="space-y-3">
           {groups.length === 0 && (
             <p className="text-xs text-muted-foreground">
-              Extract a classifier in Data Manager to colour the plot by group.
+              {t("fig.noClassifier")}
             </p>
           )}
           {groups.map((g) => {
@@ -64,7 +66,7 @@ export function FigureStylePanel({
                     className="h-7 flex-1 text-xs"
                     value={st.label}
                     onChange={(e) => setStyle(g, { label: e.target.value })}
-                    title={`Legend name for "${g}"`}
+                    title={`${t("fig.legend")}: ${g}`}
                   />
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -73,7 +75,7 @@ export function FigureStylePanel({
                     value={st.color}
                     onChange={(e) => setStyle(g, { color: e.target.value })}
                     className="h-7 w-8 cursor-pointer rounded border bg-background"
-                    title="Colour"
+                    title={t("fig.colour")}
                   />
                   {/* When a second classifier drives the symbols, shape is no
                       longer this classifier's to set. */}
@@ -90,9 +92,9 @@ export function FigureStylePanel({
                         onClick={() => setStyle(g, { filled: !st.filled })}
                         disabled={isStrokeOnly(st.symbol)}
                         className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
-                        title="Filled or open symbol"
+                        title={t("fig.filledOrOpen")}
                       >
-                        {st.filled ? "solid" : "open"}
+                        {st.filled ? t("fig.solid") : t("fig.open")}
                       </button>
                     </>
                   )}
@@ -105,22 +107,22 @@ export function FigureStylePanel({
 
       {otherClassifiers.length > 0 && (
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Second classifier</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.secondClassifier")}</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-xs">
             <select
               className="w-full rounded border bg-background px-1.5 py-1"
               value={symbolBy ?? ""}
               onChange={(e) => setSymbolBy(e.target.value || null)}
             >
-              <option value="">Symbols follow the colours</option>
+              <option value="">{t("fig.symbolsFollow")}</option>
               {otherClassifiers.map((c) => (
-                <option key={c} value={c}>Symbol by “{c}”</option>
+                <option key={c} value={c}>{t("fig.symbolBy")} “{c}”</option>
               ))}
             </select>
             <p className="text-muted-foreground">
               {splitEncoding
                 ? `Colour shows “${activeClassifier}”, symbol shape shows “${symbolBy}” — each point carries both.`
-                : "Show a second classifier at the same time by giving it the symbol shapes."}
+                : t("fig.splitHint")}
             </p>
 
             {splitEncoding && symbolValues.map((v) => {
@@ -136,7 +138,7 @@ export function FigureStylePanel({
                     className="h-7 w-20 text-xs"
                     value={st.label}
                     onChange={(e) => setSymbolStyle(v, { label: e.target.value })}
-                    title={`Legend name for "${v}"`}
+                    title={`${t("fig.legend")}: ${v}`}
                   />
                   <select
                     className="h-7 flex-1 rounded border bg-background px-1 text-xs"
@@ -149,9 +151,9 @@ export function FigureStylePanel({
                     onClick={() => setSymbolStyle(v, { filled: !st.filled })}
                     disabled={isStrokeOnly(st.symbol)}
                     className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
-                    title="Filled or open symbol"
+                    title={t("fig.filledOrOpen")}
                   >
-                    {st.filled ? "solid" : "open"}
+                    {st.filled ? t("fig.solid") : t("fig.open")}
                   </button>
                 </div>
               );
@@ -161,23 +163,23 @@ export function FigureStylePanel({
       )}
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Axes</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.axes")}</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-xs">
           <select
             className="w-full rounded border bg-background px-1.5 py-1"
             value={axisMode}
             onChange={(e) => setAxisMode(e.target.value as AxisMode)}
           >
-            <option value="auto">Fit to the data</option>
-            <option value="symmetric">Symmetric around zero</option>
-            <option value="manual">Set min and max</option>
+            <option value="auto">{t("fig.axisAuto")}</option>
+            <option value="symmetric">{t("fig.axisSymmetric")}</option>
+            <option value="manual">{t("fig.axisManual")}</option>
           </select>
           <p className="text-muted-foreground">
             {axisMode === "symmetric"
-              ? "Equal range either side of zero on both axes — spread stays comparable between plots."
+              ? t("fig.axisSymHint")
               : axisMode === "manual"
-                ? "Fixed limits, so several plots can share one scale."
-                : "Limits follow the range of the scores."}
+                ? t("fig.axisManualHint")
+                : t("fig.axisAutoHint")}
           </p>
           {axisMode === "manual" && (
             <div className="grid grid-cols-2 gap-2">
@@ -203,57 +205,57 @@ export function FigureStylePanel({
       </Card>
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">Shape references</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.shapeRefs")}</CardTitle></CardHeader>
         <CardContent className="space-y-2 text-xs">
           <select
             className="w-full rounded border bg-background px-1.5 py-1"
             value={refSource}
             onChange={(e) => setRefSource(e.target.value as RefSource)}
           >
-            <option value="wireframe">Closest specimen — wireframe</option>
-            <option value="photo">Closest specimen — photo</option>
-            <option value="deformation">Average shape change</option>
+            <option value="wireframe">{t("fig.refWireframe")}</option>
+            <option value="photo">{t("fig.refPhoto")}</option>
+            <option value="deformation">{t("fig.refDeformation")}</option>
           </select>
           <p className="text-muted-foreground">
             {refSource === "deformation"
-              ? "The mean shape pushed along the axis — the overall trend rather than any one specimen."
-              : "The specimen that sits closest to each point on the axis, so the drawings show shapes that really exist."}
+              ? t("fig.refDeformHint")
+              : t("fig.refSpecimenHint")}
           </p>
 
           {refSource === "photo" && (
             <div className="space-y-1 rounded border bg-muted/30 p-2">
               <Button size="sm" variant="outline" className="h-7 w-full text-xs" onClick={onPickImageFolder}>
-                <FolderOpen size={12} /> {imageDir ? "Change image folder…" : "Choose image folder…"}
+                <FolderOpen size={12} /> {imageDir ? t("fig.changeImageFolder") : t("fig.chooseImageFolder")}
               </Button>
               {imageDir ? (
                 <p className="break-all text-[10px] text-muted-foreground">{imageDir}</p>
               ) : (
                 <p className="text-[10px] text-muted-foreground">
-                  Point at the folder holding the specimen images. Without it the wireframe is drawn instead.
+                  {t("fig.imageFolderHint")}
                 </p>
               )}
             </div>
           )}
 
           <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs">Along PC on x</Label>
+            <Label className="text-xs">{t("fig.alongX")}</Label>
             <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
           </div>
           <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs">Along PC on y</Label>
+            <Label className="text-xs">{t("fig.alongY")}</Label>
             <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
           </div>
           {refSource !== "deformation" && (
             <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs">Show specimen IDs</Label>
+              <Label className="text-xs">{t("fig.showIds")}</Label>
               <Switch checked={refShowIds} onCheckedChange={setRefShowIds} />
             </div>
           )}
           <div className="flex items-center justify-between gap-2 pt-1">
-            <Label className="text-xs">Legend</Label>
+            <Label className="text-xs">{t("fig.legend")}</Label>
             <Switch checked={showLegend} onCheckedChange={setShowLegend} />
           </div>
-          <p className="text-muted-foreground">Drag the legend to move it inside the plot.</p>
+          <p className="text-muted-foreground">{t("fig.dragLegend")}</p>
         </CardContent>
       </Card>
     </div>

@@ -75,7 +75,7 @@ export default function CVA() {
               </TooltipContent>
             </UITooltip>
           </TooltipProvider>
-          <label className="text-xs text-muted-foreground">Permutations:</label>
+          <label className="text-xs text-muted-foreground">{t("plot.permutations")}</label>
           <select className="text-xs border rounded px-2 py-1" value={permutations} onChange={(e) => setPermutations(+e.target.value)}>
             {[99, 499, 999, 4999].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -87,7 +87,7 @@ export default function CVA() {
         </div>
       }
     >
-      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">Assign groups to specimens in Data Manager first (extract a classifier from the ID string).</p>}
+      {!groupsAvailable && <p className="mb-3 text-sm text-amber-600 dark:text-amber-400">{t("ui.needGroups")}</p>}
       {errors["cva"] && <p className="mb-3 text-sm text-destructive">{errors["cva"]}</p>}
 
       {!cva ? (
@@ -95,9 +95,9 @@ export default function CVA() {
       ) : (
         <Tabs defaultValue="scores">
           <TabsList>
-            <TabsTrigger value="scores">CV Scores</TabsTrigger>
-            <TabsTrigger value="distances">Mahalanobis Distances</TabsTrigger>
-            <TabsTrigger value="variance">Variance Explained</TabsTrigger>
+            <TabsTrigger value="scores">{t("cva.scores")}</TabsTrigger>
+            <TabsTrigger value="distances">{t("cva.distances")}</TabsTrigger>
+            <TabsTrigger value="variance">{t("pca.varianceExplained")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scores">
@@ -118,11 +118,11 @@ export default function CVA() {
 
           <TabsContent value="distances">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Pairwise Mahalanobis Distances</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{t("cva.pairwise")}</CardTitle></CardHeader>
               <CardContent>
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted-foreground border-b">
-                    <tr><th className="text-left pb-2">Group 1</th><th className="text-left pb-2">Group 2</th><th className="text-right pb-2">Distance</th></tr>
+                    <tr><th className="text-left pb-2">{t("ui.group1")}</th><th className="text-left pb-2">{t("ui.group2")}</th><th className="text-right pb-2">{t("ui.distance")}</th></tr>
                   </thead>
                   <tbody>
                     {cva.mahalanobis_distances.map((d, i) => (
@@ -140,11 +140,11 @@ export default function CVA() {
 
           <TabsContent value="variance">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Eigenvalues & Variance</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{t("cva.eigenvalues")}</CardTitle></CardHeader>
               <CardContent>
                 <table className="w-full text-sm">
                   <thead className="text-xs text-muted-foreground border-b">
-                    <tr><th className="text-left pb-2">CV</th><th className="text-right pb-2">Eigenvalue</th><th className="text-right pb-2">% Variance</th></tr>
+                    <tr><th className="text-left pb-2">CV</th><th className="text-right pb-2">{t("ui.eigenvalue")}</th><th className="text-right pb-2">% Variance</th></tr>
                   </thead>
                   <tbody>
                     {cva.eigenvalues.map((ev, i) => (
@@ -166,9 +166,10 @@ export default function CVA() {
 }
 
 function NeedsProcrustes({ title }: { title: string }) {
+  const t = useT();
   return (
     <PanelLayout title={title}>
-      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+      <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
     </PanelLayout>
   );
 }

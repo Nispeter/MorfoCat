@@ -534,13 +534,13 @@ export default function Digitizer() {
         <div className="flex w-56 flex-col gap-3">
           {/* Controls */}
           <Card>
-            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">Controls</CardTitle></CardHeader>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.controls")}</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <Button variant="outline" size="sm" className="w-full" onClick={undoLandmark} disabled={placed === 0}>
-                <Undo2 size={13} /> Undo (Ctrl+Z)
+                <Undo2 size={13} /> {t("digi.undo")}
               </Button>
               <Button variant="outline" size="sm" className="w-full text-destructive" onClick={clearSpecimen} disabled={placed === 0}>
-                <Trash2 size={13} /> Clear Specimen
+                <Trash2 size={13} /> {t("digi.clearSpecimen")}
               </Button>
               <Button
                 variant={scaleMode ? "default" : "outline"}
@@ -548,12 +548,12 @@ export default function Digitizer() {
                 className="w-full"
                 onClick={() => setScaleMode((m) => !m)}
               >
-                <Ruler size={13} /> {scaleMode ? "Cancel scale" : "Set Scale"}
+                <Ruler size={13} /> {scaleMode ? t("action.cancel") : t("digi.setScale")}
               </Button>
               <div className="flex items-center justify-between py-0.5">
                 <div className="flex items-center gap-2 text-sm">
                   <Spline size={13} className="text-muted-foreground" />
-                  <span>Connect line</span>
+                  <span>{t("digi.connectLine")}</span>
                 </div>
                 <Switch checked={showLine} onCheckedChange={setShowLine} />
               </div>
@@ -562,7 +562,7 @@ export default function Digitizer() {
 
           {/* Progress */}
           <Card>
-            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">Progress</CardTitle></CardHeader>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.progress")}</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-xs">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground">Fixed LM</span>
@@ -582,7 +582,7 @@ export default function Digitizer() {
                 <span className="font-medium">{specimens.filter((sp) => sp.landmarks.length >= nLandmarks).length}/{specimens.length}</span>
               </div>
               <div className="flex items-center justify-between pt-1">
-                <span className="text-muted-foreground">Scale</span>
+                <span className="text-muted-foreground">{t("ui.scale")}</span>
                 {current?.scale ? (
                   <span className="font-medium text-cyan-500">
                     {current.scale.toPrecision(3)} {current.scaleUnit ?? "unit"}/px
@@ -596,7 +596,7 @@ export default function Digitizer() {
 
           {/* Landmark list */}
           <Card className="flex flex-1 flex-col overflow-hidden">
-            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">Landmarks</CardTitle></CardHeader>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.landmarks")}</CardTitle></CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
               <ScrollArea className="h-full">
                 <div className="space-y-0.5 px-3 pb-3 pt-1">
@@ -658,7 +658,7 @@ export default function Digitizer() {
       <Dialog open={scaleDialog !== null} onOpenChange={(o) => { if (!o) { setScaleDialog(null); setScalePts([]); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>Set scale</DialogTitle>
+            <DialogTitle>{t("digi.setScale")}</DialogTitle>
             <DialogDescription>
               Enter the real length of the segment you just measured
               {scaleDialog ? ` (${scaleDialog.pixelDist.toFixed(1)} px).` : "."}
@@ -666,7 +666,7 @@ export default function Digitizer() {
           </DialogHeader>
           <div className="flex items-end gap-3">
             <div className="flex-1 space-y-1">
-              <Label htmlFor="scale-length">Reference length</Label>
+              <Label htmlFor="scale-length">{t("digi.refLength")}</Label>
               <Input
                 id="scale-length"
                 type="number"
@@ -680,7 +680,7 @@ export default function Digitizer() {
               />
             </div>
             <div className="w-24 space-y-1">
-              <Label htmlFor="scale-unit">Unit</Label>
+              <Label htmlFor="scale-unit">{t("digi.unit")}</Label>
               <Input
                 id="scale-unit"
                 value={scaleUnit}
@@ -696,7 +696,7 @@ export default function Digitizer() {
           )}
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => { setScaleDialog(null); setScalePts([]); }}>
-              Cancel
+              {t("action.cancel")}
             </Button>
             <Button size="sm" onClick={confirmScale}>Set scale</Button>
           </DialogFooter>
