@@ -27,6 +27,8 @@ export default function PCA() {
   const [pcX, setPcX] = useState(0);
   const [pcY, setPcY] = useState(1);
   const [scale, setScale] = useState(2);
+  const [scaleMode, setScaleMode] = useState<"sd" | "value">("sd");
+  const [pcValue, setPcValue] = useState(0.1);
   const [gridDivisions, setGridDivisions] = useState(12);
 
   const active = useDatasetStore((s) => s.activeClassifier);
@@ -52,9 +54,14 @@ export default function PCA() {
     }
   };
 
-  // Compute shape deformation for selected PC at ±scale SD
-  const deformedPlus = pca && consensus ? computeDeformed(consensus, pca.loadings, pca.eigenvalues, pcX, scale) : null;
-  const deformedMinus = pca && consensus ? computeDeformed(consensus, pca.loadings, pca.eigenvalues, pcX, -scale) : null;
+  // How far along the PC axis the shape drawings sit. In "sd" mode the slider
+  // is a multiple of the PC's standard deviation; in "value" mode the user
+  // types the PC score directly (MorphoJ's "scale to factor" option).
+  const pcSD = pca ? Math.sqrt(pca.eigenvalues[pcX] ?? 0) : 0;
+  const amount = scaleMode === "sd" ? scale * pcSD : Math.abs(pcValue);
+  const deformedPlus = pca && consensus ? computeDeformed(consensus, pca.loadings, pcX, amount) : null;
+  const deformedMinus = pca && consensus ? computeDeformed(consensus, pca.loadings, pcX, -amount) : null;
+  const amountLabel = scaleMode === "sd" ? `${scale}SD` : amount.toPrecision(3);
 
   if (!aligned) {
     return (
@@ -139,17 +146,21 @@ export default function PCA() {
           </TabsContent>
 
           <TabsContent value="shapes">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-3">
-                  Shape Deformation along PC{pcX + 1}
-                  <span className="text-xs text-muted-foreground">Scale: ±{scale}SD</span>
-                  <input type="range" min={1} max={4} step={0.5} value={scale} onChange={(e) => setScale(+e.target.value)} className="w-24" />
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex justify-around gap-6">
+            <ChartFrame
+              title={`Shape Deformation along PC${pcX + 1}`}
+              filename={`pca_shapes_pc${pcX + 1}`}
+              controls={
+                <ShapeAmountControls
+                  mode={scaleMode} onMode={setScaleMode}
+                  sd={scale} onSd={setScale}
+                  value={pcValue} onValue={setPcValue}
+                  pcSD={pcSD}
+                />
+              }
+            >
+              <div className="flex justify-around gap-6">
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">−{scale}SD</p>
+                  <p className="text-xs text-muted-foreground mb-2">−{amountLabel}</p>
                   {deformedMinus && consensus && <ShapeGrid consensus={consensus} deformed={deformedMinus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
@@ -157,11 +168,11 @@ export default function PCA() {
                   {consensus && <ShapeGrid consensus={consensus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">+{scale}SD</p>
+                  <p className="text-xs text-muted-foreground mb-2">+{amountLabel}</p>
                   {deformedPlus && consensus && <ShapeGrid consensus={consensus} deformed={deformedPlus} edges={wireframe} />}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </ChartFrame>
           </TabsContent>
 
           <TabsContent value="grid">
@@ -169,8 +180,8 @@ export default function PCA() {
               {([["−", deformedMinus], ["+", deformedPlus]] as const).map(([sign, target]) => (
                 <ChartFrame
                   key={sign}
-                  title={`PC${pcX + 1} at ${sign}${scale}SD`}
-                  filename={`pca_grid_pc${pcX + 1}_${sign === "+" ? "plus" : "minus"}${scale}sd`}
+                  title={`PC${pcX + 1} at ${sign}${amountLabel}`}
+                  filename={`pca_grid_pc${pcX + 1}_${sign === "+" ? "plus" : "minus"}`}
                   controls={
                     <>
                       <span className="text-xs font-normal text-muted-foreground">Grid {gridDivisions}</span>
@@ -217,13 +228,57 @@ export default function PCA() {
   );
 }
 
-function computeDeformed(consensus: number[][], loadings: number[][], eigenvalues: number[], pcIdx: number, scale: number): number[][] {
+/** Choose how far along the PC axis the shape drawings are taken. */
+function ShapeAmountControls({
+  mode, onMode, sd, onSd, value, onValue, pcSD,
+}: {
+  mode: "sd" | "value";
+  onMode: (m: "sd" | "value") => void;
+  sd: number;
+  onSd: (v: number) => void;
+  value: number;
+  onValue: (v: number) => void;
+  pcSD: number;
+}) {
+  return (
+    <>
+      <select
+        className="rounded border bg-background px-1 py-0.5 text-xs font-normal"
+        value={mode}
+        onChange={(e) => onMode(e.target.value as "sd" | "value")}
+      >
+        <option value="sd">± standard deviations</option>
+        <option value="value">exact PC score</option>
+      </select>
+      {mode === "sd" ? (
+        <>
+          <span className="text-xs font-normal text-muted-foreground">±{sd}SD</span>
+          <input type="range" min={1} max={4} step={0.5} value={sd} onChange={(e) => onSd(+e.target.value)} className="w-24" />
+          <span className="text-xs font-normal text-muted-foreground">= {(sd * pcSD).toPrecision(3)}</span>
+        </>
+      ) : (
+        <>
+          <span className="text-xs font-normal text-muted-foreground">±</span>
+          <input
+            type="number" step="any" min={0}
+            value={value}
+            onChange={(e) => onValue(Math.abs(parseFloat(e.target.value) || 0))}
+            className="w-20 rounded border bg-background px-1 py-0.5 text-xs"
+          />
+          <span className="text-xs font-normal text-muted-foreground">= {pcSD > 0 ? (value / pcSD).toFixed(2) : "—"}SD</span>
+        </>
+      )}
+    </>
+  );
+}
+
+/** Consensus shifted `amount` units along the PC's loading vector. */
+function computeDeformed(consensus: number[][], loadings: number[][], pcIdx: number, amount: number): number[][] {
   if (!loadings[0] || pcIdx >= loadings[0].length) return consensus;
-  const sd = Math.sqrt(eigenvalues[pcIdx] || 0);
   const flat = consensus.flat();
   const n_dim = consensus[0].length;
   const loading = loadings.map((l) => l[pcIdx] ?? 0);
-  const deformedFlat = flat.map((v, i) => v + scale * sd * loading[i]);
+  const deformedFlat = flat.map((v, i) => v + amount * loading[i]);
   const result: number[][] = [];
   for (let i = 0; i < consensus.length; i++) {
     result.push(deformedFlat.slice(i * n_dim, (i + 1) * n_dim));
