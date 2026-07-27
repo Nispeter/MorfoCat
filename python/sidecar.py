@@ -11,6 +11,8 @@ from morfoCat.io.morphologika import parse_morphologika, write_morphologika
 from morfoCat.procrustes import procrustes_gpa
 from morfoCat.outliers import detect_outliers
 from morfoCat.covariance import compute_covariance
+from morfoCat.covmatrix_compare import compare_covariance_matrices
+from morfoCat.dfa import run_pairwise_dfa
 from morfoCat.pca import run_pca
 from morfoCat.matrix_corr import matrix_correlation
 from morfoCat.pls import two_block_pls
@@ -18,7 +20,9 @@ from morfoCat.regression import run_regression
 from morfoCat.modularity import test_modularity
 from morfoCat.cva import run_cva
 from morfoCat.lda import run_lda
-from morfoCat.phylo import run_phylo_mapping, run_independent_contrasts
+from morfoCat.phylo import (
+    run_phylo_mapping, run_independent_contrasts, run_phylogenetic_signal,
+)
 from morfoCat.quantgen import run_g_matrix, run_selection_gradient
 
 DISPATCH = {
@@ -54,6 +58,15 @@ DISPATCH = {
         p["aligned"], p["groups"], p.get("permutations", 999)
     ),
     "run_lda": lambda p: run_lda(p["aligned"], p["groups"]),
+    "run_pairwise_dfa": lambda p: run_pairwise_dfa(
+        p["aligned"], p["groups"], p.get("permutations", 999)
+    ),
+    "compare_covariance_matrices": lambda p: compare_covariance_matrices(
+        p["aligned"], p["groups"], p.get("permutations", 999), p.get("n_skewers", 1000)
+    ),
+    "run_phylogenetic_signal": lambda p: run_phylogenetic_signal(
+        p["aligned"], p["tree_newick"], p["ids"], p.get("permutations", 999)
+    ),
     "run_phylo_mapping": lambda p: run_phylo_mapping(
         p["aligned"], p["tree_newick"], p["ids"]
     ),

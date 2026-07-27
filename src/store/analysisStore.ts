@@ -13,6 +13,9 @@ import type {
   SelectionGradientResult,
   CovarianceResult,
   OutlierResult,
+  PairwiseDFAResult,
+  CovComparisonResult,
+  PhyloSignalResult,
 } from "@/lib/ipc";
 
 interface AnalysisState {
@@ -29,6 +32,9 @@ interface AnalysisState {
   selectionGradient: SelectionGradientResult | null;
   covariance: CovarianceResult | null;
   outliers: OutlierResult | null;
+  pairwiseDFA: PairwiseDFAResult | null;
+  covComparison: CovComparisonResult | null;
+  phyloSignal: PhyloSignalResult | null;
 
   loading: Record<string, boolean>;
   errors: Record<string, string | null>;
@@ -46,6 +52,9 @@ interface AnalysisState {
   setSelectionGradient: (r: SelectionGradientResult) => void;
   setCovariance: (r: CovarianceResult) => void;
   setOutliers: (r: OutlierResult) => void;
+  setPairwiseDFA: (r: PairwiseDFAResult) => void;
+  setCovComparison: (r: CovComparisonResult) => void;
+  setPhyloSignal: (r: PhyloSignalResult) => void;
 
   setLoading: (key: string, val: boolean) => void;
   setError: (key: string, err: string | null) => void;
@@ -56,6 +65,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   pca: null, cva: null, lda: null, regression: null, pls: null,
   modularity: null, matrixCorr: null, phyloMapping: null, pic: null,
   gMatrix: null, selectionGradient: null, covariance: null, outliers: null,
+  pairwiseDFA: null, covComparison: null, phyloSignal: null,
   loading: {}, errors: {},
 
   setPCA: (pca) => set({ pca }),
@@ -71,6 +81,9 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
   setSelectionGradient: (selectionGradient) => set({ selectionGradient }),
   setCovariance: (covariance) => set({ covariance }),
   setOutliers: (outliers) => set({ outliers }),
+  setPairwiseDFA: (pairwiseDFA) => set({ pairwiseDFA }),
+  setCovComparison: (covComparison) => set({ covComparison }),
+  setPhyloSignal: (phyloSignal) => set({ phyloSignal }),
 
   setLoading: (key, val) => set((s) => ({ loading: { ...s.loading, [key]: val } })),
   setError: (key, err) => set((s) => ({ errors: { ...s.errors, [key]: err } })),
@@ -78,6 +91,7 @@ export const useAnalysisStore = create<AnalysisState>((set) => ({
     pca: null, cva: null, lda: null, regression: null, pls: null,
     modularity: null, matrixCorr: null, phyloMapping: null, pic: null,
     gMatrix: null, selectionGradient: null, covariance: null, outliers: null,
+    pairwiseDFA: null, covComparison: null, phyloSignal: null,
     loading: {}, errors: {},
   }),
 }));

@@ -25,6 +25,9 @@ from morfoCat.pls import two_block_pls
 from morfoCat.modularity import test_modularity as run_modularity
 from morfoCat.cva import run_cva
 from morfoCat.lda import run_lda
+from morfoCat.dfa import run_pairwise_dfa
+from morfoCat.covmatrix_compare import compare_covariance_matrices
+from morfoCat.phylo import run_phylogenetic_signal
 from morfoCat.quantgen import run_selection_gradient
 from morfoCat.io.tps import parse_tps, write_tps
 
@@ -424,3 +427,161 @@ class TestTPSRoundtrip:
         written = write_tps(landmarks)
         reparsed = parse_tps(written)
         assert len(reparsed["specimens"]) == 3
+
+
+# ── Pairwise DFA ──────────────────────────────────────────────────────────────
+
+class TestPairwiseDFA:
+    @staticmethod
+    def _two_groups(sep=1.0, seed=0, n=12):
+        rng = np.random.default_rng(seed)
+        a = rng.standard_normal((n, 5, 2)) * 0.05
+        b = rng.standard_normal((n, 5, 2)) * 0.05 + sep
+        aligned = np.vstack([a, b]).tolist()
+        groups = ["A"] * n + ["B"] * n
+        return aligned, groups
+
+    def test_one_pair_per_group_combination(self):
+        aligned, groups = self._two_groups()
+        groups = ["A"] * 8 + ["B"] * 8 + ["C"] * 8
+        rng = np.random.default_rng(3)
+        aligned = rng.standard_normal((24, 5, 2)).tolist()
+        res = run_pairwise_dfa(aligned, groups, permutations=19)
+        assert len(res["pairs"]) == 3
+
+    def test_separated_groups_have_larger_distance(self):
+        far, groups = self._two_groups(sep=2.0, seed=1)
+        near, _ = self._two_groups(sep=0.01, seed=1)
+        d_far = run_pairwise_dfa(far, groups, permutations=19)["pairs"][0]
+        d_near = run_pairwise_dfa(near, groups, permutations=19)["pairs"][0]
+        assert d_far["procrustes_distance"] > d_near["procrustes_distance"]
+
+    def test_separated_groups_classify_perfectly(self):
+        aligned, groups = self._two_groups(sep=5.0, seed=2)
+        pair = run_pairwise_dfa(aligned, groups, permutations=19)["pairs"][0]
+        assert pair["loo_accuracy"] == pytest.approx(1.0)
+
+    def test_confusion_matrix_totals_match_sample_size(self):
+        aligned, groups = self._two_groups(seed=4)
+        pair = run_pairwise_dfa(aligned, groups, permutations=19)["pairs"][0]
+        total = sum(sum(row) for row in pair["loo_confusion_matrix"])
+        assert total == pair["n1"] + pair["n2"]
+
+    def test_p_values_are_valid_probabilities(self):
+        aligned, groups = self._two_groups(seed=5)
+        pair = run_pairwise_dfa(aligned, groups, permutations=49)["pairs"][0]
+        assert 0.0 < pair["p_procrustes"] <= 1.0
+        assert 0.0 < pair["p_mahalanobis"] <= 1.0
+
+    def test_single_group_raises(self):
+        rng = np.random.default_rng(6)
+        aligned = rng.standard_normal((10, 4, 2)).tolist()
+        with pytest.raises(ValueError):
+            run_pairwise_dfa(aligned, ["A"] * 10)
+
+
+# ── Comparison of covariance matrices ─────────────────────────────────────────
+
+class TestCovarianceComparison:
+    def test_identical_structure_correlates_near_one(self):
+        """Two samples drawn from the same covariance should match closely."""
+        rng = np.random.default_rng(0)
+        base = rng.standard_normal((8, 8))
+        cov = base @ base.T
+        draws = rng.multivariate_normal(np.zeros(8), cov, size=400)
+        aligned = draws.reshape(400, 4, 2).tolist()
+        groups = ["A"] * 200 + ["B"] * 200
+        pair = compare_covariance_matrices(aligned, groups, permutations=19, n_skewers=200)["pairs"][0]
+        assert pair["r_without_diagonal"] > 0.8
+        assert pair["random_skewers"] > 0.8
+
+    def test_correlations_are_bounded(self):
+        rng = np.random.default_rng(1)
+        aligned = rng.standard_normal((40, 4, 2)).tolist()
+        groups = ["A"] * 20 + ["B"] * 20
+        pair = compare_covariance_matrices(aligned, groups, permutations=19, n_skewers=100)["pairs"][0]
+        for key in ("r_with_diagonal", "r_without_diagonal", "random_skewers"):
+            assert -1.0 <= pair[key] <= 1.0
+
+    def test_one_pair_per_group_combination(self):
+        rng = np.random.default_rng(2)
+        aligned = rng.standard_normal((30, 4, 2)).tolist()
+        groups = ["A"] * 10 + ["B"] * 10 + ["C"] * 10
+        res = compare_covariance_matrices(aligned, groups, permutations=9, n_skewers=50)
+        assert len(res["pairs"]) == 3
+
+    def test_single_group_raises(self):
+        rng = np.random.default_rng(3)
+        aligned = rng.standard_normal((10, 4, 2)).tolist()
+        with pytest.raises(ValueError):
+            compare_covariance_matrices(aligned, ["A"] * 10)
+
+
+# ── Phylogenetic signal (Kmult) ───────────────────────────────────────────────
+
+class TestPhylogeneticSignal:
+    TREE = "(((A:1,B:1):1,(C:1,D:1):1):1,(E:1,F:1):2);"
+    IDS = ["A", "B", "C", "D", "E", "F"]
+
+    def test_brownian_data_gives_k_near_one(self):
+        """Data simulated on the tree's own covariance should give Kmult ≈ 1."""
+        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        C, tips = _phylo_covariance(_parse_newick(self.TREE))
+        rng = np.random.default_rng(0)
+        L = np.linalg.cholesky(C + np.eye(len(tips)) * 1e-9)
+        # Average many simulations — a single draw is very noisy.
+        ks = []
+        for _ in range(40):
+            Y = L @ rng.standard_normal((len(tips), 8))
+            aligned = Y.reshape(len(tips), 4, 2).tolist()
+            ks.append(run_phylogenetic_signal(aligned, self.TREE, tips, permutations=9)["k_mult"])
+        assert 0.6 < float(np.mean(ks)) < 1.6
+
+    def test_signal_is_positive_and_p_value_valid(self):
+        rng = np.random.default_rng(1)
+        aligned = rng.standard_normal((6, 4, 2)).tolist()
+        res = run_phylogenetic_signal(aligned, self.TREE, self.IDS, permutations=49)
+        assert res["k_mult"] > 0
+        assert 0.0 < res["p_value"] <= 1.0
+
+    def test_strong_clade_difference_is_significant(self):
+        """Shape that tracks the deepest split should show significant signal."""
+        rng = np.random.default_rng(2)
+        noise = rng.standard_normal((6, 4, 2)) * 0.01
+        clade = np.array([0, 0, 0, 0, 5, 5], dtype=float).reshape(6, 1, 1)
+        aligned = (noise + clade).tolist()
+        res = run_phylogenetic_signal(aligned, self.TREE, self.IDS, permutations=199, seed=0)
+        assert res["p_value"] < 0.05
+
+    def test_tips_must_match_specimen_ids(self):
+        rng = np.random.default_rng(3)
+        aligned = rng.standard_normal((6, 4, 2)).tolist()
+        with pytest.raises(ValueError):
+            run_phylogenetic_signal(aligned, self.TREE, ["X"] * 6)
+
+    def test_malformed_newick_raises(self):
+        rng = np.random.default_rng(4)
+        aligned = rng.standard_normal((6, 4, 2)).tolist()
+        with pytest.raises(ValueError):
+            run_phylogenetic_signal(aligned, "((A:1,B:1);", self.IDS)
+
+
+# ── Newick parsing ────────────────────────────────────────────────────────────
+
+class TestNewickParsing:
+    def test_tip_order_follows_the_string(self):
+        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        _, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
+        assert tips == ["A", "B", "C"]
+
+    def test_covariance_diagonal_is_root_to_tip_distance(self):
+        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        C, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
+        assert np.allclose(np.diag(C), [2.0, 2.0, 2.0])
+
+    def test_shared_path_equals_mrca_depth(self):
+        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        C, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
+        i, j, k = tips.index("A"), tips.index("B"), tips.index("C")
+        assert C[i, j] == pytest.approx(1.0)   # A and B share the inner branch
+        assert C[i, k] == pytest.approx(0.0)   # A and C only share the root

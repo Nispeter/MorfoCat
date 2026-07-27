@@ -211,6 +211,67 @@ export interface LDAResult {
 export const runLDA = (aligned: number[][][], groups: string[]) =>
   runAnalysis<LDAResult>("run_lda", { aligned, groups });
 
+// ── Pairwise DFA ──────────────────────────────────────────────────────────────
+
+export interface DFAPair {
+  group1: string;
+  group2: string;
+  n1: number;
+  n2: number;
+  procrustes_distance: number;
+  mahalanobis_distance: number;
+  p_procrustes: number;
+  p_mahalanobis: number;
+  loo_accuracy: number;
+  loo_confusion_matrix: number[][];
+  warning?: string;
+}
+
+export interface PairwiseDFAResult {
+  pairs: DFAPair[];
+  groups: string[];
+  permutations: number;
+  n_specimens: number;
+}
+
+export const runPairwiseDFA = (
+  aligned: number[][][],
+  groups: string[],
+  permutations = 999
+) => runAnalysis<PairwiseDFAResult>("run_pairwise_dfa", { aligned, groups, permutations });
+
+// ── Covariance matrix comparison ──────────────────────────────────────────────
+
+export interface CovComparisonPair {
+  group1: string;
+  group2: string;
+  n1: number;
+  n2: number;
+  r_with_diagonal: number;
+  r_without_diagonal: number;
+  random_skewers: number;
+  p_matrix_correlation: number;
+  p_random_skewers: number;
+  warning?: string;
+}
+
+export interface CovComparisonResult {
+  pairs: CovComparisonPair[];
+  groups: string[];
+  permutations: number;
+  n_skewers: number;
+  n_variables: number;
+}
+
+export const compareCovarianceMatrices = (
+  aligned: number[][][],
+  groups: string[],
+  permutations = 999,
+  n_skewers = 1000
+) => runAnalysis<CovComparisonResult>("compare_covariance_matrices", {
+  aligned, groups, permutations, n_skewers,
+});
+
 // ── Phylogenetics ─────────────────────────────────────────────────────────────
 
 export interface PhyloMappingResult {
@@ -238,6 +299,25 @@ export const runIndependentContrasts = (
   tree_newick: string,
   ids: string[]
 ) => runAnalysis<PICResult>("run_independent_contrasts", { aligned, tree_newick, ids });
+
+export interface PhyloSignalResult {
+  k_mult: number;
+  p_value: number;
+  permutations: number;
+  null_distribution: number[];
+  n_tips: number;
+  tip_ids: string[];
+  method: string;
+}
+
+export const runPhylogeneticSignal = (
+  aligned: number[][][],
+  tree_newick: string,
+  ids: string[],
+  permutations = 999
+) => runAnalysis<PhyloSignalResult>("run_phylogenetic_signal", {
+  aligned, tree_newick, ids, permutations,
+});
 
 // ── Quantitative genetics ─────────────────────────────────────────────────────
 
