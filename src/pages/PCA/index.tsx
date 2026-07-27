@@ -143,7 +143,7 @@ export default function PCA() {
   if (!aligned) {
     return (
       <PanelLayout title={t("page.pca.title")}>
-        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">Run Procrustes Fit first.</div>
+        <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">{t("ui.needProcrustes")}</div>
       </PanelLayout>
     );
   }
@@ -179,16 +179,16 @@ export default function PCA() {
       ) : (
         <Tabs defaultValue="scree" className="h-full">
           <TabsList>
-            <TabsTrigger value="scree">Scree Plot</TabsTrigger>
-            <TabsTrigger value="biplot">Biplot</TabsTrigger>
-            <TabsTrigger value="figure">Figure</TabsTrigger>
-            <TabsTrigger value="shapes">Shape Deformation</TabsTrigger>
-            <TabsTrigger value="grid">Transformation Grid</TabsTrigger>
-            <TabsTrigger value="table">PC Scores</TabsTrigger>
+            <TabsTrigger value="scree">{t("pca.scree")}</TabsTrigger>
+            <TabsTrigger value="biplot">{t("pca.biplot")}</TabsTrigger>
+            <TabsTrigger value="figure">{t("pca.figure")}</TabsTrigger>
+            <TabsTrigger value="shapes">{t("pca.shapeDeform")}</TabsTrigger>
+            <TabsTrigger value="grid">{t("pca.transformGrid")}</TabsTrigger>
+            <TabsTrigger value="table">{t("pca.scoresTab")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="scree">
-            <ChartFrame title="Variance Explained" filename="pca_scree">
+            <ChartFrame title={t("pca.varianceExplained")} filename="pca_scree">
               <ScreePlot pctVariance={pca.pct_variance} cumulativePct={pca.cumulative_pct} selectedPC={pcX} onSelectPC={setPcX} />
               <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
                 {pca.pct_variance.slice(0, 8).map((pct, i) => (
@@ -203,15 +203,15 @@ export default function PCA() {
 
           <TabsContent value="biplot">
             <ChartFrame
-              title="Biplot"
+              title={t("pca.biplot")}
               filename={`pca_biplot_pc${pcX + 1}_pc${pcY + 1}`}
               controls={
                 <>
-                  <span className="text-xs font-normal text-muted-foreground">PC axes:</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t("pca.pcAxes")}</span>
                   <select className="rounded border bg-background px-1 py-0.5 text-xs" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
                     {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                   </select>
-                  <span className="text-xs font-normal text-muted-foreground">vs</span>
+                  <span className="text-xs font-normal text-muted-foreground">{t("pca.vs")}</span>
                   <select className="rounded border bg-background px-1 py-0.5 text-xs" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
                     {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                   </select>
@@ -233,7 +233,7 @@ export default function PCA() {
                     <select className="rounded border bg-background px-1 py-0.5 text-xs font-normal" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
                       {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                     </select>
-                    <span className="text-xs font-normal text-muted-foreground">vs</span>
+                    <span className="text-xs font-normal text-muted-foreground">{t("pca.vs")}</span>
                     <select className="rounded border bg-background px-1 py-0.5 text-xs font-normal" value={pcY} onChange={(e) => setPcY(+e.target.value)}>
                       {pca.pct_variance.slice(0, 10).map((_, i) => <option key={i} value={i}>PC{i + 1}</option>)}
                     </select>
@@ -270,7 +270,7 @@ export default function PCA() {
 
           <TabsContent value="shapes">
             <ChartFrame
-              title={`Shape Deformation along PC${pcX + 1}`}
+              title={`${t("pca.deformAlong")} PC${pcX + 1}`}
               filename={`pca_shapes_pc${pcX + 1}`}
               controls={
                 <ShapeAmountControls
@@ -287,7 +287,7 @@ export default function PCA() {
                   {deformedMinus && consensus && <ShapeGrid consensus={consensus} deformed={deformedMinus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-2">Consensus</p>
+                  <p className="text-xs text-muted-foreground mb-2">{t("pca.consensus")}</p>
                   {consensus && <ShapeGrid consensus={consensus} edges={wireframe} />}
                 </div>
                 <div className="text-center">
@@ -303,11 +303,11 @@ export default function PCA() {
               {([["−", deformedMinus], ["+", deformedPlus]] as const).map(([sign, target]) => (
                 <ChartFrame
                   key={sign}
-                  title={`PC${pcX + 1} at ${sign}${amountLabel}`}
+                  title={`PC${pcX + 1} ${t("pca.at")} ${sign}${amountLabel}`}
                   filename={`pca_grid_pc${pcX + 1}_${sign === "+" ? "plus" : "minus"}`}
                   controls={
                     <>
-                      <span className="text-xs font-normal text-muted-foreground">Grid {gridDivisions}</span>
+                      <span className="text-xs font-normal text-muted-foreground">{t("pca.grid")} {gridDivisions}</span>
                       <input type="range" min={6} max={24} step={2} value={gridDivisions} onChange={(e) => setGridDivisions(+e.target.value)} className="w-20" />
                     </>
                   }
@@ -324,7 +324,7 @@ export default function PCA() {
 
           <TabsContent value="table">
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">PC Scores (first 6 PCs)</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{t("pca.scoresFirst6")}</CardTitle></CardHeader>
               <CardContent className="overflow-auto max-h-96">
                 <table className="w-full text-xs">
                   <thead className="sticky top-0 bg-card border-b">
@@ -363,6 +363,7 @@ function ShapeAmountControls({
   onValue: (v: number) => void;
   pcSD: number;
 }) {
+  const t = useT();
   return (
     <>
       <select
@@ -370,8 +371,8 @@ function ShapeAmountControls({
         value={mode}
         onChange={(e) => onMode(e.target.value as "sd" | "value")}
       >
-        <option value="sd">± standard deviations</option>
-        <option value="value">exact PC score</option>
+        <option value="sd">{t("pca.bySD")}</option>
+        <option value="value">{t("pca.byValue")}</option>
       </select>
       {mode === "sd" ? (
         <>

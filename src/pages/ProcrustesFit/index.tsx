@@ -88,18 +88,18 @@ export default function ProcrustesFit() {
         {/* Options */}
         <div className="space-y-3">
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Options</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.options")}</CardTitle></CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1">
-                  <Label htmlFor="sym">Object symmetry</Label>
+                  <Label htmlFor="sym">{t("procrustes.symmetry")}</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle size={12} className="text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-56 text-xs">
-                        Enforces bilateral symmetry by averaging each specimen with its mirror image (Mardia et al. 2000). Requires symmetric landmark pairs.
+                        {t("proc.symmetryHelp")}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
@@ -108,21 +108,21 @@ export default function ProcrustesFit() {
               </div>
               <div className="flex items-center justify-between gap-2">
                 <span className="flex items-center gap-1">
-                  <Label htmlFor="align-pcs">Align by principal axes</Label>
+                  <Label htmlFor="align-pcs">{t("procrustes.alignPCs")}</Label>
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <HelpCircle size={12} className="text-muted-foreground cursor-help" />
                       </TooltipTrigger>
                       <TooltipContent className="max-w-56 text-xs">
-                        Orients the aligned sample along the main axis of shape variation, so plots and shape drawings sit upright.
+                        {t("proc.alignHelp")}
                       </TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
                 </span>
                 <Switch id="align-pcs" checked={alignPCs} onCheckedChange={setAlignPCs} />
               </div>
-              <p className="text-xs text-muted-foreground">{included.length} specimens included</p>
+              <p className="text-xs text-muted-foreground">{included.length} {t("proc.included")}</p>
             </CardContent>
           </Card>
 
@@ -134,11 +134,11 @@ export default function ProcrustesFit() {
           )}
           {aligned && consensus && (
             <Card>
-              <CardHeader className="pb-2"><CardTitle className="text-sm">Result</CardTitle></CardHeader>
+              <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.result")}</CardTitle></CardHeader>
               <CardContent className="text-xs space-y-1">
-                <p>Specimens: {aligned.length}</p>
-                <p>Landmarks: {consensus.length}</p>
-                <p>Mean Procrustean distance: {(procDist!.reduce((a, b) => a + b, 0) / procDist!.length).toExponential(3)}</p>
+                <p>{t("ui.specimens")}: {aligned.length}</p>
+                <p>{t("ui.landmarks")}: {consensus.length}</p>
+                <p>{t("proc.meanDistance")}: {(procDist!.reduce((a, b) => a + b, 0) / procDist!.length).toExponential(3)}</p>
               </CardContent>
             </Card>
           )}
@@ -153,7 +153,7 @@ export default function ProcrustesFit() {
           ) : (
             <>
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Consensus Shape</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t("proc.consensusShape")}</CardTitle></CardHeader>
                 <CardContent>
                   {is3D ? (
                     <LandmarkViewer3D landmarks={consensus!} showLabels />
@@ -164,7 +164,7 @@ export default function ProcrustesFit() {
               </Card>
 
               <ChartFrame
-                title="Procrustes Distances"
+                title={t("proc.distances")}
                 filename="procrustes_distances"
                 controls={
                   <select className="rounded border bg-background px-1 py-0.5 text-xs" value={selectedSpec} onChange={(e) => setSelectedSpec(+e.target.value)}>
@@ -183,7 +183,7 @@ export default function ProcrustesFit() {
                     </BarChart>
                   </ResponsiveContainer>
                   <div>
-                    <p className="text-xs text-muted-foreground mb-2">Selected specimen</p>
+                    <p className="text-xs text-muted-foreground mb-2">{t("proc.selectedSpecimen")}</p>
                     {is3D ? (
                       <LandmarkViewer3D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} />
                     ) : (
@@ -194,7 +194,7 @@ export default function ProcrustesFit() {
               </ChartFrame>
 
               <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-sm">Shape Variation (PC1 extremes preview)</CardTitle></CardHeader>
+                <CardHeader className="pb-2"><CardTitle className="text-sm">{t("proc.shapeVariation")}</CardTitle></CardHeader>
                 <CardContent className="flex gap-6">
                   <ShapeGrid consensus={consensus!} edges={wireframe} />
                 </CardContent>
@@ -212,6 +212,7 @@ export default function ProcrustesFit() {
  * object symmetry knows how to reflect a specimen onto itself.
  */
 function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
+  const t = useT();
   const symPairs = useDatasetStore((s) => s.symPairs);
   const midlineLms = useDatasetStore((s) => s.midlineLms);
   const addSymPair = useDatasetStore((s) => s.addSymPair);
@@ -230,11 +231,11 @@ function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm">Symmetric landmarks</CardTitle>
+        <CardTitle className="text-sm">{t("procrustes.symLandmarks")}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3 text-xs">
         <p className="text-muted-foreground">
-          Pair each landmark on one side with its mirror on the other side.
+          {t("proc.pairEach")}
         </p>
 
         <div className="flex items-center gap-1.5">
@@ -283,7 +284,7 @@ function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
                 <button
                   onClick={() => removeSymPair(i)}
                   className="text-muted-foreground hover:text-destructive"
-                  title="Remove pair"
+                  title={t("proc.removePair")}
                 >
                   ×
                 </button>
@@ -293,7 +294,7 @@ function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
         )}
 
         <div className="space-y-1 border-t pt-2">
-          <p className="text-muted-foreground">Midline landmarks (click to toggle)</p>
+          <p className="text-muted-foreground">{t("procrustes.midline")}</p>
           <div className="flex flex-wrap gap-1">
             {Array.from({ length: nLandmarks }, (_, i) => {
               const isMid = midlineLms.includes(i);
@@ -320,7 +321,7 @@ function SymmetryCard({ nLandmarks }: { nLandmarks: number }) {
 
         {(symPairs.length > 0 || midlineLms.length > 0) && (
           <Button size="sm" variant="ghost" className="h-6 w-full text-xs" onClick={clearSymmetry}>
-            Clear all
+            {t("proc.clearAll")}
           </Button>
         )}
       </CardContent>
@@ -333,7 +334,7 @@ function NoData() {
   return (
     <PanelLayout title={t("page.procrustes.title")}>
       <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-        Import a dataset in Data Manager first.
+        {t("ui.needDataset")}
       </div>
     </PanelLayout>
   );

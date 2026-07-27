@@ -55,7 +55,7 @@ export default function Outliers() {
     return (
       <PanelLayout title={t("page.outliers.title")}>
         <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">
-          Run Procrustes Fit first.
+          {t("ui.needProcrustes")}
         </div>
       </PanelLayout>
     );
@@ -97,18 +97,18 @@ export default function Outliers() {
     >
       <div className="space-y-4">
         <div className="flex items-center gap-4">
-          <label className="text-sm">Z-score threshold:</label>
+          <label className="text-sm">{t("out.threshold")}</label>
           <input type="range" min={1} max={5} step={0.5} value={threshold} onChange={(e) => setThreshold(+e.target.value)} className="w-32" />
           <span className="text-sm font-mono">±{threshold}</span>
           <Badge variant={flagged.length > 0 ? "destructive" : "secondary"}>
-            {flagged.length} flagged
+            {flagged.length} {t("out.flagged")}
           </Badge>
         </div>
 
         {errors["outliers"] && <p className="text-xs text-destructive">{errors["outliers"]}</p>}
 
         <ChartFrame
-          title="Distance from the mean shape"
+          title={t("out.distanceTitle")}
           filename={`outlier_${metric}_distances`}
           controls={
             <select
@@ -128,13 +128,13 @@ export default function Outliers() {
             onSelect={setReviewIdx}
           />
           <p className="mt-1 text-xs text-muted-foreground">
-            One line per specimen — click a line to review its landmarks.
+            {t("out.oneLine")}{" "}
             {metric === "mahalanobis" &&
-              " Mahalanobis distance weights each direction of shape change by how much the sample normally varies in it."}
+              t("out.mahalanobisNote")}
           </p>
         </ChartFrame>
 
-        <ChartFrame title="Z-scores of Procrustes Distances" filename="outlier_zscores">
+        <ChartFrame title={t("out.zscoresTitle")} filename="outlier_zscores">
             <ResponsiveContainer width="100%" height={260}>
               <BarChart data={chartData} margin={{ top: 4, right: 4, bottom: 24, left: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -154,11 +154,11 @@ export default function Outliers() {
 
         {flagged.length > 0 && (
           <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm">Flagged Specimens</CardTitle></CardHeader>
+            <CardHeader className="pb-2"><CardTitle className="text-sm">{t("out.flaggedSpecimens")}</CardTitle></CardHeader>
             <CardContent>
               <table className="w-full text-sm">
                 <thead className="text-xs text-muted-foreground">
-                  <tr><th className="text-left pb-2">ID</th><th className="text-right pb-2">Z-score</th><th className="text-right pb-2">Procrustean dist.</th><th className="text-right pb-2">Mahalanobis</th><th className="text-right pb-2">Action</th></tr>
+                  <tr><th className="text-left pb-2">ID</th><th className="text-right pb-2">Z</th><th className="text-right pb-2">{t("out.procDist")}</th><th className="text-right pb-2">Mahalanobis</th><th className="text-right pb-2">{t("ui.action")}</th></tr>
                 </thead>
                 <tbody>
                   {flagged.map((d) => (
@@ -171,11 +171,11 @@ export default function Outliers() {
                         <div className="flex justify-end gap-1.5">
                           <Button size="sm" variant="outline" className="h-6 px-2 text-xs"
                             onClick={() => setReviewIdx(d.idx)}>
-                            <Eye size={11} /> Review
+                            <Eye size={11} /> {t("action.review")}
                           </Button>
                           <Button size="sm" variant="outline" className="h-6 px-2 text-xs"
                             onClick={() => toggleSpecimen(dataset!.specimens.findIndex((s) => s.id === d.id))}>
-                            Exclude
+                            {t("action.exclude")}
                           </Button>
                         </div>
                       </td>
@@ -191,22 +191,22 @@ export default function Outliers() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center justify-between">
-                <span>Review landmarks · {chartData[reviewIdx]?.id ?? `#${reviewIdx + 1}`}</span>
-                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setReviewIdx(null)}>Close</Button>
+                <span>{t("out.reviewLandmarks")} · {chartData[reviewIdx]?.id ?? `#${reviewIdx + 1}`}</span>
+                <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setReviewIdx(null)}>{t("ui.close")}</Button>
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-[1fr_260px] gap-4">
               <LandmarkViewer2D landmarks={aligned[reviewIdx]} consensus={consensus} showLabels width={420} height={320} />
               <div className="space-y-3 text-sm">
                 <p className="text-xs text-muted-foreground">
-                  If a landmark looks out of place, its number is likely swapped with a neighbour. Fix the order below — the change applies to every specimen, then re-run Procrustes Fit.
+                  {t("out.swapHint")}
                 </p>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs">Swap landmark</span>
+                  <span className="text-xs">{t("out.swapLandmark")}</span>
                   <select className="rounded border px-2 py-1 text-xs" value={swapA} onChange={(e) => setSwapA(+e.target.value)}>
                     {Array.from({ length: nLm }, (_, i) => <option key={i} value={i}>{i + 1}</option>)}
                   </select>
-                  <span className="text-xs">with</span>
+                  <span className="text-xs">{t("out.swapWith")}</span>
                   <select className="rounded border px-2 py-1 text-xs" value={swapB} onChange={(e) => setSwapB(+e.target.value)}>
                     {Array.from({ length: nLm }, (_, i) => <option key={i} value={i}>{i + 1}</option>)}
                   </select>
@@ -220,7 +220,7 @@ export default function Outliers() {
                     toast.success(`Swapped landmarks ${swapA + 1} and ${swapB + 1}`, { description: "Re-run Procrustes Fit to update the alignment." });
                   }}
                 >
-                  <ArrowLeftRight size={13} /> Swap landmarks
+                  <ArrowLeftRight size={13} /> {t("out.swapBtn")}
                 </Button>
               </div>
             </CardContent>
