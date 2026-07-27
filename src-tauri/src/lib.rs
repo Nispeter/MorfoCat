@@ -10,6 +10,7 @@ pub fn run() {
             commands::read_file_b64,
             commands::write_text_file,
             commands::ensure_dir,
+            commands::list_dir_images,
         ])
         .run(tauri::generate_context!())
         .expect("error while running MorfoCat");

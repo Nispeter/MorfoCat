@@ -362,3 +362,7 @@ export const writeTextFile = (path: string, content: string): Promise<void> =>
 
 export const ensureDir = (path: string): Promise<void> =>
   invoke<void>("ensure_dir", { path });
+
+/** Absolute paths of every image file directly inside a folder, name-sorted. */
+export const listDirImages = (path: string): Promise<string[]> =>
+  invoke<string[]>("list_dir_images", { path });

@@ -90,3 +90,30 @@ pub async fn write_text_file(path: String, content: String) -> Result<(), String
 pub async fn ensure_dir(path: String) -> Result<(), String> {
     std::fs::create_dir_all(&path).map_err(|e| e.to_string())
 }
+
+const IMAGE_EXTENSIONS: [&str; 6] = ["png", "jpg", "jpeg", "tif", "tiff", "bmp"];
+
+/// List every image file directly inside `path`, sorted by file name.
+/// Used by "Add folder…" in Image Import so a whole folder can be imported at once.
+#[tauri::command]
+pub async fn list_dir_images(path: String) -> Result<Vec<String>, String> {
+    let entries = std::fs::read_dir(&path)
+        .map_err(|e| format!("Cannot read folder '{}': {}", path, e))?;
+
+    let mut images: Vec<String> = entries
+        .filter_map(|entry| entry.ok())
+        .filter(|entry| entry.path().is_file())
+        .filter(|entry| {
+            entry
+                .path()
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|e| IMAGE_EXTENSIONS.contains(&e.to_lowercase().as_str()))
+                .unwrap_or(false)
+        })
+        .map(|entry| entry.path().to_string_lossy().replace('\\', "/"))
+        .collect();
+
+    images.sort_by_key(|p| p.to_lowercase());
+    Ok(images)
+}

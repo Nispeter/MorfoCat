@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDigitizerStore } from "@/store/digitizerStore";
 import { useNavStore } from "@/store/navStore";
 import { writeTPS } from "@/lib/parsers";
-import { writeTextFile } from "@/lib/ipc";
+import { writeTextFile, listDirImages } from "@/lib/ipc";
 import { Images, FolderOpen, X, ArrowRight } from "lucide-react";
 
 interface ImageEntry {
@@ -38,21 +38,47 @@ export default function ImageImport() {
   const setSession = useDigitizerStore((s) => s.setSession);
   const navigate = useNavStore((s) => s.navigate);
 
+  // Add paths to the list, skipping any that are already there.
+  const addPaths = useCallback((paths: string[]) => {
+    let added = 0;
+    setImages((prev) => {
+      const existing = new Set(prev.map((e) => e.path));
+      const newEntries = paths
+        .filter((p) => !existing.has(p))
+        .map((p) => ({ path: p, base: basename(p) }));
+      added = newEntries.length;
+      return [...prev, ...newEntries];
+    });
+    return added;
+  }, []);
+
   const pickImages = useCallback(async () => {
     const result = await open({
       multiple: true,
       filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "tif", "tiff", "bmp"] }],
     });
     if (!result) return;
-    const paths = Array.isArray(result) ? result : [result];
-    setImages((prev) => {
-      const existing = new Set(prev.map((e) => e.path));
-      const newEntries = paths
-        .filter((p) => !existing.has(p))
-        .map((p) => ({ path: p, base: basename(p) }));
-      return [...prev, ...newEntries];
-    });
-  }, []);
+    addPaths(Array.isArray(result) ? result : [result]);
+  }, [addPaths]);
+
+  // Pick a folder and take every image inside it, in file-name order.
+  const pickFolder = useCallback(async () => {
+    const folder = await open({ directory: true, multiple: false });
+    if (!folder || Array.isArray(folder)) return;
+    try {
+      const found = await listDirImages(folder);
+      if (found.length === 0) {
+        toast.error("No images in that folder", { description: "Looked for PNG, JPG, TIF and BMP files." });
+        return;
+      }
+      const added = addPaths(found);
+      toast.success(`Added ${added} image${added !== 1 ? "s" : ""}`, {
+        description: added < found.length ? `${found.length - added} were already in the list.` : basename(folder),
+      });
+    } catch (e) {
+      toast.error("Could not read folder", { description: e instanceof Error ? e.message : String(e) });
+    }
+  }, [addPaths]);
 
   const removeImage = useCallback((path: string) => {
     setImages((prev) => prev.filter((e) => e.path !== path));
@@ -134,17 +160,25 @@ export default function ImageImport() {
         <div className="flex flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={pickImages}>
-              <FolderOpen size={14} /> Pick Images…
+              <Images size={14} /> Pick Images…
+            </Button>
+            <Button variant="outline" size="sm" onClick={pickFolder}>
+              <FolderOpen size={14} /> Add Folder…
             </Button>
             {images.length > 0 && (
-              <span className="text-sm text-muted-foreground">{images.length} image{images.length !== 1 ? "s" : ""} selected</span>
+              <>
+                <span className="text-sm text-muted-foreground">{images.length} image{images.length !== 1 ? "s" : ""} selected</span>
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setImages([])}>
+                  Clear
+                </Button>
+              </>
             )}
           </div>
 
           {images.length === 0 ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-muted-foreground/25 text-muted-foreground">
               <Images size={36} />
-              <p className="text-sm">No images yet — click "Pick Images" to add PNG / JPG files</p>
+              <p className="text-sm">No images yet — pick individual files, or add a whole folder at once</p>
             </div>
           ) : (
             <Card className="flex flex-1 flex-col overflow-hidden">
