@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScreePlot } from "@/components/plots/ScreePlot";
 import { BiPlot } from "@/components/plots/BiPlot";
 import { ShapeGrid } from "@/components/plots/ShapeGrid";
+import { TpsGrid } from "@/components/plots/TpsGrid";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runPCA } from "@/lib/ipc";
@@ -25,6 +26,7 @@ export default function PCA() {
   const [pcX, setPcX] = useState(0);
   const [pcY, setPcY] = useState(1);
   const [scale, setScale] = useState(2);
+  const [gridDivisions, setGridDivisions] = useState(12);
 
   const active = useDatasetStore((s) => s.activeClassifier);
   const wireframe = useDatasetStore((s) => s.wireframe);
@@ -95,6 +97,7 @@ export default function PCA() {
             <TabsTrigger value="scree">Scree Plot</TabsTrigger>
             <TabsTrigger value="biplot">Biplot</TabsTrigger>
             <TabsTrigger value="shapes">Shape Deformation</TabsTrigger>
+            <TabsTrigger value="grid">Transformation Grid</TabsTrigger>
             <TabsTrigger value="table">PC Scores</TabsTrigger>
           </TabsList>
 
@@ -158,6 +161,36 @@ export default function PCA() {
                 <div className="text-center">
                   <p className="text-xs text-muted-foreground mb-2">+{scale}SD</p>
                   {deformedPlus && consensus && <ShapeGrid consensus={consensus} deformed={deformedPlus} edges={wireframe} />}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="grid">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-3">
+                  Transformation Grid along PC{pcX + 1}
+                  <span className="text-xs text-muted-foreground">Scale: ±{scale}SD</span>
+                  <input type="range" min={1} max={4} step={0.5} value={scale} onChange={(e) => setScale(+e.target.value)} className="w-24" />
+                  <span className="ml-auto text-xs font-normal text-muted-foreground">
+                    Grid: {gridDivisions}
+                  </span>
+                  <input type="range" min={6} max={24} step={2} value={gridDivisions} onChange={(e) => setGridDivisions(+e.target.value)} className="w-20" />
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex justify-around gap-6">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-2">−{scale}SD</p>
+                  {deformedMinus && consensus && (
+                    <TpsGrid source={consensus} target={deformedMinus} edges={wireframe} divisions={gridDivisions} />
+                  )}
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-2">+{scale}SD</p>
+                  {deformedPlus && consensus && (
+                    <TpsGrid source={consensus} target={deformedPlus} edges={wireframe} divisions={gridDivisions} />
+                  )}
                 </div>
               </CardContent>
             </Card>
