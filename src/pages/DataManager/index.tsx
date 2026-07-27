@@ -13,7 +13,10 @@ import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
-import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check } from "lucide-react";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma } from "lucide-react";
 
 function formatRelTime(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -73,6 +76,7 @@ export default function DataManager() {
     dataset, setDataset, toggleSpecimen, clear,
     activeClassifier, extractClassifier, setSpecimenClassifier,
     renameClassifier, deleteClassifier, setActiveClassifier, appendSpecimens,
+    subsetLandmarks, averageByClassifier,
   } = useDatasetStore();
   const clearAnalyses = useAnalysisStore((s) => s.clearAll);
   const { files: recentFiles, addRecentFile, removeRecentFile } = useRecentFilesStore();
@@ -311,6 +315,12 @@ export default function DataManager() {
               onRename={renameClassifier}
               onDelete={deleteClassifier}
             />
+            <TransformCard
+              nLandmarks={dataset.n_landmarks}
+              classifiers={dataset.classifierNames ?? []}
+              onSubset={subsetLandmarks}
+              onAverage={averageByClassifier}
+            />
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm">Dataset Summary</CardTitle>
@@ -500,6 +510,113 @@ function ClassifiersCard({
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+/** Dataset-wide transforms: keep a landmark subset, or collapse to group averages. */
+function TransformCard({
+  nLandmarks, classifiers, onSubset, onAverage,
+}: {
+  nLandmarks: number;
+  classifiers: string[];
+  onSubset: (keep: number[]) => { kept: number } | { error: string };
+  onAverage: (name: string) => { groups: number } | { error: string };
+}) {
+  const [subsetOpen, setSubsetOpen] = useState(false);
+  const [keep, setKeep] = useState<number[]>([]);
+  const [avgBy, setAvgBy] = useState(classifiers[0] ?? "");
+
+  const openSubset = () => {
+    setKeep(Array.from({ length: nLandmarks }, (_, i) => i));
+    setSubsetOpen(true);
+  };
+
+  const applySubset = () => {
+    const res = onSubset(keep);
+    if ("error" in res) {
+      toast.error("Cannot subset landmarks", { description: res.error });
+      return;
+    }
+    setSubsetOpen(false);
+    toast.success(`Kept ${res.kept} landmarks`, { description: "Re-run Procrustes Fit to update the alignment." });
+  };
+
+  const applyAverage = () => {
+    const res = onAverage(avgBy);
+    if ("error" in res) {
+      toast.error("Cannot average", { description: res.error });
+      return;
+    }
+    toast.success(`Averaged into ${res.groups} specimens`, { description: `One per "${avgBy}" value.` });
+  };
+
+  return (
+    <>
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm flex items-center gap-1.5">
+            <Wand2 size={13} /> Transform
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button size="sm" variant="outline" className="w-full justify-start" onClick={openSubset}>
+            <Scissors size={13} /> Choose landmarks…
+          </Button>
+          {classifiers.length > 0 && (
+            <div className="flex gap-1.5">
+              <select
+                className="flex-1 rounded border bg-background px-1.5 py-1 text-xs"
+                value={avgBy}
+                onChange={(e) => setAvgBy(e.target.value)}
+              >
+                {classifiers.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+              <Button size="sm" variant="outline" className="h-8" onClick={applyAverage} title="Replace the sample with one averaged specimen per value">
+                <Sigma size={13} /> Average
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Dialog open={subsetOpen} onOpenChange={setSubsetOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Choose landmarks</DialogTitle>
+            <DialogDescription>
+              Unselected landmarks are removed from every specimen. Links and symmetric pairs are renumbered.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-wrap gap-1">
+            {Array.from({ length: nLandmarks }, (_, i) => {
+              const on = keep.includes(i);
+              return (
+                <button
+                  key={i}
+                  onClick={() => setKeep((k) => (on ? k.filter((x) => x !== i) : [...k, i]))}
+                  className={`h-7 w-8 rounded border text-xs transition-colors ${
+                    on ? "border-primary bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {i + 1}
+                </button>
+              );
+            })}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <button className="underline" onClick={() => setKeep(Array.from({ length: nLandmarks }, (_, i) => i))}>Select all</button>
+            <button className="underline" onClick={() => setKeep([])}>Select none</button>
+            <span className="ml-auto">{keep.length} of {nLandmarks} kept</span>
+          </div>
+          <DialogFooter>
+            <Button size="sm" variant="outline" onClick={() => setSubsetOpen(false)}>Cancel</Button>
+            <Button size="sm" disabled={keep.length < 3 || keep.length === nLandmarks} onClick={applySubset}>
+              Apply
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 

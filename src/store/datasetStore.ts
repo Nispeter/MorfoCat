@@ -57,6 +57,8 @@ interface DatasetState {
   toggleMidline: (i: number) => void;
   clearSymmetry: () => void;
   swapLandmarks: (i: number, j: number) => void;
+  subsetLandmarks: (keep: number[]) => { kept: number } | { error: string };
+  averageByClassifier: (name: string) => { groups: number } | { error: string };
   appendSpecimens: (specimens: Specimen[]) => { added: number } | { error: string };
   clear: () => void;
 }
@@ -235,6 +237,82 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
         procrustes_distances: null,
       };
     }),
+
+  // Keep only the given landmarks (0-based, any order) across every specimen.
+  // Links, symmetric pairs and midline landmarks are renumbered; anything that
+  // referenced a dropped landmark is discarded.
+  subsetLandmarks: (keep) => {
+    const s = get();
+    if (!s.dataset) return { error: "No dataset loaded." };
+    const ordered = [...new Set(keep)].sort((a, b) => a - b);
+    if (ordered.length < 3) return { error: "Keep at least 3 landmarks." };
+    if (ordered.length === s.dataset.n_landmarks) return { error: "Nothing to remove." };
+
+    const newIdx = new Map(ordered.map((old, i) => [old, i]));
+    const remap = ([a, b]: [number, number]): [number, number] | null => {
+      const na = newIdx.get(a), nb = newIdx.get(b);
+      return na == null || nb == null ? null : [na, nb];
+    };
+
+    set({
+      dataset: {
+        ...s.dataset,
+        specimens: s.dataset.specimens.map((sp) => ({
+          ...sp,
+          landmarks: ordered.map((i) => sp.landmarks[i]),
+        })),
+        n_landmarks: ordered.length,
+      },
+      wireframe: s.wireframe.map(remap).filter((e): e is [number, number] => e !== null),
+      symPairs: s.symPairs.map(remap).filter((e): e is [number, number] => e !== null),
+      midlineLms: s.midlineLms.map((m) => newIdx.get(m)).filter((m): m is number => m != null),
+      aligned: null,
+      consensus: null,
+      centroid_sizes: null,
+      procrustes_distances: null,
+    });
+    return { kept: ordered.length };
+  },
+
+  // Collapse the sample to one averaged specimen per classifier value
+  // (MorphoJ's "average by …"). Only included specimens contribute.
+  averageByClassifier: (name) => {
+    const s = get();
+    if (!s.dataset) return { error: "No dataset loaded." };
+    const included = s.dataset.specimens.filter((sp) => sp.include);
+    if (!included.length) return { error: "No specimens are included." };
+
+    const buckets = new Map<string, Specimen[]>();
+    for (const sp of included) {
+      const key = sp.classifiers?.[name] ?? sp.group ?? "unassigned";
+      const bucket = buckets.get(key);
+      bucket ? bucket.push(sp) : buckets.set(key, [sp]);
+    }
+    if (buckets.size < 2) return { error: `"${name}" has only one value — nothing to average.` };
+
+    const nDim = s.dataset.dimensions;
+    const specimens: Specimen[] = [...buckets.entries()].map(([key, members]) => ({
+      id: key,
+      landmarks: Array.from({ length: s.dataset!.n_landmarks }, (_, li) =>
+        Array.from({ length: nDim }, (_, d) =>
+          members.reduce((sum, sp) => sum + (sp.landmarks[li]?.[d] ?? 0), 0) / members.length
+        )
+      ),
+      group: key,
+      classifiers: { [name]: key },
+      include: true,
+    }));
+
+    set({
+      dataset: { ...s.dataset, specimens, classifierNames: [name] },
+      activeClassifier: name,
+      aligned: null,
+      consensus: null,
+      centroid_sizes: null,
+      procrustes_distances: null,
+    });
+    return { groups: specimens.length };
+  },
 
   // Append specimens from another file. Requires the same landmark count.
   appendSpecimens: (incoming) => {
