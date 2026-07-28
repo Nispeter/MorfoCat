@@ -59,6 +59,11 @@ const en = {
   // ── Data Manager cards ───────────────────────────────────────────────────────
   "data.classifiers":    "Classifiers",
   "data.dragHint":    "Drag across the characters that belong together.",
+  "data.byPosition":  "By character position",
+  "data.bySeparator": "By separator",
+  "data.separator":   "Separator",
+  "data.clickPart":   "Click a part to turn it into a classifier.",
+  "data.noParts":     "No ID splits on “{s}”. Try another separator, or use character positions.",
   "data.idsTooPlain": "The IDs in this file are just numbers ({id}), so there is nothing to split. Classifiers need IDs that carry a code — usually the image file name.",
   "data.activeLabel":      "Active — this is what the plots use",
   "data.nextUse":          "Now open PCA → Figure and colour by one of them.",
@@ -402,6 +407,11 @@ const es: Record<keyof typeof en, string> = {
 
   "data.classifiers":    "Clasificadores",
   "data.dragHint":    "Arrastrá sobre los caracteres que van juntos.",
+  "data.byPosition":  "Por posición de carácter",
+  "data.bySeparator": "Por separador",
+  "data.separator":   "Separador",
+  "data.clickPart":   "Hacé clic en una parte para convertirla en clasificador.",
+  "data.noParts":     "Ningún ID se separa con “{s}”. Probá otro separador, o usá posiciones de carácter.",
   "data.idsTooPlain": "Los ID de este archivo son sólo números ({id}), así que no hay nada que separar. Los clasificadores necesitan ID con código — normalmente el nombre del archivo de imagen.",
   "data.activeLabel":      "Activo — es el que usan los gráficos",
   "data.nextUse":          "Ahora andá a ACP → Figura y coloreá por alguno de ellos.",

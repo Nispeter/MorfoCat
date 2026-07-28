@@ -13,7 +13,10 @@ import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc"
 import { buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION } from "@/lib/project";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
-import { useDatasetStore, type Specimen, type IdField } from "@/store/datasetStore";
+import { useDatasetStore, type Specimen } from "@/store/datasetStore";
+import {
+  idFieldValue, guessSeparator, partCount, type IdField,
+} from "@/lib/idFields";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
 import {
@@ -614,58 +617,69 @@ function ClassifiersCard({
 }
 
 /**
- * Cut the specimen ID into named fields by character position.
+ * Carve the specimen ID into named classifiers.
  *
- * Lab IDs are structured — `01-23QN031242` is a running number, a dash, a year,
- * an area code and a site code — so the layout is described by dragging across
- * the characters that belong together. Each span becomes a classifier.
- * Positions are 1-based and inclusive.
+ * No layout is assumed: a field is read either from a span of characters
+ * (`26-13MA020230`) or from a delimited part (`ficu_F_031`), and a scheme can
+ * hold any number of them under any names. Whatever is not marked is ignored.
  */
 function IdSchemeEditor({
   ids, scheme, onExtract,
 }: {
   ids: string[];
-  /** The spans already in use, so they can be adjusted rather than redrawn. */
+  /** The fields already in use, so they can be adjusted rather than redrawn. */
   scheme: IdField[];
   onExtract: (fields: IdField[]) => { added: number } | { error: string };
 }) {
   const t = useT();
-  const [fields, setFields] = useState<Array<{ key: number; name: string; first: number; last: number }>>(
-    () => scheme.map((f, i) => ({ key: i + 1, ...f }))
+  const [fields, setFields] = useState<Array<IdField & { key: number }>>(
+    () => scheme.map((f, i) => ({ ...f, key: i + 1 }))
+  );
+  const [mode, setMode] = useState<"position" | "separator">(
+    () => (scheme[0]?.by === "separator" ? "separator" : guessSeparator(ids) ? "separator" : "position")
+  );
+  const [separator, setSeparator] = useState(
+    () =>
+      (scheme.find((f) => f.by === "separator") as { separator: string } | undefined)?.separator ||
+      guessSeparator(ids) ||
+      "_"
   );
   const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
   const nextKey = useRef(scheme.length + 1);
 
   const sample = ids[0] ?? "";
   const width = ids.reduce((w, id) => Math.max(w, id.length), 0);
+  const parts = partCount(ids, separator);
 
-  /** Distinct values, and how many IDs are too short, for one span. */
-  const summarize = (first: number, last: number) => {
-    const counts = new Map<string, number>();
-    let empty = 0;
-    for (const id of ids) {
-      const value = id.slice(Math.max(0, first - 1), last).trim();
-      if (!value) empty++;
-      else counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-    return { groups: counts.size, empty };
-  };
+  /** How many distinct values a field would produce across the sample. */
+  const groupCount = (field: IdField) =>
+    new Set(ids.map((id) => idFieldValue(id, field)).filter(Boolean)).size;
 
-  const addField = (first: number, last: number) =>
-    setFields((f) => [...f, { key: nextKey.current++, name: "", first, last }]);
+  const addField = (field: IdField) =>
+    setFields((f) => [...f, { ...field, key: nextKey.current++ }]);
 
   const finishDrag = () => {
     if (!drag) return;
-    addField(Math.min(drag.from, drag.to), Math.max(drag.from, drag.to));
+    addField({
+      name: "", by: "position",
+      first: Math.min(drag.from, drag.to),
+      last: Math.max(drag.from, drag.to),
+    });
     setDrag(null);
   };
 
   const inDrag = (pos: number) =>
     drag !== null && pos >= Math.min(drag.from, drag.to) && pos <= Math.max(drag.from, drag.to);
-  const inField = (pos: number) => fields.some((f) => pos >= f.first && pos <= f.last);
+  const inField = (pos: number) =>
+    fields.some((f) => f.by === "position" && pos >= f.first && pos <= f.last);
+  const partTaken = (index: number) =>
+    fields.some((f) => f.by === "separator" && f.separator === separator && f.part === index);
+
+  const rename = (i: number, name: string) =>
+    setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name } : x)));
 
   const apply = () => {
-    const res = onExtract(fields.map(({ name, first, last }) => ({ name, first, last })));
+    const res = onExtract(fields.map(({ key: _key, ...f }) => f));
     if ("error" in res) {
       toast.error(res.error);
       return;
@@ -675,8 +689,7 @@ function IdSchemeEditor({
 
   if (ids.length === 0) return null;
 
-  // Nothing to slice: the file had no IMAGE= names, so the IDs are bare
-  // numbers and carry no site or area code to pull apart.
+  // Nothing to slice: bare numeric IDs carry no code to pull apart.
   if (width < 3) {
     return (
       <p className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
@@ -687,63 +700,100 @@ function IdSchemeEditor({
 
   return (
     <div className="space-y-2" onPointerUp={finishDrag} onPointerLeave={finishDrag}>
-      <p className="text-[11px] text-muted-foreground">{t("data.dragHint")}</p>
-
-      {/* The ID, character by character — drag across the ones that go together */}
-      <div className="flex select-none flex-wrap gap-0.5">
-        {Array.from({ length: width }, (_, i) => {
-          const pos = i + 1;
-          const marked = inDrag(pos);
-          const taken = inField(pos);
-          return (
-            <button
-              key={pos}
-              onPointerDown={() => setDrag({ from: pos, to: pos })}
-              onPointerEnter={() => drag && setDrag((d) => (d ? { ...d, to: pos } : d))}
-              className={`flex h-8 w-5 shrink-0 flex-col items-center justify-center rounded border text-[11px] leading-none transition-colors ${
-                marked
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : taken
-                    ? "border-primary/50 bg-primary/10 text-primary"
-                    : "hover:bg-muted"
-              }`}
-            >
-              <span className="font-mono">{sample[i] ?? "·"}</span>
-              <span className="mt-0.5 text-[8px] opacity-60">{pos}</span>
-            </button>
-          );
-        })}
+      <div className="flex items-center gap-1">
+        <select
+          className="h-7 flex-1 rounded border bg-background px-1 text-[11px]"
+          value={mode}
+          onChange={(e) => setMode(e.target.value as "position" | "separator")}
+        >
+          <option value="position">{t("data.byPosition")}</option>
+          <option value="separator">{t("data.bySeparator")}</option>
+        </select>
+        {mode === "separator" && (
+          <Input
+            className="h-7 w-12 text-center font-mono text-xs"
+            value={separator}
+            onChange={(e) => setSeparator(e.target.value)}
+            title={t("data.separator")}
+          />
+        )}
       </div>
 
-      {/* One row per field */}
-      {fields.map((f, i) => {
-        const info = summarize(f.first, f.last);
-        const value = sample.slice(Math.max(0, f.first - 1), f.last).trim();
-        return (
-          <div key={f.key} className="flex items-center gap-1.5">
-            <Input
-              className="h-7 flex-1 text-xs"
-              placeholder={t("data.fieldName")}
-              autoFocus={i === fields.length - 1 && !f.name}
-              value={f.name}
-              onChange={(e) =>
-                setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-              }
-            />
-            <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
-              <span className="font-mono text-foreground">{value || "∅"}</span>
-              {" · "}{info.groups} {t("data.groupsFound")}
-            </span>
-            <button
-              onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
-              className="shrink-0 px-0.5 text-muted-foreground hover:text-destructive"
-              title={t("data.removeField")}
-            >
-              <X size={12} />
-            </button>
+      {mode === "position" ? (
+        <>
+          <p className="text-[11px] text-muted-foreground">{t("data.dragHint")}</p>
+          <div className="flex select-none flex-wrap gap-0.5">
+            {Array.from({ length: width }, (_, i) => {
+              const pos = i + 1;
+              const marked = inDrag(pos);
+              const taken = inField(pos);
+              return (
+                <button
+                  key={pos}
+                  onPointerDown={() => setDrag({ from: pos, to: pos })}
+                  onPointerEnter={() => drag && setDrag((d) => (d ? { ...d, to: pos } : d))}
+                  className={`flex h-8 w-5 shrink-0 flex-col items-center justify-center rounded border text-[11px] leading-none transition-colors ${
+                    marked
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : taken
+                        ? "border-primary/50 bg-primary/10 text-primary"
+                        : "hover:bg-muted"
+                  }`}
+                >
+                  <span className="font-mono">{sample[i] ?? "·"}</span>
+                  <span className="mt-0.5 text-[8px] opacity-60">{pos}</span>
+                </button>
+              );
+            })}
           </div>
-        );
-      })}
+        </>
+      ) : parts > 1 ? (
+        <>
+          <p className="text-[11px] text-muted-foreground">{t("data.clickPart")}</p>
+          <div className="flex select-none flex-wrap items-center gap-0.5">
+            {sample.split(separator).map((part, i) => (
+              <button
+                key={i}
+                onClick={() => addField({ name: "", by: "separator", separator, part: i })}
+                disabled={partTaken(i)}
+                className={`rounded border px-1.5 py-1 font-mono text-[11px] transition-colors ${
+                  partTaken(i) ? "border-primary/50 bg-primary/10 text-primary" : "hover:bg-muted"
+                }`}
+              >
+                {part || "∅"}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <p className="text-[11px] text-muted-foreground">
+          {t("data.noParts").replace("{s}", separator)}
+        </p>
+      )}
+
+      {/* One row per field */}
+      {fields.map((f, i) => (
+        <div key={f.key} className="flex items-center gap-1.5">
+          <Input
+            className="h-7 flex-1 text-xs"
+            placeholder={t("data.fieldName")}
+            autoFocus={i === fields.length - 1 && !f.name}
+            value={f.name}
+            onChange={(e) => rename(i, e.target.value)}
+          />
+          <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
+            <span className="font-mono text-foreground">{idFieldValue(sample, f) || "∅"}</span>
+            {" · "}{groupCount(f)} {t("data.groupsFound")}
+          </span>
+          <button
+            onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
+            className="shrink-0 px-0.5 text-muted-foreground hover:text-destructive"
+            title={t("data.removeField")}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      ))}
 
       {fields.length > 0 && (
         <Button size="sm" className="w-full" onClick={apply}>

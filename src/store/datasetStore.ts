@@ -1,4 +1,7 @@
 import { create } from "zustand";
+import { idFieldValue, normalizeField, type IdField } from "@/lib/idFields";
+
+export type { IdField };
 
 export interface Specimen {
   id: string;
@@ -25,13 +28,6 @@ export interface Dataset {
    * later instead of being redrawn from scratch. Saved with the project.
    */
   idScheme?: IdField[];
-}
-
-/** One named span of the specimen ID. Positions are 1-based and inclusive. */
-export interface IdField {
-  name: string;
-  first: number;
-  last: number;
 }
 
 interface DatasetState {
@@ -165,10 +161,10 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
   /**
    * Cut several classifiers out of the ID in one pass.
    *
-   * IDs are usually structured — a running number, a separator, an area code,
-   * a site code — so the useful operation is describing that whole layout by
-   * character position and slicing every field at once, rather than repeating
-   * a one-field extraction. Positions are 1-based and inclusive.
+   * IDs are structured, but every project structures them differently, so the
+   * whole layout is described by the caller — any number of fields, named
+   * freely, each read either by character position or by delimiter — and every
+   * field is sliced in a single pass.
    */
   extractClassifiers: (fields) => {
     const s = get();
@@ -184,11 +180,7 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
 
     const specimens = s.dataset.specimens.map((sp) => {
       const classifiers = { ...(sp.classifiers ?? {}) };
-      for (const f of named) {
-        // Trimmed: IDs taken from file names often carry stray spaces, and a
-        // group called " QN" would sit apart from "QN" for no good reason.
-        classifiers[f.name] = sp.id.slice(Math.max(0, f.first - 1), f.last).trim();
-      }
+      for (const f of named) classifiers[f.name] = idFieldValue(sp.id, f);
       return { ...sp, classifiers };
     });
 
@@ -435,7 +427,13 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
   // already holds exactly what the user had.
   loadProject: (p) =>
     set({
-      dataset: p.dataset,
+      dataset: {
+        ...p.dataset,
+        // Schemes saved before separators existed carry no `by` tag.
+        idScheme: (p.dataset.idScheme ?? [])
+          .map(normalizeField)
+          .filter((f): f is IdField => f !== null),
+      },
       activeClassifier: p.activeClassifier,
       wireframe: p.wireframe,
       symPairs: p.symPairs,
