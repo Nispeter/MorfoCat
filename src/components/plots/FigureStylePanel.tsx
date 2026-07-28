@@ -68,49 +68,44 @@ export function FigureStylePanel({
             const st = styles[g];
             if (!st) return null;
             const stroke = isStrokeOnly(st.symbol) || !st.filled;
+            // One row per value: swatch, name, and — unless a second
+            // category owns the shapes — the symbol and its fill.
             return (
-              <div key={g} className="space-y-1.5 border-b pb-2 last:border-0 last:pb-0">
-                <div className="flex items-center gap-1.5">
-                  <svg width={18} height={18} viewBox="-9 -9 18 18" className="shrink-0">
-                    <path d={symbolPath(st.symbol, 6)} fill={stroke ? "none" : st.color} stroke={st.color} strokeWidth={stroke ? 1.8 : 0.8} />
-                  </svg>
-                  <Input
-                    className="h-7 flex-1 text-xs"
-                    value={st.label}
-                    onChange={(e) => setStyle(g, { label: e.target.value })}
-                    title={`${t("fig.legend")}: ${g}`}
-                  />
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <input
-                    type="color"
-                    value={st.color}
-                    onChange={(e) => setStyle(g, { color: e.target.value })}
-                    className="h-7 w-8 cursor-pointer rounded border bg-background"
-                    title={t("fig.colour")}
-                  />
-                  {/* When a second classifier drives the symbols, shape is no
-                      longer this classifier's to set. */}
-                  {!splitEncoding && (
-                    <>
-                      <select
-                        className="h-7 flex-1 rounded border bg-background px-1 text-xs"
-                        value={st.symbol}
-                        onChange={(e) => setStyle(g, { symbol: e.target.value as SymbolKind })}
-                      >
-                        {SYMBOL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
-                      </select>
-                      <button
-                        onClick={() => setStyle(g, { filled: !st.filled })}
-                        disabled={isStrokeOnly(st.symbol)}
-                        className="h-7 rounded border px-2 text-xs transition-colors hover:bg-muted disabled:opacity-40"
-                        title={t("fig.filledOrOpen")}
-                      >
-                        {st.filled ? t("fig.solid") : t("fig.open")}
-                      </button>
-                    </>
-                  )}
-                </div>
+              <div key={g} className="flex items-center gap-1.5">
+                <input
+                  type="color"
+                  value={st.color}
+                  onChange={(e) => setStyle(g, { color: e.target.value })}
+                  className="h-7 w-7 shrink-0 cursor-pointer rounded border bg-background p-0.5"
+                  title={t("fig.colour")}
+                />
+                <Input
+                  className="h-7 min-w-0 flex-1 text-xs"
+                  value={st.label}
+                  onChange={(e) => setStyle(g, { label: e.target.value })}
+                  title={`${t("fig.legend")}: ${g}`}
+                />
+                {!splitEncoding && (
+                  <>
+                    <select
+                      className="h-7 w-20 shrink-0 rounded border bg-background px-1 text-xs"
+                      value={st.symbol}
+                      onChange={(e) => setStyle(g, { symbol: e.target.value as SymbolKind })}
+                    >
+                      {SYMBOL_KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+                    </select>
+                    <button
+                      onClick={() => setStyle(g, { filled: !st.filled })}
+                      disabled={isStrokeOnly(st.symbol)}
+                      className="h-7 w-7 shrink-0 rounded border transition-colors hover:bg-muted disabled:opacity-40"
+                      title={t("fig.filledOrOpen")}
+                    >
+                      <svg width={16} height={16} viewBox="-8 -8 16 16" className="mx-auto">
+                        <path d={symbolPath(st.symbol, 5)} fill={stroke ? "none" : st.color} stroke={st.color} strokeWidth={stroke ? 1.6 : 0.7} />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
             );
           })}
