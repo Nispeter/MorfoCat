@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database, GitMerge, ScanSearch, BarChart2, Layers, TrendingUp,
   Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight, ChevronDown,
-  Cat, Grid3X3, Images, MousePointerClick, Settings, Spline,
+  Cat, Grid3X3, MousePointerClick, Settings, Spline,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useNavStore } from "@/store/navStore";
@@ -15,7 +15,7 @@ import { hasGroups } from "@/lib/groups";
 import { useT, type TranslationKey } from "@/lib/i18n";
 
 export type PageId =
-  | "data" | "image-import" | "digitizer"
+  | "data" | "digitizer"
   | "procrustes" | "outliers" | "covariance" | "wireframe"
   | "pca" | "matrix-corr" | "pls" | "regression" | "modularity"
   | "cva" | "lda"
@@ -34,9 +34,8 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { id: "image-import",   labelKey: "nav.imageImport",   icon: <Images size={18} />,            group: "Digitize",     requires: "none" },
-  { id: "digitizer",      labelKey: "nav.digitizer",     icon: <MousePointerClick size={18} />, group: "Digitize",     requires: "none" },
   { id: "data",           labelKey: "nav.data",          icon: <Database size={18} />,          group: "Data",         requires: "none" },
+  { id: "digitizer",      labelKey: "nav.digitizer",     icon: <MousePointerClick size={18} />, group: "Data",         requires: "none" },
   { id: "procrustes",     labelKey: "nav.procrustes",    icon: <GitMerge size={18} />,          group: "Core",         requires: "dataset" },
   { id: "outliers",       labelKey: "nav.outliers",      icon: <ScanSearch size={18} />,        group: "Core",         requires: "aligned" },
   { id: "covariance",     labelKey: "nav.covariance",    icon: <Grid3X3 size={18} />,           group: "Core",         requires: "aligned" },

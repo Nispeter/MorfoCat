@@ -21,9 +21,10 @@ import { useAnalysisStore } from "@/store/analysisStore";
 import { parseTPS, writeTPS } from "@/lib/parsers";
 import { readFileB64, readTextFile, writeTextFile } from "@/lib/ipc";
 import { resolveSpecimenId } from "@/lib/specimenId";
+import { StartSession } from "./StartSession";
 import {
   ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
-  CheckCircle2, Circle, MousePointerClick, Import, Spline, Ruler,
+  CheckCircle2, Circle, Import, Spline, Ruler,
 } from "lucide-react";
 
 // ── Canvas drawing ────────────────────────────────────────────────────────────
@@ -442,18 +443,7 @@ export default function Digitizer() {
         title={t("page.digitizer.title")}
         description={t("page.digitizer.desc")}
       >
-        <div className="flex h-full flex-col items-center justify-center gap-4">
-          <MousePointerClick size={48} className="text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">{t("digi.noSession")}</p>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navNavigate("image-import")}>
-              <Import size={14} /> Start from Images
-            </Button>
-            <Button variant="outline" onClick={handleOpenTPS}>
-              <FolderOpen size={14} /> Open TPS File…
-            </Button>
-          </div>
-        </div>
+        <StartSession onOpenTPS={handleOpenTPS} />
       </PanelLayout>
     );
   }

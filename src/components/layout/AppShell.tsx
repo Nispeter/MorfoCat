@@ -2,7 +2,6 @@ import { Sidebar, type PageId } from "./Sidebar";
 import { StatusBar } from "./StatusBar";
 import { useNavStore } from "@/store/navStore";
 import DataManager from "@/pages/DataManager";
-import ImageImport from "@/pages/ImageImport";
 import Digitizer from "@/pages/Digitizer";
 import ProcrustesFit from "@/pages/ProcrustesFit";
 import Outliers from "@/pages/Outliers";
@@ -21,7 +20,6 @@ import Settings from "@/pages/Settings";
 
 const PAGE_MAP: Record<PageId, React.ComponentType> = {
   "data":           DataManager,
-  "image-import":   ImageImport,
   "digitizer":      Digitizer,
   "procrustes":     ProcrustesFit,
   "outliers":       Outliers,

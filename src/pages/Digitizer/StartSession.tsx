@@ -2,18 +2,22 @@ import { useState, useCallback } from "react";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
-import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDigitizerStore } from "@/store/digitizerStore";
-import { useNavStore } from "@/store/navStore";
 import { writeTPS } from "@/lib/parsers";
 import { writeTextFile, listDirImages } from "@/lib/ipc";
 import { Images, FolderOpen, X, ArrowRight } from "lucide-react";
 
+/**
+ * Starting point of a digitizing session: gather the images, say how many
+ * landmarks each specimen gets, and write the TPS template — or reopen a TPS
+ * that already exists. It lives inside the digitizer rather than on a page of
+ * its own, since it is step one of digitizing and nothing else uses it.
+ */
 interface ImageEntry {
   path: string;
   base: string;
@@ -29,7 +33,7 @@ function dirname(p: string) {
   return idx === -1 ? "." : norm.slice(0, idx);
 }
 
-export default function ImageImport() {
+export function StartSession({ onOpenTPS }: { onOpenTPS: () => void }) {
   const t = useT();
   const [images, setImages] = useState<ImageEntry[]>([]);
   const [nLandmarks, setNLandmarks] = useState(10);
@@ -38,7 +42,6 @@ export default function ImageImport() {
   const [busy, setBusy] = useState(false);
 
   const setSession = useDigitizerStore((s) => s.setSession);
-  const navigate = useNavStore((s) => s.navigate);
 
   // Add paths to the list, skipping any that are already there.
   const addPaths = useCallback((paths: string[]) => {
@@ -147,20 +150,15 @@ export default function ImageImport() {
       toast.success(`TPS template created`, {
         description: `${images.length} specimens · ${nLandmarks} landmarks`,
       });
-      navigate("digitizer");
     } catch (e) {
       toast.error("Failed to create TPS", { description: String(e) });
     } finally {
       setBusy(false);
     }
-  }, [images, nLandmarks, nSemi, tpsPath, setSession, navigate]);
+  }, [images, nLandmarks, nSemi, tpsPath, setSession]);
 
   return (
-    <PanelLayout
-      title={t("page.imageImport.title")}
-      description={t("page.imageImport.desc")}
-    >
-      <div className="flex h-full gap-4">
+    <div className="flex h-full gap-4">
         {/* Left: image list */}
         <div className="flex flex-1 flex-col gap-3">
           <div className="flex items-center gap-2">
@@ -169,6 +167,9 @@ export default function ImageImport() {
             </Button>
             <Button variant="outline" size="sm" onClick={pickFolder}>
               <FolderOpen size={14} /> {t("action.pickFolder2")}
+            </Button>
+            <Button variant="outline" size="sm" onClick={onOpenTPS}>
+              <FolderOpen size={14} /> {t("action.openTPS")}
             </Button>
             {images.length > 0 && (
               <>
@@ -272,7 +273,6 @@ export default function ImageImport() {
             {busy ? "Creating…" : "Create Template & Digitize"}
           </Button>
         </div>
-      </div>
-    </PanelLayout>
+    </div>
   );
 }

@@ -5,7 +5,6 @@ export type Lang = "en" | "es";
 const en = {
   // ── Navigation ──────────────────────────────────────────────────────────────
   "nav.data":          "Data Manager",
-  "nav.imageImport":   "Image Import",
   "nav.digitizer":     "Landmark Digitizer",
   "nav.procrustes":    "Procrustes Fit",
   "nav.outliers":      "Outlier Detection",
@@ -24,7 +23,6 @@ const en = {
 
   // ── Sidebar groups ───────────────────────────────────────────────────────────
   "group.Data":         "Data",
-  "group.Digitize":     "Digitize",
   "group.Core":         "Core",
   "group.Multivariate": "Multivariate",
   "group.Discriminant": "Discriminant",
@@ -100,8 +98,6 @@ const en = {
   // ── Page titles & descriptions ───────────────────────────────────────────────
   "page.data.title":           "Data Manager",
   "page.data.desc":            "Import TPS, NTS, or Morphologika landmark files",
-  "page.imageImport.title":    "Image Import",
-  "page.imageImport.desc":     "Create a TPS template from PNG/JPG images, then place landmarks in the Digitizer",
   "page.digitizer.title":      "Landmark Digitizer",
   "page.digitizer.desc":       "Place landmarks on images and export as TPS",
   "page.procrustes.title":     "Procrustes Fit",
@@ -359,7 +355,6 @@ const en = {
 
 const es: Record<keyof typeof en, string> = {
   "nav.data":          "Gestor de Datos",
-  "nav.imageImport":   "Importar Imágenes",
   "nav.digitizer":     "Digitalizador",
   "nav.procrustes":    "Ajuste de Procrustes",
   "nav.outliers":      "Detección de Atípicos",
@@ -377,7 +372,6 @@ const es: Record<keyof typeof en, string> = {
   "nav.settings":      "Configuración",
 
   "group.Data":         "Datos",
-  "group.Digitize":     "Digitalizar",
   "group.Core":         "Base",
   "group.Multivariate": "Multivariado",
   "group.Discriminant": "Discriminante",
@@ -447,8 +441,6 @@ const es: Record<keyof typeof en, string> = {
 
   "page.data.title":           "Gestor de Datos",
   "page.data.desc":            "Importar archivos de puntos de referencia TPS, NTS o Morphologika",
-  "page.imageImport.title":    "Importar Imágenes",
-  "page.imageImport.desc":     "Crear una plantilla TPS a partir de imágenes PNG/JPG y digitalizar puntos",
   "page.digitizer.title":      "Digitalizador de Puntos",
   "page.digitizer.desc":       "Colocar puntos de referencia sobre imágenes y exportar como TPS",
   "page.procrustes.title":     "Ajuste de Procrustes",
