@@ -13,7 +13,8 @@ const cache = new Map<string, string>();
  * than throwing, so the figure just falls back to drawing the wireframe.
  */
 export function useSpecimenImages(paths: string[]): Record<string, string> {
-  const key = paths.join("|");
+  // JSON rather than a joined string: image paths can contain any character.
+  const key = JSON.stringify(paths);
   const [urls, setUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {

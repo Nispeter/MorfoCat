@@ -40,7 +40,12 @@ function formatRelTime(ts: number) {
  */
 function imageStem(image: string): string {
   const base = image.replace(/\\/g, "/").split("/").pop() ?? image;
-  return base.replace(/\.[^.]+$/, "");
+  return base
+    .replace(/\.[^.]+$/, "")
+    // File names collected by hand pick up stray and doubled spaces, which
+    // would otherwise split one site into "La Puntilla" and "La  Puntilla".
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function resolveId(id: string | null | undefined, image: string | null | undefined, fallbackIdx: number): string {
