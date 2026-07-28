@@ -61,6 +61,8 @@ interface PlotStyleState {
   refShowIds: boolean;
   /** Size of each reference drawing, in figure pixels. */
   refSize: number;
+  /** Gap between the axis and its reference drawings, in figure pixels. */
+  refGap: number;
   /** Mirror the reference drawings; which way a specimen faces depends on how
    *  it was photographed, so this is a display choice, not a data change. */
   refFlipX: boolean;
@@ -95,6 +97,7 @@ interface PlotStyleState {
   setRefSource: (source: RefSource) => void;
   setRefShowIds: (show: boolean) => void;
   setRefSize: (size: number) => void;
+  setRefGap: (gap: number) => void;
   setRefFlip: (axis: "x" | "y", on: boolean) => void;
   setRefRotation: (deg: number) => void;
   setRefPositions: (axis: "x" | "y", positions: number[] | null) => void;
@@ -113,7 +116,7 @@ export type PlotStyleSnapshot = Pick<
   PlotStyleState,
   | "styles" | "symbolBy" | "symbolStyles"
   | "axisMode" | "manualLimits" | "invertX" | "invertY"
-  | "refShapesX" | "refShapesY" | "refSource" | "refShowIds" | "refSize"
+  | "refShapesX" | "refShapesY" | "refSource" | "refShowIds" | "refSize" | "refGap"
   | "refFlipX" | "refFlipY" | "refRotation" | "refPositionsX" | "refPositionsY"
   | "figureWidth" | "figureHeight" | "exportScale"
   | "legendPos" | "legendScale" | "showLegend"
@@ -122,7 +125,7 @@ export type PlotStyleSnapshot = Pick<
 const SNAPSHOT_KEYS = [
   "styles", "symbolBy", "symbolStyles",
   "axisMode", "manualLimits", "invertX", "invertY",
-  "refShapesX", "refShapesY", "refSource", "refShowIds", "refSize",
+  "refShapesX", "refShapesY", "refSource", "refShowIds", "refSize", "refGap",
   "refFlipX", "refFlipY", "refRotation", "refPositionsX", "refPositionsY",
   "figureWidth", "figureHeight", "exportScale",
   "legendPos", "legendScale", "showLegend",
@@ -143,6 +146,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       refSource: "wireframe",
       refShowIds: false,
       refSize: 96,
+      refGap: 12,
       refFlipX: false,
       refFlipY: false,
       refRotation: 0,
@@ -210,6 +214,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       setRefSource: (refSource) => set({ refSource }),
       setRefShowIds: (refShowIds) => set({ refShowIds }),
       setRefSize: (refSize) => set({ refSize }),
+      setRefGap: (refGap) => set({ refGap }),
       setRefFlip: (axis, on) => set(axis === "x" ? { refFlipX: on } : { refFlipY: on }),
       setRefRotation: (refRotation) => set({ refRotation }),
       setRefPositions: (axis, positions) =>

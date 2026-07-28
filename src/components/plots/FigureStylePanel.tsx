@@ -36,7 +36,7 @@ export function FigureStylePanel({
     invertX, invertY, setInvert,
     refShapesX, refShapesY, setRefShapes,
     refSource, setRefSource, refShowIds, setRefShowIds,
-    refSize, setRefSize,
+    refSize, setRefSize, refGap, setRefGap,
     refFlipX, refFlipY, setRefFlip, refRotation, setRefRotation,
     refPositionsX, refPositionsY, setRefPositions,
     figureWidth, figureHeight, setFigureSize, exportScale, setExportScale,
@@ -318,15 +318,26 @@ export function FigureStylePanel({
             </div>
           </div>
           {(refShapesX > 0 || refShapesY > 0) && (
-            <div className="flex items-center justify-between gap-2">
-              <Label className="text-xs">{t("fig.refSize")}</Label>
-              <input
-                type="range" min={48} max={200} step={4}
-                value={refSize}
-                onChange={(e) => setRefSize(+e.target.value)}
-                className="w-28"
-              />
-            </div>
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs">{t("fig.refSize")}</Label>
+                <input
+                  type="range" min={48} max={200} step={4}
+                  value={refSize}
+                  onChange={(e) => setRefSize(+e.target.value)}
+                  className="w-28"
+                />
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <Label className="text-xs">{t("fig.refGap")}</Label>
+                <input
+                  type="range" min={0} max={64} step={2}
+                  value={refGap}
+                  onChange={(e) => setRefGap(+e.target.value)}
+                  className="w-28"
+                />
+              </div>
+            </>
           )}
           {refSource !== "deformation" && (
             <div className="flex items-center justify-between gap-2">

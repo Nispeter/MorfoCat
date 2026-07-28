@@ -44,7 +44,7 @@ export function PCAFigure({
   const {
     styles, symbolBy, symbolStyles,
     axisMode, manualLimits, invertX, invertY,
-    refShapesX, refShapesY, refSource, refShowIds, refSize,
+    refShapesX, refShapesY, refSource, refShowIds, refSize, refGap,
     refFlipX, refFlipY, refRotation, refPositionsX, refPositionsY,
     legendPos, legendScale, showLegend, setLegendPos,
   } = usePlotStyleStore();
@@ -57,7 +57,6 @@ export function PCAFigure({
 
   // Reference drawings live outside the axes, so they claim their own gutter;
   // turning them off gives the plot that space back.
-  const refGap = 12;
   const showRefsX = (refPositionsX ?? []).length > 0 || (refPositionsX === null && refShapesX > 0);
   const showRefsY = (refPositionsY ?? []).length > 0 || (refPositionsY === null && refShapesY > 0);
   const extraLeft = showRefsY ? refSize + refGap + 18 : 0;
@@ -216,6 +215,16 @@ export function PCAFigure({
         <line key={`gy${i}`} x1={MARGIN.left} x2={MARGIN.left + plotW} y1={sy(t)} y2={sy(t)}
           stroke="hsl(var(--border))" strokeDasharray="3 3" strokeWidth={0.6} />
       ))}
+
+      {/* Zero lines — stronger than the grid, lighter than the axes */}
+      {domain.x[0] < 0 && domain.x[1] > 0 && (
+        <line x1={sx(0)} x2={sx(0)} y1={MARGIN.top} y2={MARGIN.top + plotH}
+          stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.4} />
+      )}
+      {domain.y[0] < 0 && domain.y[1] > 0 && (
+        <line x1={MARGIN.left} x2={MARGIN.left + plotW} y1={sy(0)} y2={sy(0)}
+          stroke="hsl(var(--foreground))" strokeWidth={1} opacity={0.4} />
+      )}
 
       {/* Axes */}
       <line x1={MARGIN.left} x2={MARGIN.left + plotW} y1={MARGIN.top + plotH} y2={MARGIN.top + plotH}
