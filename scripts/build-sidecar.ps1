@@ -9,10 +9,10 @@ $Root    = Split-Path $PSScriptRoot -Parent
 $PySrc   = Join-Path $Root "python"
 $OutDir  = Join-Path (Join-Path $Root "src-tauri") "binaries"
 
-Write-Host "Installing Python dependencies…"
+Write-Host "Installing Python dependencies..."
 python -m pip install -r "$PySrc\requirements.txt" --quiet
 
-Write-Host "Building sidecar with PyInstaller…"
+Write-Host "Building sidecar with PyInstaller..."
 python -m PyInstaller `
     --onefile `
     --name morfocat-sidecar `

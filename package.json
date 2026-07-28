@@ -10,7 +10,8 @@
     "sidecar:win": "powershell -ExecutionPolicy Bypass -File scripts/build-sidecar.ps1",
     "sidecar:unix": "bash scripts/build-sidecar.sh",
     "package:win": "npm run sidecar:win && tauri build",
-    "package:unix": "npm run sidecar:unix && tauri build"
+    "package:unix": "npm run sidecar:unix && tauri build",
+    "package:win:signed": "npm run sidecar:win && tauri build --config src-tauri/tauri.signing.conf.json"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.1.2",
