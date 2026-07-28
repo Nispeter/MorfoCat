@@ -20,6 +20,7 @@ import {
   idFieldValue, guessSeparator, partCount, fieldColour, type IdField,
 } from "@/lib/idFields";
 import { useAnalysisStore } from "@/store/analysisStore";
+import { usePlotStyleStore } from "@/store/plotStyleStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
@@ -232,8 +233,10 @@ export default function DataManager() {
               procrustes_distances: s.procrustes_distances,
             }
           : null,
+        plotStyle: usePlotStyleStore.getState().snapshot(),
       });
-      await writeTextFile(path, JSON.stringify(project));
+      // Indented so the file can be read, diffed and hand-edited.
+      await writeTextFile(path, JSON.stringify(project, null, 2));
       toast.success("Project saved", { description: path });
     } catch (e) {
       toast.error("Could not save project", { description: e instanceof Error ? e.message : String(e) });
@@ -249,6 +252,7 @@ export default function DataManager() {
       const project = parseProject(await readTextFile(picked));
       clearAnalyses();
       loadProject(project);
+      if (project.plotStyle) usePlotStyleStore.getState().restore(project.plotStyle);
       toast.success("Project opened", {
         description: `${project.dataset.specimens.length} specimens · ${project.dataset.n_landmarks} landmarks`,
       });

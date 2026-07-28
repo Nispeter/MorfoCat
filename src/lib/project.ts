@@ -1,4 +1,5 @@
 import type { Dataset } from "@/store/datasetStore";
+import type { PlotStyleSnapshot } from "@/store/plotStyleStore";
 
 /**
  * `.morfocat.json` project files: the dataset plus everything the user set up
@@ -25,6 +26,8 @@ export interface ProjectFile {
   symPairs: [number, number][];
   midlineLms: number[];
   alignment: ProjectAlignment | null;
+  /** How the PCA figure is styled, so a saved figure comes back as it was. */
+  plotStyle: PlotStyleSnapshot | null;
 }
 
 export function buildProject(
@@ -68,6 +71,7 @@ export function parseProject(text: string): ProjectFile {
     symPairs: p.symPairs ?? [],
     midlineLms: p.midlineLms ?? [],
     alignment: p.alignment ?? null,
+    plotStyle: p.plotStyle ?? null,
   };
 }
 

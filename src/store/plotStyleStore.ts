@@ -100,7 +100,30 @@ interface PlotStyleState {
   setExportScale: (scale: number) => void;
   setLegendPos: (pos: { x: number; y: number }) => void;
   setShowLegend: (show: boolean) => void;
+  /** Everything that describes how the figure looks, for saving in a project. */
+  snapshot: () => PlotStyleSnapshot;
+  restore: (snap: Partial<PlotStyleSnapshot>) => void;
 }
+
+/** The figure's appearance, split out so a project file can carry it. */
+export type PlotStyleSnapshot = Pick<
+  PlotStyleState,
+  | "styles" | "symbolBy" | "symbolStyles"
+  | "axisMode" | "manualLimits" | "invertX" | "invertY"
+  | "refShapesX" | "refShapesY" | "refSource" | "refShowIds" | "refSize"
+  | "refFlipX" | "refFlipY" | "refRotation" | "refPositionsX" | "refPositionsY"
+  | "figureWidth" | "figureHeight" | "exportScale"
+  | "legendPos" | "showLegend"
+>;
+
+const SNAPSHOT_KEYS = [
+  "styles", "symbolBy", "symbolStyles",
+  "axisMode", "manualLimits", "invertX", "invertY",
+  "refShapesX", "refShapesY", "refSource", "refShowIds", "refSize",
+  "refFlipX", "refFlipY", "refRotation", "refPositionsX", "refPositionsY",
+  "figureWidth", "figureHeight", "exportScale",
+  "legendPos", "showLegend",
+] as const satisfies readonly (keyof PlotStyleSnapshot)[];
 
 export const usePlotStyleStore = create<PlotStyleState>()(
   persist(
@@ -191,6 +214,20 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       setExportScale: (exportScale) => set({ exportScale }),
       setLegendPos: (legendPos) => set({ legendPos }),
       setShowLegend: (showLegend) => set({ showLegend }),
+
+      snapshot: () => {
+        const s = get();
+        return Object.fromEntries(
+          SNAPSHOT_KEYS.map((k) => [k, s[k]])
+        ) as PlotStyleSnapshot;
+      },
+
+      restore: (snap) =>
+        set(
+          Object.fromEntries(
+            SNAPSHOT_KEYS.filter((k) => snap[k] !== undefined).map((k) => [k, snap[k]])
+          ) as Partial<PlotStyleState>
+        ),
     }),
     { name: "morfocat-plot-style" }
   )
