@@ -20,6 +20,7 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { parseTPS, writeTPS } from "@/lib/parsers";
 import { readFileB64, readTextFile, writeTextFile } from "@/lib/ipc";
+import { resolveSpecimenId } from "@/lib/specimenId";
 import {
   ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
   CheckCircle2, Circle, MousePointerClick, Import, Spline, Ruler,
@@ -342,7 +343,7 @@ export default function Digitizer() {
         const imgBase = sp.image ? basename(sp.image) : null;
         const imgPath = imgBase ? (dir ? `${dir}/${imgBase}` : imgBase) : "";
         return {
-          id: sp.id ?? String(i + 1),
+          id: resolveSpecimenId(sp.id, imgBase, i),
           imagePath: imgPath,
           imageBase: imgBase ?? "",
           scale: sp.scale ?? undefined,

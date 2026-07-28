@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
+import { imageStem, resolveSpecimenId as resolveId } from "@/lib/specimenId";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,31 +31,6 @@ function formatRelTime(ts: number) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
-}
-
-/**
- * File name of an image reference, without directories or extension.
- *
- * tpsDig and TpsUtil often write the absolute path the images had on the
- * machine that digitized them, so the folders have to go — otherwise every
- * specimen ID starts with the same `C:\Users\…` prefix and classifiers
- * extracted from the ID are all identical.
- */
-function imageStem(image: string): string {
-  const base = image.replace(/\\/g, "/").split("/").pop() ?? image;
-  return base
-    .replace(/\.[^.]+$/, "")
-    // File names collected by hand pick up stray and doubled spaces, which
-    // would otherwise split one site into "La Puntilla" and "La  Puntilla".
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function resolveId(id: string | null | undefined, image: string | null | undefined, fallbackIdx: number): string {
-  if (id && !/^\d+$/.test(id.trim())) return id.trim();
-  if (image) return imageStem(image);
-  if (id) return id.trim();
-  return `specimen_${fallbackIdx + 1}`;
 }
 
 function detectGroup(image: string | null | undefined): string | undefined {
