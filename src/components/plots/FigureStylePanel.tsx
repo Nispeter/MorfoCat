@@ -28,6 +28,8 @@ export function FigureStylePanel({
     axisMode, setAxisMode, manualLimits, setManualLimits,
     refShapesX, refShapesY, setRefShapes,
     refSource, setRefSource, refShowIds, setRefShowIds,
+    refSize, setRefSize,
+    figureWidth, figureHeight, setFigureSize, exportScale, setExportScale,
     showLegend, setShowLegend,
   } = usePlotStyleStore();
 
@@ -121,7 +123,7 @@ export function FigureStylePanel({
             </select>
             <p className="text-muted-foreground">
               {splitEncoding
-                ? `Colour shows “${activeClassifier}”, symbol shape shows “${symbolBy}” — each point carries both.`
+                ? t("fig.splitActive").replace("{a}", activeClassifier ?? "").replace("{b}", symbolBy ?? "")
                 : t("fig.splitHint")}
             </p>
 
@@ -239,12 +241,29 @@ export function FigureStylePanel({
 
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs">{t("fig.alongX")}</Label>
-            <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
+            <div className="flex items-center gap-1">
+              <Switch checked={refShapesX > 0} onCheckedChange={(on) => setRefShapes("x", on ? 4 : 0)} />
+              <NumberInput className="h-7 w-14 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
+            </div>
           </div>
           <div className="flex items-center justify-between gap-2">
             <Label className="text-xs">{t("fig.alongY")}</Label>
-            <NumberInput className="h-7 w-16 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
+            <div className="flex items-center gap-1">
+              <Switch checked={refShapesY > 0} onCheckedChange={(on) => setRefShapes("y", on ? 4 : 0)} />
+              <NumberInput className="h-7 w-14 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
+            </div>
           </div>
+          {(refShapesX > 0 || refShapesY > 0) && (
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs">{t("fig.refSize")}</Label>
+              <input
+                type="range" min={48} max={200} step={4}
+                value={refSize}
+                onChange={(e) => setRefSize(+e.target.value)}
+                className="w-28"
+              />
+            </div>
+          )}
           {refSource !== "deformation" && (
             <div className="flex items-center justify-between gap-2">
               <Label className="text-xs">{t("fig.showIds")}</Label>
@@ -256,6 +275,47 @@ export function FigureStylePanel({
             <Switch checked={showLegend} onCheckedChange={setShowLegend} />
           </div>
           <p className="text-muted-foreground">{t("fig.dragLegend")}</p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.size")}</CardTitle></CardHeader>
+        <CardContent className="space-y-2 text-xs">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="space-y-0.5">
+              <Label className="text-[10px]">{t("fig.width")}</Label>
+              <NumberInput
+                className="h-7 text-xs" min={400} max={2400}
+                value={figureWidth}
+                onChange={(w) => setFigureSize(w, figureHeight)}
+              />
+            </div>
+            <div className="space-y-0.5">
+              <Label className="text-[10px]">{t("fig.height")}</Label>
+              <NumberInput
+                className="h-7 text-xs" min={300} max={2400}
+                value={figureHeight}
+                onChange={(h) => setFigureSize(figureWidth, h)}
+              />
+            </div>
+          </div>
+          <div className="flex items-center justify-between gap-2">
+            <Label className="text-xs">{t("fig.exportQuality")}</Label>
+            <select
+              className="rounded border bg-background px-1.5 py-1"
+              value={exportScale}
+              onChange={(e) => setExportScale(+e.target.value)}
+            >
+              {[2, 3, 4, 6, 8].map((s) => (
+                <option key={s} value={s}>{s}×</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-muted-foreground">
+            {t("fig.exportQualityHint")
+              .replace("{w}", String(Math.round(figureWidth * exportScale)))
+              .replace("{h}", String(Math.round(figureHeight * exportScale)))}
+          </p>
         </CardContent>
       </Card>
     </div>

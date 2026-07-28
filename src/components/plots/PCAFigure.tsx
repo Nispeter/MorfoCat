@@ -27,8 +27,7 @@ interface PCAFigureProps {
   height?: number;
 }
 
-const MARGIN = { top: 24, right: 24, bottom: 150, left: 150 };
-const REF_BOX = 96;
+const AXIS_GUTTER = { top: 24, right: 24, bottom: 54, left: 54 };
 
 /**
  * Publication-style PCA scatter: group symbols and colours, shape references
@@ -42,13 +41,25 @@ export function PCAFigure({
 }: PCAFigureProps) {
   const {
     styles, symbolBy, symbolStyles,
-    axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds,
+    axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds, refSize,
     legendPos, showLegend, setLegendPos,
   } = usePlotStyleStore();
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
   const dragging = useRef(false);
+
+  // Reference drawings live outside the axes, so they claim their own gutter;
+  // turning them off gives the plot that space back.
+  const refGap = 12;
+  const extraLeft = refShapesY > 0 ? refSize + refGap + 18 : 0;
+  const extraBottom = refShapesX > 0 ? refSize + refGap + 18 : 0;
+  const MARGIN = {
+    top: AXIS_GUTTER.top,
+    right: AXIS_GUTTER.right,
+    bottom: AXIS_GUTTER.bottom + extraBottom,
+    left: AXIS_GUTTER.left + extraLeft,
+  };
 
   const plotW = width - MARGIN.left - MARGIN.right;
   const plotH = height - MARGIN.top - MARGIN.bottom;
@@ -221,8 +232,8 @@ export function PCAFigure({
           photo={r.photo}
           edges={wireframe}
           cx={sx(r.at)}
-          cy={MARGIN.top + plotH + 60 + REF_BOX / 2}
-          size={REF_BOX}
+          cy={MARGIN.top + plotH + AXIS_GUTTER.bottom + refGap + refSize / 2}
+          size={refSize}
           label={r.label}
           caption={r.caption}
         />
@@ -235,9 +246,9 @@ export function PCAFigure({
           shape={r.shape}
           photo={r.photo}
           edges={wireframe}
-          cx={MARGIN.left - 66 - REF_BOX / 2}
+          cx={MARGIN.left - AXIS_GUTTER.left - refGap - refSize / 2}
           cy={sy(r.at)}
-          size={REF_BOX}
+          size={refSize}
           label={r.label}
           caption={r.caption}
         />

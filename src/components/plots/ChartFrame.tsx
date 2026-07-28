@@ -11,6 +11,8 @@ interface ChartFrameProps {
   filename: string;
   /** Controls rendered between the title and the export buttons. */
   controls?: ReactNode;
+  /** How many times the on-screen size the PNG is rendered at. */
+  exportScale?: number;
   className?: string;
   children: ReactNode;
 }
@@ -19,14 +21,14 @@ interface ChartFrameProps {
  * Card wrapper that gives every chart the same header layout and a PNG/SVG
  * export control in the top-right corner.
  */
-export function ChartFrame({ title, filename, controls, className, children }: ChartFrameProps) {
+export function ChartFrame({ title, filename, controls, className, exportScale = 3, children }: ChartFrameProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<ChartFormat | null>(null);
 
   const save = async (format: ChartFormat) => {
     setBusy(format);
     try {
-      await exportChart(ref.current, filename, format);
+      await exportChart(ref.current, filename, format, exportScale);
       toast.success(`Chart exported as ${format.toUpperCase()}`);
     } catch (e) {
       toast.error("Export failed", { description: e instanceof Error ? e.message : String(e) });

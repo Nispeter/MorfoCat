@@ -55,6 +55,13 @@ interface PlotStyleState {
   refSource: RefSource;
   /** Show the specimen's ID under each reference drawing. */
   refShowIds: boolean;
+  /** Size of each reference drawing, in figure pixels. */
+  refSize: number;
+  /** Figure size in pixels; the export is rendered from this at high DPI. */
+  figureWidth: number;
+  figureHeight: number;
+  /** Multiplier applied when rasterizing the PNG. */
+  exportScale: number;
   /** Legend position as a fraction of the plot area, so it survives resizing. */
   legendPos: { x: number; y: number };
   showLegend: boolean;
@@ -71,6 +78,9 @@ interface PlotStyleState {
   setRefShapes: (axis: "x" | "y", n: number) => void;
   setRefSource: (source: RefSource) => void;
   setRefShowIds: (show: boolean) => void;
+  setRefSize: (size: number) => void;
+  setFigureSize: (w: number, h: number) => void;
+  setExportScale: (scale: number) => void;
   setLegendPos: (pos: { x: number; y: number }) => void;
   setShowLegend: (show: boolean) => void;
 }
@@ -87,6 +97,10 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       refShapesY: 4,
       refSource: "wireframe",
       refShowIds: false,
+      refSize: 96,
+      figureWidth: 900,
+      figureHeight: 680,
+      exportScale: 4,
       legendPos: { x: 0.66, y: 0.7 },
       showLegend: true,
 
@@ -143,6 +157,9 @@ export const usePlotStyleStore = create<PlotStyleState>()(
         set(axis === "x" ? { refShapesX: n } : { refShapesY: n }),
       setRefSource: (refSource) => set({ refSource }),
       setRefShowIds: (refShowIds) => set({ refShowIds }),
+      setRefSize: (refSize) => set({ refSize }),
+      setFigureSize: (figureWidth, figureHeight) => set({ figureWidth, figureHeight }),
+      setExportScale: (exportScale) => set({ exportScale }),
       setLegendPos: (legendPos) => set({ legendPos }),
       setShowLegend: (showLegend) => set({ showLegend }),
     }),

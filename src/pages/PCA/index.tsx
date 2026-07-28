@@ -51,6 +51,9 @@ export default function PCA() {
   const refShapesX = usePlotStyleStore((s) => s.refShapesX);
   const refShapesY = usePlotStyleStore((s) => s.refShapesY);
   const axisMode = usePlotStyleStore((s) => s.axisMode);
+  const figureWidth = usePlotStyleStore((s) => s.figureWidth);
+  const figureHeight = usePlotStyleStore((s) => s.figureHeight);
+  const exportScale = usePlotStyleStore((s) => s.exportScale);
   const manualLimits = usePlotStyleStore((s) => s.manualLimits);
 
   const refIndices = useMemo(() => {
@@ -228,6 +231,7 @@ export default function PCA() {
               <ChartFrame
                 title={`PC${pcX + 1} vs PC${pcY + 1}`}
                 filename={`pca_figure_pc${pcX + 1}_pc${pcY + 1}`}
+                exportScale={exportScale}
                 controls={
                   <>
                     <select className="rounded border bg-background px-1 py-0.5 text-xs font-normal" value={pcX} onChange={(e) => setPcX(+e.target.value)}>
@@ -255,6 +259,8 @@ export default function PCA() {
                   photos={photos}
                   pcX={pcX}
                   pcY={pcY}
+                  width={figureWidth}
+                  height={figureHeight}
                 />
               </ChartFrame>
               <FigureStylePanel

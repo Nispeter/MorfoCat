@@ -69,11 +69,34 @@ function triggerDownload(blob: Blob, filename: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Background colour matching the current theme's card surface. */
-function themeBackground(): string {
-  const card = getComputedStyle(document.documentElement).getPropertyValue("--card").trim();
-  return card ? `hsl(${card})` : "#ffffff";
+/**
+ * Render the chart in the light theme regardless of what the app is using.
+ *
+ * Figures end up in papers and slides on white paper, so a dark-theme export
+ * would be unusable. The document is switched to the light theme for the
+ * duration of the capture and put back afterwards; it is synchronous, so no
+ * repaint happens in between and the flip is invisible.
+ */
+function withLightTheme<T>(fn: () => T): T {
+  const root = document.documentElement;
+  const hadDark = root.classList.contains("dark");
+  const previousTheme = root.getAttribute("data-theme");
+
+  // Dropping both the dark class and the theme attribute falls back to the
+  // neutral light palette, which reads better in print than a tinted theme.
+  root.classList.remove("dark");
+  root.removeAttribute("data-theme");
+  try {
+    return fn();
+  } finally {
+    if (hadDark) root.classList.add("dark");
+    if (previousTheme === null) root.removeAttribute("data-theme");
+    else root.setAttribute("data-theme", previousTheme);
+  }
 }
+
+/** Card surface of the light theme — the background exported figures sit on. */
+const EXPORT_BACKGROUND = "#ffffff";
 
 export type ChartFormat = "svg" | "png";
 
@@ -88,8 +111,10 @@ export async function exportChart(
   scale = 3
 ): Promise<void> {
   if (!container) throw new Error("Nothing to export.");
-  const background = themeBackground();
-  const markup = serialize(container, background);
+  const background = EXPORT_BACKGROUND;
+  // Styles are read off the live DOM, so the theme must be light while the
+  // colours are being inlined — not merely when the PNG is painted.
+  const markup = withLightTheme(() => serialize(container, background));
   if (!markup) throw new Error("No chart found to export.");
 
   const base = filename.replace(/\.(svg|png)$/i, "");
