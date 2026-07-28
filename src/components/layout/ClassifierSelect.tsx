@@ -2,9 +2,8 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useT } from "@/lib/i18n";
 
 /**
- * Compact dropdown to choose which classifier drives grouping/coloring.
- * Reads classifier names + active from the dataset store. Renders nothing
- * when no classifiers are defined.
+ * Compact dropdown for picking the active category — the one that colours and
+ * groups the plots. Renders nothing until a category has been defined.
  */
 export function ClassifierSelect({ label }: { label?: string } = {}) {
   const t = useT();

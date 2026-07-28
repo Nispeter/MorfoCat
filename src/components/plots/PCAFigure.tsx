@@ -12,11 +12,11 @@ interface PCAFigureProps {
   /** Procrustes-aligned coordinates, used to draw real specimens as references. */
   aligned: number[][][] | null;
   wireframe: [number, number][];
-  /** Value of the colour classifier for each specimen. */
+  /** Value of the colour category for each specimen. */
   groups: string[];
-  /** Value of the symbol classifier, when a second one is in play. */
+  /** Value of the symbol category, when a second one is in play. */
   symbolGroups?: string[] | null;
-  /** Name of the colour classifier, used as the legend heading. */
+  /** Name of the colour category, used as the legend heading. */
   activeLabel?: string;
   ids: string[];
   /** Photo for each specimen, keyed by its index in `scores`. */
@@ -36,7 +36,7 @@ const AXIS_GUTTER = { top: 24, right: 24, bottom: 54, left: 54 };
  */
 export function PCAFigure({
   scores, loadings, pctVariance, consensus, aligned, wireframe,
-  groups, symbolGroups, activeLabel = "group", ids, photos,
+  groups, symbolGroups, activeLabel = "category", ids, photos,
   pcX, pcY, width = 900, height = 680,
 }: PCAFigureProps) {
   const {
@@ -91,7 +91,7 @@ export function PCAFigure({
   const styleFor = (g: string) =>
     styles[g] ?? { label: g, color: "#3b82f6", symbol: "circle" as const, filled: true };
 
-  // A second classifier splits the encoding in two: the first picks the colour,
+  // A second category splits the encoding in two: the first picks the colour,
   // the second the symbol shape, so one point can show both memberships.
   const splitEncoding = !!symbolBy && !!symbolGroups;
   const uniqueSymbolGroups = useMemo(
@@ -106,7 +106,7 @@ export function PCAFigure({
     ? uniqueGroups.length + uniqueSymbolGroups.length + 2
     : uniqueGroups.length;
 
-  /** Final paint for a point: colour from one classifier, shape from the other. */
+  /** Final paint for a point: colour from one category, shape from the other. */
   function markFor(i: number) {
     const colour = styleFor(groups[i]);
     const shape = splitEncoding ? symbolStyleFor(symbolGroups![i]) : colour;

@@ -272,7 +272,7 @@ export default function PCA() {
                   wireframe={wireframe}
                   groups={groups}
                   symbolGroups={symbolGroups}
-                  activeLabel={active ?? "group"}
+                  activeLabel={active ?? t("ui.category")}
                   ids={ids}
                   photos={photos}
                   pcX={pcX}
