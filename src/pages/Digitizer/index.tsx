@@ -410,12 +410,15 @@ export default function Digitizer() {
     }
     clearAnalyses();
     setDataset({
-      specimens: specimens.map((sp) => {
+      specimens: specimens.map((sp, i) => {
         // Apply metric scale (units per pixel) to coordinates when available,
         // so centroid size and allometry are in real units.
         const k = sp.scale ?? 1;
         return {
-          id: sp.id,
+          // A session started from Image Import numbers its specimens 1, 2, 3;
+          // the file name is the informative label, and the one classifiers
+          // get carved out of.
+          id: resolveSpecimenId(sp.id, sp.imageBase, i),
           landmarks: sp.landmarks.map((lm) => [lm.x * k, lm.y * k]),
           scale: sp.scale ?? null,
           image: sp.imageBase || null,
