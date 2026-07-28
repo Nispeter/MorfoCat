@@ -1,7 +1,9 @@
 import { useMemo, useRef, useState } from "react";
 import { symbolPath, isStrokeOnly } from "@/lib/symbols";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
-import { figureDomain, referenceSpecimens, resolveRefPositions, orientShape } from "@/lib/figure";
+import {
+  figureDomain, referenceSpecimens, resolveRefPositions, orientShape, niceTicks,
+} from "@/lib/figure";
 
 interface PCAFigureProps {
   scores: number[][];
@@ -117,12 +119,8 @@ export function PCAFigure({
     };
   }
 
-  const ticks = (lo: number, hi: number, count = 6) => {
-    const step = (hi - lo) / count;
-    return Array.from({ length: count + 1 }, (_, i) => lo + step * i);
-  };
-  const xTicks = ticks(domain.x[0], domain.x[1]);
-  const yTicks = ticks(domain.y[0], domain.y[1]);
+  const xTicks = niceTicks(domain.x[0], domain.x[1]);
+  const yTicks = niceTicks(domain.y[0], domain.y[1]);
 
   const deform = (pc: number, amount: number): number[][] | null => {
     if (!consensus || !loadings.length) return null;

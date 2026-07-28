@@ -12,7 +12,7 @@ import { useT, type TranslationKey } from "@/lib/i18n";
 /** Controls for how the PCA figure looks: group appearance, axes, references. */
 export function FigureStylePanel({
   groups, symbolValues, classifiers, activeClassifier, imageDir, onPickImageFolder,
-  suggestedX, suggestedY,
+  suggestedX, suggestedY, optionsX, optionsY,
 }: {
   groups: string[];
   /** Distinct values of the second classifier, when one is chosen. */
@@ -22,9 +22,12 @@ export function FigureStylePanel({
   activeClassifier: string | null;
   imageDir: string | null;
   onPickImageFolder: () => void;
-  /** Evenly spaced axis positions, used to seed the pinned list. */
+  /** Default reference positions, used to seed the pinned list. */
   suggestedX: number[];
   suggestedY: number[];
+  /** Axis tick values, offered as the positions a reference can sit at. */
+  optionsX: number[];
+  optionsY: number[];
 }) {
   const {
     styles, setStyle, resetStyles,
@@ -273,11 +276,13 @@ export function FigureStylePanel({
 
           <RefAxisControls
             axis="x" label={t("fig.alongX")} count={refShapesX} pinned={refPositionsX}
-            suggested={suggestedX} setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
+            suggested={suggestedX} options={optionsX}
+            setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
           />
           <RefAxisControls
             axis="y" label={t("fig.alongY")} count={refShapesY} pinned={refPositionsY}
-            suggested={suggestedY} setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
+            suggested={suggestedY} options={optionsY}
+            setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
           />
 
           <div className="space-y-1.5 border-t pt-2">
@@ -402,16 +407,18 @@ export function FigureStylePanel({
  * usually needs.
  */
 function RefAxisControls({
-axis, label, count, pinned, suggested, setRefShapes, setRefPositions, t,
+  axis, label, count, pinned, suggested, options, setRefShapes, setRefPositions, t,
 }: {
-axis: "x" | "y";
-label: string;
-count: number;
-pinned: number[] | null;
-suggested: number[];
-setRefShapes: (axis: "x" | "y", n: number) => void;
-setRefPositions: (axis: "x" | "y", positions: number[] | null) => void;
-t: (key: TranslationKey) => string;
+  axis: "x" | "y";
+  label: string;
+  count: number;
+  pinned: number[] | null;
+  suggested: number[];
+  /** The axis tick values — the positions a reference can sit at. */
+  options: number[];
+  setRefShapes: (axis: "x" | "y", n: number) => void;
+  setRefPositions: (axis: "x" | "y", positions: number[] | null) => void;
+  t: (key: TranslationKey) => string;
 }) {
   return (
     <div className="space-y-1.5">
@@ -439,11 +446,17 @@ t: (key: TranslationKey) => string;
         <div className="space-y-1 rounded border bg-muted/30 p-1.5">
           {pinned.map((value, i) => (
             <div key={i} className="flex items-center gap-1">
-              <NumberInput
-                className="h-6 flex-1 text-[11px]" allowDecimal
+              <select
+                className="h-6 flex-1 rounded border bg-background px-1 text-[11px]"
                 value={value}
-                onChange={(v) => setRefPositions(axis, pinned.map((p, j) => (j === i ? v : p)))}
-              />
+                onChange={(e) =>
+                  setRefPositions(axis, pinned.map((p, j) => (j === i ? +e.target.value : p)))
+                }
+              >
+                {(options.includes(value) ? options : [value, ...options]).map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
               <button
                 onClick={() => setRefPositions(axis, pinned.filter((_, j) => j !== i))}
                 className="px-1 text-muted-foreground hover:text-destructive"
@@ -455,7 +468,7 @@ t: (key: TranslationKey) => string;
           ))}
           <div className="flex gap-1">
             <button
-              onClick={() => setRefPositions(axis, [...pinned, 0])}
+              onClick={() => setRefPositions(axis, [...pinned, options[0] ?? 0])}
               className="flex-1 rounded border px-1 py-0.5 text-[10px] hover:bg-muted"
             >
               + {t("fig.addPosition")}

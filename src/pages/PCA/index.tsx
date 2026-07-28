@@ -13,7 +13,9 @@ import { ChartFrame } from "@/components/plots/ChartFrame";
 import { PCAFigure } from "@/components/plots/PCAFigure";
 import { FigureStylePanel } from "@/components/plots/FigureStylePanel";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
-import { figureDomain, referenceSpecimens, resolveRefPositions, refPositions } from "@/lib/figure";
+import {
+  figureDomain, referenceSpecimens, resolveRefPositions, refPositions, niceTicks,
+} from "@/lib/figure";
 import { useSpecimenImages } from "@/lib/useSpecimenImages";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useDatasetStore } from "@/store/datasetStore";
@@ -91,13 +93,15 @@ export default function PCA() {
 
   // Where evenly spaced references would land, used to seed the pinned list.
   const suggested = useMemo(() => {
-    if (!pca) return { x: [] as number[], y: [] as number[] };
+    if (!pca) return { x: [] as number[], y: [] as number[], ticksX: [] as number[], ticksY: [] as number[] };
     const xs = pca.scores.map((s) => s[pcX] ?? 0);
     const ys = pca.scores.map((s) => s[pcY] ?? 0);
     const domain = figureDomain(xs, ys, axisMode, manualLimits);
     return {
-      x: refPositions(Math.max(refShapesX, 1), domain.x[0], domain.x[1]).map((v) => +v.toFixed(3)),
-      y: refPositions(Math.max(refShapesY, 1), domain.y[0], domain.y[1]).map((v) => +v.toFixed(3)),
+      x: refPositions(Math.max(refShapesX, 1), domain.x[0], domain.x[1]).map((v) => +v.toFixed(4)),
+      y: refPositions(Math.max(refShapesY, 1), domain.y[0], domain.y[1]).map((v) => +v.toFixed(4)),
+      ticksX: niceTicks(domain.x[0], domain.x[1]).map((v) => +v.toFixed(4)),
+      ticksY: niceTicks(domain.y[0], domain.y[1]).map((v) => +v.toFixed(4)),
     };
   }, [pca, pcX, pcY, refShapesX, refShapesY, axisMode, manualLimits]);
 
@@ -290,6 +294,8 @@ export default function PCA() {
                 onPickImageFolder={pickImageFolder}
                 suggestedX={suggested.x}
                 suggestedY={suggested.y}
+                optionsX={suggested.ticksX}
+                optionsY={suggested.ticksY}
               />
             </div>
           </TabsContent>

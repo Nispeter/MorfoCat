@@ -13,6 +13,45 @@ export interface FigureDomain {
 
 const PAD = 0.12;
 
+/**
+ * A round step close to `rough` — 1, 2, 2.5 or 5 times a power of ten.
+ *
+ * Dividing the data range into equal parts gives axes labelled -0.15, -0.09,
+ * -0.04, 0.01…, which nobody can read against a published figure. Snapping the
+ * step to a round number puts the ticks on -0.15, -0.10, -0.05, 0.00 instead.
+ */
+function niceStep(rough: number): number {
+  if (!isFinite(rough) || rough <= 0) return 1;
+  const power = Math.pow(10, Math.floor(Math.log10(rough)));
+  const scaled = rough / power;
+  // Thresholds sit between the candidates rather than on them, so a step of
+  // 0.051 rounds down to 0.05 and keeps seven ticks instead of jumping to 0.1
+  // and leaving four.
+  const step = scaled <= 1.5 ? 1 : scaled <= 3 ? 2 : scaled <= 7 ? 5 : 10;
+  return step * power;
+}
+
+/** Round an interval outwards to whole multiples of a nice step. */
+function niceRange(lo: number, hi: number, count: number): [number, number] {
+  const step = niceStep((hi - lo) / count);
+  return [Math.floor(lo / step) * step, Math.ceil(hi / step) * step];
+}
+
+/**
+ * Tick positions across a domain, on round values. The domain is expected to
+ * already sit on multiples of the step, so the ticks land exactly on its ends.
+ */
+export function niceTicks(lo: number, hi: number, count = 6): number[] {
+  const step = niceStep((hi - lo) / count);
+  const out: number[] = [];
+  // Nudge the bound before comparing so floating-point drift does not drop the
+  // last tick when it lands exactly on the end of the axis.
+  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) {
+    out.push(Math.abs(v) < step * 1e-6 ? 0 : v);
+  }
+  return out;
+}
+
 export function figureDomain(
   xs: number[],
   ys: number[],
@@ -29,20 +68,33 @@ export function figureDomain(
     // Same magnitude either side of zero on both axes, so the spread of the
     // sample is directly comparable between plots.
     const m = Math.max(...xs.map(Math.abs), ...ys.map(Math.abs)) * (1 + PAD) || 0.01;
-    return { x: [-m, m], y: [-m, m] };
+    const [, hi] = niceRange(-m, m, 6);
+    return { x: [-hi, hi], y: [-hi, hi] };
   }
   const span = (vals: number[]): [number, number] => {
     if (!vals.length) return [-0.01, 0.01];
     const lo = Math.min(...vals), hi = Math.max(...vals);
     const margin = (hi - lo) * PAD || 0.01;
-    return [lo - margin, hi + margin];
+    return niceRange(lo - margin, hi + margin, 6);
   };
   return { x: span(xs), y: span(ys) };
 }
 
-/** `n` evenly spaced positions across an axis, each centred in its own slot. */
+/**
+ * Where `n` reference drawings sit along an axis.
+ *
+ * They land on tick values rather than arbitrary offsets, so a drawing labelled
+ * "0.05" sits under the 0.05 gridline the way published figures show it.
+ */
 export function refPositions(n: number, lo: number, hi: number): number[] {
-  return n <= 0 ? [] : Array.from({ length: n }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / n);
+  if (n <= 0) return [];
+  const ticks = niceTicks(lo, hi);
+  if (ticks.length === 0) return [];
+  if (n >= ticks.length) return ticks;
+  // Spread the chosen ticks across the axis instead of bunching them at one end.
+  return Array.from({ length: n }, (_, i) =>
+    ticks[Math.round((i * (ticks.length - 1)) / (n - 1 || 1))]
+  );
 }
 
 /** Index of the specimen whose score on `pc` sits closest to `value`. */
