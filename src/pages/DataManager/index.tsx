@@ -555,9 +555,17 @@ function ClassifiersCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
+        <p className="text-xs leading-relaxed text-muted-foreground">
+          {t("data.whatIsClassifier")}
+        </p>
+
         {/* Existing classifiers */}
         {names.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              {t("data.activeLabel")}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
             {names.map((n) => (
               <div
                 key={n}
@@ -588,11 +596,14 @@ function ClassifiersCard({
                 </button>
               </div>
             ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground">{t("data.nextUse")}</p>
           </div>
         )}
 
         {/* Cut the ID into named fields */}
-        <div className="border-t pt-2">
+        <div className="space-y-2 border-t pt-2">
+          <p className="text-xs font-medium">{t("data.fromId")}</p>
           <IdSchemeEditor ids={ids} onExtract={onExtractMany} />
         </div>
 
@@ -665,7 +676,11 @@ function IdSchemeEditor({
 
   return (
     <div className="space-y-2">
-      <p className="text-xs text-muted-foreground">{t("data.schemeHint")}</p>
+      <div className="space-y-0.5 text-[10px] leading-relaxed text-muted-foreground">
+        <p>{t("data.step1")}</p>
+        <p>{t("data.step2")}</p>
+        <p>{t("data.step3")}</p>
+      </div>
 
       {/* Character ruler — click two positions to mark a span */}
       <div className="flex flex-wrap gap-0.5">
