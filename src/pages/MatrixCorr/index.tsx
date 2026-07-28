@@ -11,7 +11,8 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, Res
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { matrixCorrelation, computeCovariance } from "@/lib/ipc";
-import { Play, Loader2, HelpCircle } from "lucide-react";
+import { Play, Loader2, HelpCircle, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 export default function MatrixCorr() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -60,6 +61,23 @@ export default function MatrixCorr() {
       description={t("page.matrixCorr.desc")}
       actions={
         <div className="flex items-center gap-2">
+          {matrixCorr && (
+            <Button size="sm" variant="outline" onClick={() => {
+              downloadCSV(
+                "matrix_correlation",
+                ["Statistic", "Value"],
+                [["r", matrixCorr.r], ["p_value", matrixCorr.p_value], ["permutations", matrixCorr.permutations]]
+              );
+              downloadCSV(
+                "matrix_correlation_null",
+                ["null_r"],
+                matrixCorr.null_distribution.map((v) => [v])
+              );
+              toast.success(t("msg.exported"));
+            }}>
+              <Download size={14} /> {t("action.exportCSV")}
+            </Button>
+          )}
           <TooltipProvider>
             <UITooltip>
               <TooltipTrigger asChild>

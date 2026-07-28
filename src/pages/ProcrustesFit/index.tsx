@@ -16,7 +16,8 @@ import { useAnalysisStore } from "@/store/analysisStore";
 import { procrustesFit } from "@/lib/ipc";
 import { alignPrincipalAxes } from "@/lib/shape";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
-import { Play, Loader2, HelpCircle } from "lucide-react";
+import { Play, Loader2, HelpCircle, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 export default function ProcrustesFit() {
   const { dataset, setAligned } = useDatasetStore();
@@ -25,6 +26,7 @@ export default function ProcrustesFit() {
   const aligned = useDatasetStore((s) => s.aligned);
   const consensus = useDatasetStore((s) => s.consensus);
   const procDist = useDatasetStore((s) => s.procrustes_distances);
+  const centroidSizes = useDatasetStore((s) => s.centroid_sizes);
   const wireframe = useDatasetStore((s) => s.wireframe);
 
   const symPairs = useDatasetStore((s) => s.symPairs);
@@ -78,10 +80,32 @@ export default function ProcrustesFit() {
       title={t("page.procrustes.title")}
       description={t("page.procrustes.desc")}
       actions={
+        <>
+        {aligned && consensus && (
+          <Button size="sm" variant="outline" onClick={() => {
+            const dim = aligned[0]?.[0]?.length ?? 2;
+            const axes = dim === 3 ? ["x", "y", "z"] : ["x", "y"];
+            const headers = [
+              "ID", "CentroidSize", "ProcrustesDistance",
+              ...aligned[0].flatMap((_, li) => axes.map((a) => `lm${li + 1}_${a}`)),
+            ];
+            const rows = aligned.map((sp, i) => [
+              included[i]?.id ?? `sp_${i + 1}`,
+              centroidSizes?.[i] ?? "",
+              procDist?.[i] ?? "",
+              ...sp.flat(),
+            ]);
+            downloadCSV("procrustes_aligned", headers, rows);
+            toast.success(t("msg.exported"));
+          }}>
+            <Download size={14} /> {t("action.exportCSV")}
+          </Button>
+        )}
         <Button size="sm" onClick={run} disabled={loading["procrustes"]}>
           {loading["procrustes"] ? <Loader2 size={14} className="animate-spin" /> : <Play size={14} />}
           {loading["procrustes"] ? t("action.running") : t("action.run") + " GPA"}
         </Button>
+        </>
       }
     >
       <div className="grid grid-cols-[240px_1fr] gap-4 h-full">

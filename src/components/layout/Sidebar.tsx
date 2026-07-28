@@ -6,7 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Database, GitMerge, ScanSearch, BarChart2, Layers, TrendingUp,
   Activity, GitBranch, Dna, Network, Sigma, ChevronLeft, ChevronRight, ChevronDown,
-  Cat, Grid3X3, Images, MousePointerClick, PackageOpen, Settings, Spline,
+  Cat, Grid3X3, Images, MousePointerClick, Settings, Spline,
 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { useNavStore } from "@/store/navStore";
@@ -20,7 +20,7 @@ export type PageId =
   | "pca" | "matrix-corr" | "pls" | "regression" | "modularity"
   | "cva" | "lda"
   | "phylogenetics" | "quant-genetics"
-  | "export-all" | "settings";
+  | "settings";
 
 /** What a page needs before it can do anything useful. */
 type Requirement = "none" | "dataset" | "aligned" | "groups";
@@ -50,7 +50,6 @@ const NAV: NavItem[] = [
   { id: "lda",            labelKey: "nav.lda",           icon: <GitBranch size={18} />,         group: "Discriminant", requires: "groups" },
   { id: "phylogenetics",  labelKey: "nav.phylogenetics", icon: <GitBranch size={18} />,         group: "Comparative",  requires: "aligned" },
   { id: "quant-genetics", labelKey: "nav.quantGenetics", icon: <Dna size={18} />,               group: "Comparative",  requires: "aligned" },
-  { id: "export-all",     labelKey: "nav.exportAll",     icon: <PackageOpen size={18} />,       group: "Tools",        requires: "dataset" },
   { id: "settings",       labelKey: "nav.settings",      icon: <Settings size={18} />,          group: "Tools",        requires: "none" },
 ];
 
@@ -70,11 +69,11 @@ export function Sidebar() {
   /** Why a page can't be opened yet, or null when it's ready. */
   function blockedReason(req: Requirement): string | null {
     if (req === "none") return null;
-    if (!hasDataset) return "Import a dataset in Data Manager first.";
+    if (!hasDataset) return t("ui.needDataset");
     if (req === "dataset") return null;
-    if (!hasAligned) return "Run Procrustes Fit first.";
+    if (!hasAligned) return t("ui.needProcrustes");
     if (req === "aligned") return null;
-    if (!hasGroupLabels) return "Assign groups in Data Manager first (extract a classifier).";
+    if (!hasGroupLabels) return t("ui.needGroups");
     return null;
   }
 

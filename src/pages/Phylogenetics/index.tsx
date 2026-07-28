@@ -14,7 +14,8 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine,
   Tooltip as RechartTooltip, ResponsiveContainer,
 } from "recharts";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 const EXAMPLE_NEWICK = "((A:1,B:1):1,(C:1,D:1):1);";
 
@@ -101,7 +102,46 @@ export default function Phylogenetics() {
   );
 
   return (
-    <PanelLayout title={t("page.phylogenetics.title")} description={t("page.phylogenetics.desc")}>
+    <PanelLayout
+      title={t("page.phylogenetics.title")}
+      description={t("page.phylogenetics.desc")}
+      actions={
+        (phyloMapping || pic || phyloSignal) && (
+          <Button size="sm" variant="outline" onClick={() => {
+            if (phyloMapping) {
+              downloadCSV(
+                "phylo_ancestral_states",
+                ["Node", "MeanShapeValue"],
+                Object.entries(phyloMapping.node_values).map(([node, vals]) => [
+                  node,
+                  (vals as number[]).reduce((a, b) => a + b, 0) / (vals as number[]).length,
+                ])
+              );
+            }
+            if (pic) {
+              downloadCSV(
+                "phylo_independent_contrasts",
+                ["Contrast", "Variance", "MeanContrast"],
+                pic.contrasts.map((c, i) => [
+                  i + 1, c.variance,
+                  c.contrast.reduce((a, b) => a + b, 0) / c.contrast.length,
+                ])
+              );
+            }
+            if (phyloSignal) {
+              downloadCSV(
+                "phylo_signal",
+                ["Statistic", "Value"],
+                [["k_mult", phyloSignal.k_mult], ["p_value", phyloSignal.p_value], ["n_tips", phyloSignal.n_tips]]
+              );
+            }
+            toast.success(t("msg.exported"));
+          }}>
+            <Download size={14} /> {t("action.exportCSV")}
+          </Button>
+        )
+      }
+    >
       <div className="grid grid-cols-[300px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>

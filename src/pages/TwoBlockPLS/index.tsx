@@ -12,7 +12,8 @@ import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Responsive
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { twoBlockPLS } from "@/lib/ipc";
-import { Play, Loader2, HelpCircle } from "lucide-react";
+import { Play, Loader2, HelpCircle, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 export default function TwoBlockPLS() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -25,6 +26,7 @@ export default function TwoBlockPLS() {
   const n_lm = dataset?.n_landmarks ?? 0;
   const half = Math.floor(n_lm / 2);
   const split = splitIdx ?? half;
+  const included = dataset?.specimens.filter((s) => s.include) ?? [];
 
   const run = async () => {
     if (!aligned || n_lm < 2) return;
@@ -62,6 +64,23 @@ export default function TwoBlockPLS() {
       description={t("page.pls.desc")}
       actions={
         <div className="flex items-center gap-2">
+          {pls && (
+            <Button size="sm" variant="outline" onClick={() => {
+              downloadCSV(
+                "pls_singular_values",
+                ["Dimension", "SingularValue", "PctCovariance"],
+                pls.singular_values.map((sv, i) => [i + 1, sv, pls.pct_covariance[i]])
+              );
+              downloadCSV(
+                "pls_block_scores",
+                ["ID", "Block1_SV1", "Block2_SV1"],
+                pls.x_scores.map((r, i) => [included[i]?.id ?? `sp_${i + 1}`, r[0], pls.y_scores[i]?.[0]])
+              );
+              toast.success(t("msg.exported"));
+            }}>
+              <Download size={14} /> {t("action.exportCSV")}
+            </Button>
+          )}
           <label className="text-xs text-muted-foreground">{t("pls.blockSplit")}</label>
           <input type="number" min={1} max={n_lm - 1} value={split} onChange={(e) => setSplitIdx(+e.target.value)} className="w-16 text-xs border rounded px-2 py-1" />
           <TooltipProvider>

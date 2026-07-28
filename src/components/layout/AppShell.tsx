@@ -17,7 +17,6 @@ import CVA from "@/pages/CVA";
 import LDA from "@/pages/LDA";
 import Phylogenetics from "@/pages/Phylogenetics";
 import QuantGenetics from "@/pages/QuantGenetics";
-import ExportAll from "@/pages/ExportAll";
 import Settings from "@/pages/Settings";
 
 const PAGE_MAP: Record<PageId, React.ComponentType> = {
@@ -37,7 +36,6 @@ const PAGE_MAP: Record<PageId, React.ComponentType> = {
   "lda":            LDA,
   "phylogenetics":  Phylogenetics,
   "quant-genetics": QuantGenetics,
-  "export-all":     ExportAll,
   "settings":       Settings,
 };
 

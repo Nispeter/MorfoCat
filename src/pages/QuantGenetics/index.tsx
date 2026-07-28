@@ -10,7 +10,8 @@ import { Label } from "@/components/ui/label";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { runGMatrix, runSelectionGradient } from "@/lib/ipc";
-import { Play, Loader2 } from "lucide-react";
+import { Play, Loader2, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 export default function QuantGenetics() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -72,7 +73,41 @@ export default function QuantGenetics() {
   const maxAbs = Math.max(...gCov.flat().map(Math.abs), 1e-10);
 
   return (
-    <PanelLayout title={t("page.quantGenetics.title")} description={t("page.quantGenetics.desc")}>
+    <PanelLayout
+      title={t("page.quantGenetics.title")}
+      description={t("page.quantGenetics.desc")}
+      actions={
+        (gMatrix || selectionGradient) && (
+          <Button size="sm" variant="outline" onClick={() => {
+            if (gMatrix) {
+              downloadCSV(
+                "g_matrix_eigenvalues",
+                ["Component", "Eigenvalue"],
+                gMatrix.eigenvalues.map((e, i) => [i + 1, e])
+              );
+              const n = gMatrix.g_matrix.length;
+              downloadCSV(
+                "g_matrix",
+                ["", ...Array.from({ length: n }, (_, i) => `var${i + 1}`)],
+                gMatrix.g_matrix.map((row, i) => [`var${i + 1}`, ...row])
+              );
+            }
+            if (selectionGradient) {
+              downloadCSV(
+                "selection_gradient",
+                ["Variable", "Beta", "ResponseR"],
+                selectionGradient.selection_gradient.map((b, i) => [
+                  `var${i + 1}`, b, selectionGradient.response_to_selection[i],
+                ])
+              );
+            }
+            toast.success(t("msg.exported"));
+          }}>
+            <Download size={14} /> {t("action.exportCSV")}
+          </Button>
+        )
+      }
+    >
       <Tabs defaultValue="gmatrix">
         <TabsList>
           <TabsTrigger value="gmatrix">{t("qg.gMatrix")}</TabsTrigger>

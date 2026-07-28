@@ -12,7 +12,8 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { detectOutliers } from "@/lib/ipc";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell } from "recharts";
-import { RefreshCw, Loader2, ArrowLeftRight, Eye } from "lucide-react";
+import { RefreshCw, Loader2, ArrowLeftRight, Eye, Download } from "lucide-react";
+import { downloadCSV } from "@/lib/export";
 
 export default function Outliers() {
   const aligned = useDatasetStore((s) => s.aligned);
@@ -89,10 +90,24 @@ export default function Outliers() {
       title={t("page.outliers.title")}
       description={t("page.outliers.desc")}
       actions={
+        <>
+        {outliers && (
+          <Button size="sm" variant="outline" onClick={() => {
+            downloadCSV(
+              "outlier_distances",
+              ["ID", "ProcrustesDistance", "Mahalanobis", "ZScore", "Flagged"],
+              chartData.map((d) => [d.id, d.d, d.md, d.z, Math.abs(d.z) > threshold ? "yes" : "no"])
+            );
+            toast.success(t("msg.exported"));
+          }}>
+            <Download size={14} /> {t("action.exportCSV")}
+          </Button>
+        )}
         <Button size="sm" variant="outline" onClick={run} disabled={loading["outliers"]}>
           {loading["outliers"] ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
           {loading["outliers"] ? t("action.running") : t("action.refresh")}
         </Button>
+        </>
       }
     >
       <div className="space-y-4">
