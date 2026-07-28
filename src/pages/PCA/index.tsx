@@ -14,7 +14,7 @@ import { PCAFigure } from "@/components/plots/PCAFigure";
 import { FigureStylePanel } from "@/components/plots/FigureStylePanel";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
 import {
-  figureDomain, referenceSpecimens, resolveRefPositions, refPositions, niceTicks,
+  figureDomain, referenceSpecimens, resolveRefPositions, refPositions, refPositionOptions,
 } from "@/lib/figure";
 import { useSpecimenImages } from "@/lib/useSpecimenImages";
 import { open } from "@tauri-apps/plugin-dialog";
@@ -100,8 +100,8 @@ export default function PCA() {
     return {
       x: refPositions(Math.max(refShapesX, 1), domain.x[0], domain.x[1]).map((v) => +v.toFixed(4)),
       y: refPositions(Math.max(refShapesY, 1), domain.y[0], domain.y[1]).map((v) => +v.toFixed(4)),
-      ticksX: niceTicks(domain.x[0], domain.x[1]).map((v) => +v.toFixed(4)),
-      ticksY: niceTicks(domain.y[0], domain.y[1]).map((v) => +v.toFixed(4)),
+      ticksX: refPositionOptions(domain.x[0], domain.x[1]).map((v) => +v.toFixed(4)),
+      ticksY: refPositionOptions(domain.y[0], domain.y[1]).map((v) => +v.toFixed(4)),
     };
   }, [pca, pcX, pcY, refShapesX, refShapesY, axisMode, manualLimits]);
 

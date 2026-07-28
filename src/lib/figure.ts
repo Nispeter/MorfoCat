@@ -42,7 +42,20 @@ function niceRange(lo: number, hi: number, count: number): [number, number] {
  * already sit on multiples of the step, so the ticks land exactly on its ends.
  */
 export function niceTicks(lo: number, hi: number, count = 6): number[] {
-  const step = niceStep((hi - lo) / count);
+  return ticksWithStep(lo, hi, niceStep((hi - lo) / count));
+}
+
+/**
+ * A finer set of round values across the axis, for choosing where a reference
+ * drawing sits. The axis itself stays sparsely labelled, but a value like 0.05
+ * should still be offered when the gridlines happen to land on multiples of
+ * 0.02.
+ */
+export function refPositionOptions(lo: number, hi: number): number[] {
+  return ticksWithStep(lo, hi, niceStep((hi - lo) / 14));
+}
+
+function ticksWithStep(lo: number, hi: number, step: number): number[] {
   const out: number[] = [];
   // Nudge the bound before comparing so floating-point drift does not drop the
   // last tick when it lands exactly on the end of the axis.

@@ -46,7 +46,7 @@ export function PCAFigure({
     axisMode, manualLimits, invertX, invertY,
     refShapesX, refShapesY, refSource, refShowIds, refSize,
     refFlipX, refFlipY, refRotation, refPositionsX, refPositionsY,
-    legendPos, showLegend, setLegendPos,
+    legendPos, legendScale, showLegend, setLegendPos,
   } = usePlotStyleStore();
 
   const orientation = { flipX: refFlipX, flipY: refFlipY, rotation: refRotation };
@@ -324,7 +324,7 @@ export function PCAFigure({
       {/* Legend — drag it anywhere inside the plot */}
       {showLegend && uniqueGroups.length > 0 && (
         <g
-          transform={`translate(${MARGIN.left + legendPos.x * plotW},${MARGIN.top + legendPos.y * plotH})`}
+          transform={`translate(${MARGIN.left + legendPos.x * plotW},${MARGIN.top + legendPos.y * plotH}) scale(${legendScale})`}
           onPointerDown={onLegendDown}
           style={{ cursor: "move" }}
         >

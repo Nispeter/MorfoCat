@@ -77,6 +77,8 @@ interface PlotStyleState {
   exportScale: number;
   /** Legend position as a fraction of the plot area, so it survives resizing. */
   legendPos: { x: number; y: number };
+  /** Legend size relative to its default, for fitting it into a figure. */
+  legendScale: number;
   showLegend: boolean;
 
   /** Fill in defaults for any group we haven't seen before. */
@@ -99,6 +101,7 @@ interface PlotStyleState {
   setFigureSize: (w: number, h: number) => void;
   setExportScale: (scale: number) => void;
   setLegendPos: (pos: { x: number; y: number }) => void;
+  setLegendScale: (scale: number) => void;
   setShowLegend: (show: boolean) => void;
   /** Everything that describes how the figure looks, for saving in a project. */
   snapshot: () => PlotStyleSnapshot;
@@ -113,7 +116,7 @@ export type PlotStyleSnapshot = Pick<
   | "refShapesX" | "refShapesY" | "refSource" | "refShowIds" | "refSize"
   | "refFlipX" | "refFlipY" | "refRotation" | "refPositionsX" | "refPositionsY"
   | "figureWidth" | "figureHeight" | "exportScale"
-  | "legendPos" | "showLegend"
+  | "legendPos" | "legendScale" | "showLegend"
 >;
 
 const SNAPSHOT_KEYS = [
@@ -122,7 +125,7 @@ const SNAPSHOT_KEYS = [
   "refShapesX", "refShapesY", "refSource", "refShowIds", "refSize",
   "refFlipX", "refFlipY", "refRotation", "refPositionsX", "refPositionsY",
   "figureWidth", "figureHeight", "exportScale",
-  "legendPos", "showLegend",
+  "legendPos", "legendScale", "showLegend",
 ] as const satisfies readonly (keyof PlotStyleSnapshot)[];
 
 export const usePlotStyleStore = create<PlotStyleState>()(
@@ -149,6 +152,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       figureHeight: 680,
       exportScale: 4,
       legendPos: { x: 0.66, y: 0.7 },
+      legendScale: 1,
       showLegend: true,
 
       ensureGroups: (groups) => {
@@ -213,6 +217,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       setFigureSize: (figureWidth, figureHeight) => set({ figureWidth, figureHeight }),
       setExportScale: (exportScale) => set({ exportScale }),
       setLegendPos: (legendPos) => set({ legendPos }),
+      setLegendScale: (legendScale) => set({ legendScale }),
       setShowLegend: (showLegend) => set({ showLegend }),
 
       snapshot: () => {

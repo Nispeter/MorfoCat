@@ -40,7 +40,7 @@ export function FigureStylePanel({
     refFlipX, refFlipY, setRefFlip, refRotation, setRefRotation,
     refPositionsX, refPositionsY, setRefPositions,
     figureWidth, figureHeight, setFigureSize, exportScale, setExportScale,
-    showLegend, setShowLegend,
+    showLegend, setShowLegend, legendScale, setLegendScale,
   } = usePlotStyleStore();
 
   const t = useT();
@@ -338,6 +338,17 @@ export function FigureStylePanel({
             <Label className="text-xs">{t("fig.legend")}</Label>
             <Switch checked={showLegend} onCheckedChange={setShowLegend} />
           </div>
+          {showLegend && (
+            <div className="flex items-center justify-between gap-2">
+              <Label className="text-xs">{t("fig.legendSize")}</Label>
+              <input
+                type="range" min={0.6} max={2} step={0.05}
+                value={legendScale}
+                onChange={(e) => setLegendScale(+e.target.value)}
+                className="w-28"
+              />
+            </div>
+          )}
           <p className="text-muted-foreground">{t("fig.dragLegend")}</p>
       </CollapsibleCard>
 
