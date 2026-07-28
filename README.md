@@ -152,34 +152,15 @@ projects never clear it. Signing moves reputation onto the publisher instead.
 | Option | Cost (verify current pricing) | Warning gone |
 | --- | --- | --- |
 | Unsigned | — | Never, in practice |
-| Self-signed certificate | free | No — SmartScreen ignores untrusted CAs |
-| [SignPath Foundation](https://signpath.org/) (open source only) | free | Gradually, as downloads accrue |
-| Microsoft Store | one-off dev account fee | Yes — Store apps skip SmartScreen |
-| [Azure Trusted Signing](https://azure.microsoft.com/products/trusted-signing) | ~USD 10 / month | Immediately |
 | OV certificate | ~USD 200–400 / year | Only after enough downloads |
 | EV certificate | ~USD 300–600 / year | Immediately |
+| [Azure Trusted Signing](https://azure.microsoft.com/products/trusted-signing) | ~USD 10 / month | Immediately |
+| Microsoft Store | Store fee | N/A — Store apps skip SmartScreen |
 
-There is no free publicly trusted code signing certificate. A self-signed one
-costs nothing and achieves nothing here — SmartScreen only counts signatures
-from a trusted CA.
-
-**SignPath Foundation** signs open-source projects for free. It needs a public
-repository under an OSI-approved licence, which this project does not have yet:
-add a `LICENSE` file before applying. Their certificate is OV, so the warning
-fades as downloads accumulate rather than vanishing at once.
-
-**The Microsoft Store** is the cheapest way to make the warning never appear —
-a one-off developer account fee rather than a yearly certificate. Store apps
-bypass SmartScreen entirely.
-
-**Azure Trusted Signing** is the sensible paid choice otherwise: an order of
-magnitude cheaper than an EV certificate and no USB token. Eligibility rules
-have changed more than once, so check the current terms before committing.
-
-Publishing a [winget](https://learn.microsoft.com/windows/package-manager/)
-manifest is free and sidesteps the issue for anyone who installs that way, since
-`winget install` does not go through the browser download path where SmartScreen
-fires. It does nothing for people who download the installer directly.
+Azure Trusted Signing is usually the sensible choice for a project this size:
+it is an order of magnitude cheaper than an EV certificate and needs no USB
+token. Eligibility rules have changed more than once, so check the current terms
+before committing.
 
 Since mid-2023 the CA/Browser Forum requires the private key of any publicly
 trusted code signing certificate to live on FIPS 140-2 Level 2 hardware — a USB
