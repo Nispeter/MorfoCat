@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
@@ -31,16 +31,29 @@ function formatRelTime(ts: number) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+/**
+ * File name of an image reference, without directories or extension.
+ *
+ * tpsDig and TpsUtil often write the absolute path the images had on the
+ * machine that digitized them, so the folders have to go — otherwise every
+ * specimen ID starts with the same `C:\Users\…` prefix and classifiers
+ * extracted from the ID are all identical.
+ */
+function imageStem(image: string): string {
+  const base = image.replace(/\\/g, "/").split("/").pop() ?? image;
+  return base.replace(/\.[^.]+$/, "");
+}
+
 function resolveId(id: string | null | undefined, image: string | null | undefined, fallbackIdx: number): string {
   if (id && !/^\d+$/.test(id.trim())) return id.trim();
-  if (image) return image.replace(/\.[^.]+$/, "");
+  if (image) return imageStem(image);
   if (id) return id.trim();
   return `specimen_${fallbackIdx + 1}`;
 }
 
 function detectGroup(image: string | null | undefined): string | undefined {
   if (!image) return undefined;
-  const base = image.replace(/\.[^.]+$/, "").replace(/_[^_]+$/, "");
+  const base = imageStem(image).replace(/_[^_]+$/, "");
   const m = base.match(/^([A-Za-z]+?)[FM]\d/);
   return m ? m[1].toLowerCase() : undefined;
 }
@@ -411,7 +424,7 @@ export default function DataManager() {
             <ClassifiersCard
               names={dataset.classifierNames ?? []}
               active={activeClassifier}
-              sampleIds={dataset.specimens.slice(0, 3).map((s) => s.id)}
+              ids={dataset.specimens.map((s) => s.id)}
               onExtract={extractClassifier}
               onActivate={setActiveClassifier}
               onRename={renameClassifier}
@@ -515,11 +528,12 @@ function SpecimenRow({
 }
 
 function ClassifiersCard({
-  names, active, sampleIds, onExtract, onActivate, onRename, onDelete,
+  names, active, ids, onExtract, onActivate, onRename, onDelete,
 }: {
   names: string[];
   active: string | null;
-  sampleIds: string[];
+  /** Every specimen ID, so the preview can show the real groups. */
+  ids: string[];
   onExtract: (name: string, first: number, last: number) => void;
   onActivate: (name: string | null) => void;
   onRename: (oldName: string, newName: string) => void;
@@ -530,19 +544,43 @@ function ClassifiersCard({
   const [first, setFirst] = useState(1);
   const [last, setLast] = useState(2);
 
-  const preview = sampleIds.map((id) => id.slice(Math.max(0, first - 1), last) || "—");
+  // Preview the groups this split would actually create across the whole
+  // sample — the useful question is "how many groups, and how big", not
+  // "what do the first few IDs look like".
+  const preview = useMemo(() => {
+    const lo = Math.max(0, first - 1);
+    const counts = new Map<string, number>();
+    let empty = 0;
+    for (const id of ids) {
+      const value = id.slice(lo, last);
+      if (!value) { empty++; continue; }
+      counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+    return {
+      groups: [...counts.entries()].sort((a, b) => b[1] - a[1]),
+      empty,
+      example: ids[0] ?? "",
+      exampleValue: (ids[0] ?? "").slice(lo, last),
+    };
+  }, [ids, first, last]);
 
   const submit = () => {
     if (!name.trim()) {
-      toast.error("Give the classifier a name.");
+      toast.error(t("data.errNoName"));
       return;
     }
     if (last < first) {
-      toast.error("Last character must be ≥ first.");
+      toast.error(t("data.errRange"));
+      return;
+    }
+    if (preview.groups.length === 0) {
+      toast.error(t("data.errAllEmpty"));
       return;
     }
     onExtract(name, first, last);
-    toast.success(`Classifier "${name.trim()}" extracted`);
+    toast.success(`${t("data.extractBtn")}: ${name.trim()}`, {
+      description: `${preview.groups.length} ${t("data.groupsFound")}`,
+    });
     setName("");
   };
 
@@ -607,10 +645,48 @@ function ClassifiersCard({
               <NumberInput min={1} value={last} onChange={setLast} className="h-8" />
             </div>
           </div>
-          {sampleIds.length > 0 && (
-            <p className="text-xs text-muted-foreground">
-              {t("data.previewLabel")} <span className="font-mono text-foreground">{preview.join(", ")}</span>
-            </p>
+          {ids.length > 0 && (
+            <div className="space-y-1.5 rounded border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">
+                {t("data.previewLabel")}{" "}
+                <span className="font-mono text-foreground">
+                  {preview.example.slice(0, 24)}
+                  {preview.example.length > 24 ? "…" : ""}
+                </span>
+                {" → "}
+                <span className="font-mono font-medium text-primary">
+                  {preview.exampleValue || "∅"}
+                </span>
+              </p>
+
+              {preview.groups.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {preview.groups.slice(0, 8).map(([value, count]) => (
+                    <span key={value} className="rounded-full border bg-background px-1.5 py-0.5 text-[10px]">
+                      <span className="font-mono font-medium">{value}</span>
+                      <span className="ml-1 text-muted-foreground">{count}</span>
+                    </span>
+                  ))}
+                  {preview.groups.length > 8 && (
+                    <span className="px-1 py-0.5 text-[10px] text-muted-foreground">
+                      +{preview.groups.length - 8}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground">
+                {preview.groups.length} {t("data.groupsFound")}
+                {preview.empty > 0 && ` · ${preview.empty} ${t("data.idsTooShort")}`}
+              </p>
+
+              {preview.groups.length === 1 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400">{t("data.warnOneGroup")}</p>
+              )}
+              {preview.groups.length === ids.length && ids.length > 1 && (
+                <p className="text-[10px] text-amber-600 dark:text-amber-400">{t("data.warnAllUnique")}</p>
+              )}
+            </div>
           )}
           <Button size="sm" className="w-full" onClick={submit}>{t("data.extractBtn")}</Button>
         </div>

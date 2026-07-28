@@ -93,8 +93,12 @@ export default function PCA() {
   };
 
   // Keep the figure's per-group colours and symbols in step with the data.
-  const groupKey = groups.join(" ");
-  const uniqueGroups = useMemo(() => [...new Set(groupKey.split(" "))], [groupKey]);
+  // The key is JSON so group values containing spaces survive intact.
+  const groupKey = JSON.stringify(groups);
+  const uniqueGroups = useMemo(
+    () => [...new Set(JSON.parse(groupKey) as string[])],
+    [groupKey]
+  );
   const ensureGroups = usePlotStyleStore((s) => s.ensureGroups);
   useEffect(() => { ensureGroups(uniqueGroups); }, [uniqueGroups, ensureGroups]);
 
@@ -105,9 +109,9 @@ export default function PCA() {
   const ensureSymbolGroups = usePlotStyleStore((s) => s.ensureSymbolGroups);
   const classifiers = dataset?.classifierNames ?? [];
   const symbolGroups = symbolBy ? groupsOf(included, symbolBy) : null;
-  const symbolKey = symbolGroups?.join(" ") ?? "";
+  const symbolKey = JSON.stringify(symbolGroups ?? []);
   const uniqueSymbolGroups = useMemo(
-    () => (symbolKey ? [...new Set(symbolKey.split(" "))] : []),
+    () => [...new Set(JSON.parse(symbolKey) as string[])],
     [symbolKey]
   );
   useEffect(() => { ensureSymbolGroups(uniqueSymbolGroups); }, [uniqueSymbolGroups, ensureSymbolGroups]);
@@ -115,7 +119,7 @@ export default function PCA() {
   // Drop the second classifier if it disappears (deleted, renamed, or made active).
   useEffect(() => {
     if (symbolBy && (!classifiers.includes(symbolBy) || symbolBy === active)) setSymbolBy(null);
-  }, [symbolBy, classifiers.join(" "), active, setSymbolBy]);
+  }, [symbolBy, JSON.stringify(classifiers), active, setSymbolBy]);
 
   const run = async () => {
     if (!aligned) return;
