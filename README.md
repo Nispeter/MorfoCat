@@ -91,6 +91,18 @@ The app hot-reloads on React changes. Python sidecar runs directly from `python/
 
 ## Building for distribution (installer)
 
+One command does both steps:
+
+```powershell
+npm run package:win     # macOS / Linux: npm run package:unix
+```
+
+> **Always rebuild the sidecar before packaging.** `src-tauri/binaries/` is
+> gitignored, so whatever binary is sitting there is from whenever you last built
+> it. Tauri bundles it without checking, and an out-of-date sidecar ships an app
+> whose analyses silently answer `Unknown method`. The `package:*` scripts above
+> rebuild it every time; the two steps below are what they run.
+
 ### Step 1 — Build the Python sidecar
 
 The Python code must be compiled to a standalone binary so the installer works on machines without Python.
