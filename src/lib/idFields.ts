@@ -10,6 +10,16 @@ export type IdField =
   | { name: string; by: "position"; first: number; last: number }
   | { name: string; by: "separator"; separator: string; part: number };
 
+/**
+ * Colour per field, so adjacent spans in the character ruler stay visually
+ * apart. Cycles when a scheme has more fields than colours.
+ */
+const FIELD_COLOURS = ["#3b82f6", "#f59e0b", "#22c55e", "#a855f7", "#ec4899", "#06b6d4"];
+
+export function fieldColour(index: number): string {
+  return FIELD_COLOURS[index % FIELD_COLOURS.length];
+}
+
 /** Separators worth offering, in the order they are guessed. */
 export const ID_SEPARATORS: string[] = ["_", "-", ".", " ", "/"];
 

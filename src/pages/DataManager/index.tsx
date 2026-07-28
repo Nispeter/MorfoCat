@@ -16,7 +16,7 @@ import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
 import {
-  idFieldValue, guessSeparator, partCount, type IdField,
+  idFieldValue, guessSeparator, partCount, fieldColour, type IdField,
 } from "@/lib/idFields";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
@@ -612,7 +612,7 @@ function IdSchemeEditor({
     () => scheme.map((f, i) => ({ ...f, key: i + 1 }))
   );
   const [mode, setMode] = useState<"position" | "separator">(
-    () => (scheme[0]?.by === "separator" ? "separator" : guessSeparator(ids) ? "separator" : "position")
+    () => (scheme[0]?.by === "separator" ? "separator" : "position")
   );
   const [separator, setSeparator] = useState(
     () =>
@@ -646,10 +646,11 @@ function IdSchemeEditor({
 
   const inDrag = (pos: number) =>
     drag !== null && pos >= Math.min(drag.from, drag.to) && pos <= Math.max(drag.from, drag.to);
-  const inField = (pos: number) =>
-    fields.some((f) => f.by === "position" && pos >= f.first && pos <= f.last);
-  const partTaken = (index: number) =>
-    fields.some((f) => f.by === "separator" && f.separator === separator && f.part === index);
+  const fieldAt = (pos: number) =>
+    fields.findIndex((f) => f.by === "position" && pos >= f.first && pos <= f.last);
+  const partOwner = (index: number) =>
+    fields.findIndex((f) => f.by === "separator" && f.separator === separator && f.part === index);
+  const partTaken = (index: number) => partOwner(index) >= 0;
 
   const rename = (i: number, name: string) =>
     setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name } : x)));
@@ -702,18 +703,20 @@ function IdSchemeEditor({
             {Array.from({ length: width }, (_, i) => {
               const pos = i + 1;
               const marked = inDrag(pos);
-              const taken = inField(pos);
+              const owner = fieldAt(pos);
+              const colour = owner >= 0 ? fieldColour(owner) : null;
               return (
                 <button
                   key={pos}
                   onPointerDown={() => setDrag({ from: pos, to: pos })}
                   onPointerEnter={() => drag && setDrag((d) => (d ? { ...d, to: pos } : d))}
+                  // Each field gets its own colour so neighbouring spans stay
+                  // apart at a glance — "MA" next to "3" reads as two fields.
+                  style={colour && !marked
+                    ? { borderColor: colour, backgroundColor: `${colour}22`, color: colour }
+                    : undefined}
                   className={`flex h-8 w-5 shrink-0 flex-col items-center justify-center rounded border text-[11px] leading-none transition-colors ${
-                    marked
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : taken
-                        ? "border-primary/50 bg-primary/10 text-primary"
-                        : "hover:bg-muted"
+                    marked ? "border-primary bg-primary text-primary-foreground" : colour ? "" : "hover:bg-muted"
                   }`}
                 >
                   <span className="font-mono">{sample[i] ?? "·"}</span>
@@ -732,8 +735,15 @@ function IdSchemeEditor({
                 key={i}
                 onClick={() => addField({ name: "", by: "separator", separator, part: i })}
                 disabled={partTaken(i)}
+                style={partOwner(i) >= 0
+                  ? {
+                      borderColor: fieldColour(partOwner(i)),
+                      backgroundColor: `${fieldColour(partOwner(i))}22`,
+                      color: fieldColour(partOwner(i)),
+                    }
+                  : undefined}
                 className={`rounded border px-1.5 py-1 font-mono text-[11px] transition-colors ${
-                  partTaken(i) ? "border-primary/50 bg-primary/10 text-primary" : "hover:bg-muted"
+                  partTaken(i) ? "" : "hover:bg-muted"
                 }`}
               >
                 {part || "∅"}
@@ -750,6 +760,10 @@ function IdSchemeEditor({
       {/* One row per field */}
       {fields.map((f, i) => (
         <div key={f.key} className="flex items-center gap-1.5">
+          <span
+            className="h-5 w-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: fieldColour(i) }}
+          />
           <Input
             className="h-7 flex-1 text-xs"
             placeholder={t("data.fieldName")}
