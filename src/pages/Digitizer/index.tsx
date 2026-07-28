@@ -558,7 +558,7 @@ export default function Digitizer() {
         </div>
 
         {/* Sidebar */}
-        <div className="flex w-56 flex-col gap-3">
+        <div className="flex w-64 flex-col gap-3">
           {/* Controls */}
           <Card>
             <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.controls")}</CardTitle></CardHeader>

@@ -362,7 +362,7 @@ export default function DataManager() {
           )}
         </div>
       ) : (
-        <div className="grid h-full grid-cols-[1fr_280px] gap-4">
+        <div className="grid h-full grid-cols-[1fr_340px] gap-4">
           {/* Specimen list */}
           <Card className="flex flex-col overflow-hidden">
             <CardHeader className="pb-2 pt-4">

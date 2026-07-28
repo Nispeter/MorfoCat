@@ -76,7 +76,7 @@ export default function Regression() {
         </>
       }
     >
-      <div className="grid grid-cols-[220px_1fr] gap-4 h-full">
+      <div className="grid grid-cols-[260px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t("ui.options")}</CardTitle></CardHeader>

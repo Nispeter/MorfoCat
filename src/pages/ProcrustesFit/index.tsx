@@ -108,7 +108,7 @@ export default function ProcrustesFit() {
         </>
       }
     >
-      <div className="grid grid-cols-[240px_1fr] gap-4 h-full">
+      <div className="grid grid-cols-[280px_1fr] gap-4 h-full">
         {/* Options */}
         <div className="space-y-3">
           <Card>
