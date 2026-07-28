@@ -100,12 +100,12 @@ export function Sidebar() {
         "flex h-full flex-col border-r bg-card transition-all duration-200",
         collapsed ? "w-14" : "w-64"
       )}>
-        <div className={cn("flex h-[var(--topbar-h)] shrink-0 items-center gap-2 px-4 font-bold text-primary", collapsed && "justify-center")}>
+        {/* The rule is the block's own bottom border, matching how the page
+            header draws it — a separate 1px element sat one pixel lower. */}
+        <div className={cn("flex h-[var(--topbar-h)] shrink-0 items-center gap-2 border-b px-4 font-bold text-primary", collapsed && "justify-center")}>
           <Cat size={22} className="shrink-0" />
           {!collapsed && <span className="text-base">MorfoCat</span>}
         </div>
-
-        <Separator />
 
         <ScrollArea className="flex-1 px-2 py-2">
           {groups.map((group) => {
