@@ -38,8 +38,7 @@ Python computation engine) is bundled inside. Just install and run.
 > **"Windows protected your PC" warning.** Because the build is not code-signed, Windows
 > SmartScreen may block it on first launch. Click **More info → Run anyway**. Some antivirus
 > tools may also flag it as a false positive (common for PyInstaller-packed apps). This is
-> expected for an unsigned build — see
-> [Getting rid of the SmartScreen warning](#getting-rid-of-the-smartscreen-warning-windows-code-signing).
+> expected for an unsigned build.
 
 ### macOS / Linux
 
@@ -142,64 +141,6 @@ Outputs (in `src-tauri/target/release/bundle/`):
 Distribute either the `.msi` (Windows), `.dmg` (macOS), or `.deb`/`.AppImage` (Linux) — recipients do **not** need Python, Node, or Rust installed.
 
 ---
-
-## Getting rid of the SmartScreen warning (Windows code signing)
-
-SmartScreen is a *reputation* check, not a signature check. An unsigned build
-earns reputation per file hash, so every new version starts from zero and small
-projects never clear it. Signing moves reputation onto the publisher instead.
-
-| Option | Cost (verify current pricing) | Warning gone |
-| --- | --- | --- |
-| Unsigned | — | Never, in practice |
-| OV certificate | ~USD 200–400 / year | Only after enough downloads |
-| EV certificate | ~USD 300–600 / year | Immediately |
-| [Azure Trusted Signing](https://azure.microsoft.com/products/trusted-signing) | ~USD 10 / month | Immediately |
-| Microsoft Store | Store fee | N/A — Store apps skip SmartScreen |
-
-Azure Trusted Signing is usually the sensible choice for a project this size:
-it is an order of magnitude cheaper than an EV certificate and needs no USB
-token. Eligibility rules have changed more than once, so check the current terms
-before committing.
-
-Since mid-2023 the CA/Browser Forum requires the private key of any publicly
-trusted code signing certificate to live on FIPS 140-2 Level 2 hardware — a USB
-token or a cloud HSM — so OV certificates now involve a token too, which is what
-narrowed the price gap with EV.
-
-### Wiring it into the build
-
-Tauri signs the bundle for you once `bundle.windows` in
-`src-tauri/tauri.conf.json` says how. With a certificate installed in the Windows
-certificate store:
-
-```json
-"bundle": {
-  "windows": {
-    "certificateThumbprint": "YOUR_CERT_SHA1_THUMBPRINT",
-    "digestAlgorithm": "sha256",
-    "timestampUrl": "http://timestamp.digicert.com"
-  }
-}
-```
-
-Timestamping matters: without it every signature stops validating the day the
-certificate expires, including on copies already installed.
-
-For Azure Trusted Signing or any cloud HSM, hand Tauri the command instead —
-`%1` is the file to sign:
-
-```json
-"bundle": {
-  "windows": {
-    "signCommand": "trusted-signing-cli -e <endpoint> -a <account> -c <profile> %1"
-  }
-}
-```
-
-Signing does not silence antivirus false positives from PyInstaller-packed
-binaries, though it makes them less likely. If one shows up, submit the
-installer to the vendor as a false positive.
 
 ## Running the test suite
 
