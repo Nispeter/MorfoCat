@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import { symbolPath, isStrokeOnly } from "@/lib/symbols";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
-import { figureDomain, referenceSpecimens } from "@/lib/figure";
+import { figureDomain, referenceSpecimens, resolveRefPositions, orientShape } from "@/lib/figure";
 
 interface PCAFigureProps {
   scores: number[][];
@@ -42,8 +42,11 @@ export function PCAFigure({
   const {
     styles, symbolBy, symbolStyles,
     axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds, refSize,
+    refFlipX, refFlipY, refRotation, refPositionsX, refPositionsY,
     legendPos, showLegend, setLegendPos,
   } = usePlotStyleStore();
+
+  const orientation = { flipX: refFlipX, flipY: refFlipY, rotation: refRotation };
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -52,8 +55,10 @@ export function PCAFigure({
   // Reference drawings live outside the axes, so they claim their own gutter;
   // turning them off gives the plot that space back.
   const refGap = 12;
-  const extraLeft = refShapesY > 0 ? refSize + refGap + 18 : 0;
-  const extraBottom = refShapesX > 0 ? refSize + refGap + 18 : 0;
+  const showRefsX = (refPositionsX ?? []).length > 0 || (refPositionsX === null && refShapesX > 0);
+  const showRefsY = (refPositionsY ?? []).length > 0 || (refPositionsY === null && refShapesY > 0);
+  const extraLeft = showRefsY ? refSize + refGap + 18 : 0;
+  const extraBottom = showRefsX ? refSize + refGap + 18 : 0;
   const MARGIN = {
     top: AXIS_GUTTER.top,
     right: AXIS_GUTTER.right,
@@ -127,28 +132,40 @@ export function PCAFigure({
    * that's the mean shape pushed to that PC score; otherwise it's the real
    * specimen that sits closest to that point on the axis.
    */
-  function references(pc: number, count: number, lo: number, hi: number) {
+  function references(pc: number, positions: number[]) {
     if (refSource === "deformation") {
-      const positions = count <= 0 ? [] :
-        Array.from({ length: count }, (_, i) => lo + ((hi - lo) * (i + 0.5)) / count);
-      return positions.map((position) => ({
-        key: `d${position}`,
-        at: position,
-        shape: deform(pc, position),
-        photo: undefined as string | undefined,
-        label: position.toFixed(2),
-        caption: undefined as string | undefined,
-      }));
+      return positions.map((position) => {
+        const shape = deform(pc, position);
+        return {
+          key: `d${position}`,
+          at: position,
+          shape: shape ? orientShape(shape, orientation) : null,
+          photo: undefined as string | undefined,
+          label: position.toFixed(2),
+          caption: undefined as string | undefined,
+        };
+      });
     }
-    return referenceSpecimens(scores, pc, count, lo, hi).map(({ position, index }) => ({
-      key: `s${position}-${index}`,
-      at: position,
-      shape: aligned?.[index] ?? null,
-      photo: refSource === "photo" ? photos[index] : undefined,
-      label: (scores[index]?.[pc] ?? position).toFixed(2),
-      caption: refShowIds ? ids[index] : undefined,
-    }));
+    return referenceSpecimens(scores, pc, positions).map(({ position, index }) => {
+      const shape = aligned?.[index] ?? null;
+      return {
+        key: `s${position}-${index}`,
+        at: position,
+        shape: shape ? orientShape(shape, orientation) : null,
+        photo: refSource === "photo" ? photos[index] : undefined,
+        label: (scores[index]?.[pc] ?? position).toFixed(2),
+        caption: refShowIds ? ids[index] : undefined,
+      };
+    });
   }
+
+  // A pinned position can sit outside the axis after the limits change; drawing
+  // it would put the shape off the canvas, so it waits until the axis covers it.
+  const within = ([lo, hi]: [number, number]) => (v: number) => v >= lo && v <= hi;
+  const positionsX = resolveRefPositions(refPositionsX, refShapesX, domain.x[0], domain.x[1])
+    .filter(within(domain.x));
+  const positionsY = resolveRefPositions(refPositionsY, refShapesY, domain.y[0], domain.y[1])
+    .filter(within(domain.y));
 
   const onLegendDown = (e: React.PointerEvent) => {
     dragging.current = true;
@@ -225,7 +242,7 @@ export function PCAFigure({
       </text>
 
       {/* Reference drawings below the x axis */}
-      {references(pcX, refShapesX, domain.x[0], domain.x[1]).map((r) => (
+      {references(pcX, positionsX).map((r) => (
         <RefShape
           key={`rx-${r.key}`}
           shape={r.shape}
@@ -240,7 +257,7 @@ export function PCAFigure({
       ))}
 
       {/* Reference drawings left of the y axis */}
-      {references(pcY, refShapesY, domain.y[0], domain.y[1]).map((r) => (
+      {references(pcY, positionsY).map((r) => (
         <RefShape
           key={`ry-${r.key}`}
           shape={r.shape}
@@ -424,7 +441,9 @@ function RefShape({
   const py = (y: number) => cy + ((maxY + minY) / 2 - y) * k;
 
   const links: [number, number][] =
-    edges.length > 0 ? edges : shape.map((_, i) => [i, (i + 1) % shape.length] as [number, number]);
+    edges.length > 0
+      ? edges
+      : shape.slice(0, -1).map((_, i) => [i, i + 1] as [number, number]);
 
   return (
     <g>

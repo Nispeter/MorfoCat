@@ -41,8 +41,8 @@ export function ShapeGrid({ consensus, deformed, width = 260, height = 220, show
             if (!p || !q) return null;
             return <line key={i} x1={p.cx} y1={p.cy} x2={q.cx} y2={q.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
           })
-        : pts.map((p, i) => {
-            const next = pts[(i + 1) % pts.length];
+        : pts.slice(0, -1).map((p, i) => {
+            const next = pts[i + 1];
             return <line key={i} x1={p.cx} y1={p.cy} x2={next.cx} y2={next.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
           }))}
 

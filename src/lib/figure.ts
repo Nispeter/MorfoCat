@@ -57,6 +57,19 @@ export function nearestSpecimen(scores: number[][], pc: number, value: number): 
 }
 
 /**
+ * Where the reference drawings sit on an axis: the positions the user pinned
+ * if there are any, otherwise `count` evenly spaced slots.
+ */
+export function resolveRefPositions(
+  explicit: number[] | null,
+  count: number,
+  lo: number,
+  hi: number
+): number[] {
+  return explicit ?? refPositions(count, lo, hi);
+}
+
+/**
  * The specimens standing in for each axis reference: for every reference slot,
  * the real specimen that sits closest to it. A specimen can legitimately
  * represent two neighbouring slots when the sample is sparse there.
@@ -64,13 +77,50 @@ export function nearestSpecimen(scores: number[][], pc: number, value: number): 
 export function referenceSpecimens(
   scores: number[][],
   pc: number,
-  count: number,
-  lo: number,
-  hi: number
+  positions: number[]
 ): Array<{ position: number; index: number }> {
-  return refPositions(count, lo, hi).flatMap((position) => {
+  return positions.flatMap((position) => {
     const index = nearestSpecimen(scores, pc, position);
     return index == null ? [] : [{ position, index }];
+  });
+}
+
+export interface ShapeOrientation {
+  flipX: boolean;
+  flipY: boolean;
+  /** Clockwise rotation in degrees. */
+  rotation: number;
+}
+
+/**
+ * Re-orient a shape for display, about its own centre.
+ *
+ * Which way a specimen faces depends on how it was photographed and on the
+ * digitizer's axis convention, so the drawings sometimes come out mirrored or
+ * lying on their side relative to how the figure should read. This only changes
+ * the picture — the coordinates the analyses use are untouched.
+ *
+ * Mirroring is applied first, then the rotation, so the two controls stay
+ * independent of each other.
+ */
+export function orientShape(points: number[][], o: ShapeOrientation): number[][] {
+  if (!points.length) return points;
+  if (!o.flipX && !o.flipY && o.rotation % 360 === 0) return points;
+
+  let cx = 0, cy = 0;
+  for (const [x, y] of points) { cx += x; cy += y; }
+  cx /= points.length; cy /= points.length;
+
+  const theta = (-o.rotation * Math.PI) / 180; // screen y is up here, so negate
+  const cos = Math.cos(theta), sin = Math.sin(theta);
+
+  return points.map((p) => {
+    let dx = p[0] - cx;
+    let dy = p[1] - cy;
+    if (o.flipX) dx = -dx;
+    if (o.flipY) dy = -dy;
+    const rest = p.slice(2);
+    return [cx + dx * cos - dy * sin, cy + dx * sin + dy * cos, ...rest];
   });
 }
 

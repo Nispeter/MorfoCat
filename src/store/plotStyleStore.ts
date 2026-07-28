@@ -57,6 +57,15 @@ interface PlotStyleState {
   refShowIds: boolean;
   /** Size of each reference drawing, in figure pixels. */
   refSize: number;
+  /** Mirror the reference drawings; which way a specimen faces depends on how
+   *  it was photographed, so this is a display choice, not a data change. */
+  refFlipX: boolean;
+  refFlipY: boolean;
+  /** Clockwise rotation of the reference drawings, in degrees. */
+  refRotation: number;
+  /** Exact axis positions to draw references at; null spaces them evenly. */
+  refPositionsX: number[] | null;
+  refPositionsY: number[] | null;
   /** Figure size in pixels; the export is rendered from this at high DPI. */
   figureWidth: number;
   figureHeight: number;
@@ -79,6 +88,9 @@ interface PlotStyleState {
   setRefSource: (source: RefSource) => void;
   setRefShowIds: (show: boolean) => void;
   setRefSize: (size: number) => void;
+  setRefFlip: (axis: "x" | "y", on: boolean) => void;
+  setRefRotation: (deg: number) => void;
+  setRefPositions: (axis: "x" | "y", positions: number[] | null) => void;
   setFigureSize: (w: number, h: number) => void;
   setExportScale: (scale: number) => void;
   setLegendPos: (pos: { x: number; y: number }) => void;
@@ -98,6 +110,11 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       refSource: "wireframe",
       refShowIds: false,
       refSize: 96,
+      refFlipX: false,
+      refFlipY: false,
+      refRotation: 0,
+      refPositionsX: null,
+      refPositionsY: null,
       figureWidth: 900,
       figureHeight: 680,
       exportScale: 4,
@@ -158,6 +175,10 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       setRefSource: (refSource) => set({ refSource }),
       setRefShowIds: (refShowIds) => set({ refShowIds }),
       setRefSize: (refSize) => set({ refSize }),
+      setRefFlip: (axis, on) => set(axis === "x" ? { refFlipX: on } : { refFlipY: on }),
+      setRefRotation: (refRotation) => set({ refRotation }),
+      setRefPositions: (axis, positions) =>
+        set(axis === "x" ? { refPositionsX: positions } : { refPositionsY: positions }),
       setFigureSize: (figureWidth, figureHeight) => set({ figureWidth, figureHeight }),
       setExportScale: (exportScale) => set({ exportScale }),
       setLegendPos: (legendPos) => set({ legendPos }),

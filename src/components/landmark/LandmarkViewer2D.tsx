@@ -53,7 +53,7 @@ export function LandmarkViewer2D({
       if (edges && edges.length > 0) {
         edges.forEach(([a, b]) => drawLink(a, b));
       } else {
-        for (let i = 0; i < landmarks.length; i++) drawLink(i, (i + 1) % landmarks.length);
+        for (let i = 0; i < landmarks.length - 1; i++) drawLink(i, i + 1);
       }
     }
 

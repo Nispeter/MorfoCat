@@ -52,7 +52,7 @@ export function TpsGrid({
   const links: [number, number][] =
     edges && edges.length > 0
       ? edges
-      : target.map((_, i) => [i, (i + 1) % target.length] as [number, number]);
+      : target.slice(0, -1).map((_, i) => [i, i + 1] as [number, number]);
 
   return (
     <svg width={width} height={height} className="overflow-visible">

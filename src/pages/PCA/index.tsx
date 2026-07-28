@@ -13,7 +13,7 @@ import { ChartFrame } from "@/components/plots/ChartFrame";
 import { PCAFigure } from "@/components/plots/PCAFigure";
 import { FigureStylePanel } from "@/components/plots/FigureStylePanel";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
-import { figureDomain, referenceSpecimens } from "@/lib/figure";
+import { figureDomain, referenceSpecimens, resolveRefPositions, refPositions } from "@/lib/figure";
 import { useSpecimenImages } from "@/lib/useSpecimenImages";
 import { open } from "@tauri-apps/plugin-dialog";
 import { useDatasetStore } from "@/store/datasetStore";
@@ -50,6 +50,8 @@ export default function PCA() {
   const refSource = usePlotStyleStore((s) => s.refSource);
   const refShapesX = usePlotStyleStore((s) => s.refShapesX);
   const refShapesY = usePlotStyleStore((s) => s.refShapesY);
+  const refPositionsX = usePlotStyleStore((s) => s.refPositionsX);
+  const refPositionsY = usePlotStyleStore((s) => s.refPositionsY);
   const axisMode = usePlotStyleStore((s) => s.axisMode);
   const figureWidth = usePlotStyleStore((s) => s.figureWidth);
   const figureHeight = usePlotStyleStore((s) => s.figureHeight);
@@ -62,10 +64,10 @@ export default function PCA() {
     const ys = pca.scores.map((s) => s[pcY] ?? 0);
     const domain = figureDomain(xs, ys, axisMode, manualLimits);
     return [
-      ...referenceSpecimens(pca.scores, pcX, refShapesX, domain.x[0], domain.x[1]),
-      ...referenceSpecimens(pca.scores, pcY, refShapesY, domain.y[0], domain.y[1]),
+      ...referenceSpecimens(pca.scores, pcX, resolveRefPositions(refPositionsX, refShapesX, domain.x[0], domain.x[1])),
+      ...referenceSpecimens(pca.scores, pcY, resolveRefPositions(refPositionsY, refShapesY, domain.y[0], domain.y[1])),
     ].map((r) => r.index);
-  }, [refSource, pca, pcX, pcY, refShapesX, refShapesY, axisMode, manualLimits]);
+  }, [refSource, pca, pcX, pcY, refShapesX, refShapesY, refPositionsX, refPositionsY, axisMode, manualLimits]);
 
   const refPaths = useMemo(() => {
     if (!imageDir) return [];
@@ -86,6 +88,18 @@ export default function PCA() {
     }
     return out;
   }, [refIndices, imageUrls, imageDir, included]);
+
+  // Where evenly spaced references would land, used to seed the pinned list.
+  const suggested = useMemo(() => {
+    if (!pca) return { x: [] as number[], y: [] as number[] };
+    const xs = pca.scores.map((s) => s[pcX] ?? 0);
+    const ys = pca.scores.map((s) => s[pcY] ?? 0);
+    const domain = figureDomain(xs, ys, axisMode, manualLimits);
+    return {
+      x: refPositions(Math.max(refShapesX, 1), domain.x[0], domain.x[1]).map((v) => +v.toFixed(3)),
+      y: refPositions(Math.max(refShapesY, 1), domain.y[0], domain.y[1]).map((v) => +v.toFixed(3)),
+    };
+  }, [pca, pcX, pcY, refShapesX, refShapesY, axisMode, manualLimits]);
 
   const pickImageFolder = async () => {
     const folder = await open({ directory: true, multiple: false });
@@ -274,6 +288,8 @@ export default function PCA() {
                 activeClassifier={active}
                 imageDir={imageDir}
                 onPickImageFolder={pickImageFolder}
+                suggestedX={suggested.x}
+                suggestedY={suggested.y}
               />
             </div>
           </TabsContent>

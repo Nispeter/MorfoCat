@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { usePlotStyleStore, type AxisMode, type RefSource } from "@/store/plotStyleStore";
 import { SYMBOL_KINDS, symbolPath, isStrokeOnly, type SymbolKind } from "@/lib/symbols";
-import { Palette, RotateCcw, FolderOpen } from "lucide-react";
-import { useT } from "@/lib/i18n";
+import { Palette, RotateCcw, RotateCw, FolderOpen, FlipHorizontal, FlipVertical, X } from "lucide-react";
+import { useT, type TranslationKey } from "@/lib/i18n";
 
 /** Controls for how the PCA figure looks: group appearance, axes, references. */
 export function FigureStylePanel({
   groups, symbolValues, classifiers, activeClassifier, imageDir, onPickImageFolder,
+  suggestedX, suggestedY,
 }: {
   groups: string[];
   /** Distinct values of the second classifier, when one is chosen. */
@@ -21,6 +22,9 @@ export function FigureStylePanel({
   activeClassifier: string | null;
   imageDir: string | null;
   onPickImageFolder: () => void;
+  /** Evenly spaced axis positions, used to seed the pinned list. */
+  suggestedX: number[];
+  suggestedY: number[];
 }) {
   const {
     styles, setStyle, resetStyles,
@@ -29,6 +33,8 @@ export function FigureStylePanel({
     refShapesX, refShapesY, setRefShapes,
     refSource, setRefSource, refShowIds, setRefShowIds,
     refSize, setRefSize,
+    refFlipX, refFlipY, setRefFlip, refRotation, setRefRotation,
+    refPositionsX, refPositionsY, setRefPositions,
     figureWidth, figureHeight, setFigureSize, exportScale, setExportScale,
     showLegend, setShowLegend,
   } = usePlotStyleStore();
@@ -36,6 +42,7 @@ export function FigureStylePanel({
   const t = useT();
   const splitEncoding = !!symbolBy;
   const otherClassifiers = classifiers.filter((c) => c !== activeClassifier);
+
 
   return (
     <div className="space-y-3">
@@ -239,18 +246,52 @@ export function FigureStylePanel({
             </div>
           )}
 
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs">{t("fig.alongX")}</Label>
-            <div className="flex items-center gap-1">
-              <Switch checked={refShapesX > 0} onCheckedChange={(on) => setRefShapes("x", on ? 4 : 0)} />
-              <NumberInput className="h-7 w-14 text-xs" min={0} max={8} value={refShapesX} onChange={(n) => setRefShapes("x", n)} />
+          <RefAxisControls
+            axis="x" label={t("fig.alongX")} count={refShapesX} pinned={refPositionsX}
+            suggested={suggestedX} setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
+          />
+          <RefAxisControls
+            axis="y" label={t("fig.alongY")} count={refShapesY} pinned={refPositionsY}
+            suggested={suggestedY} setRefShapes={setRefShapes} setRefPositions={setRefPositions} t={t}
+          />
+
+          <div className="space-y-1.5 border-t pt-2">
+            <p className="text-muted-foreground">{t("fig.orientation")}</p>
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setRefFlip("x", !refFlipX)}
+                className={`h-7 flex-1 rounded border text-xs transition-colors ${
+                  refFlipX ? "border-primary bg-primary/15 text-primary" : "hover:bg-muted"
+                }`}
+                title={t("fig.flipXHint")}
+              >
+                <FlipHorizontal size={12} className="mx-auto" />
+              </button>
+              <button
+                onClick={() => setRefFlip("y", !refFlipY)}
+                className={`h-7 flex-1 rounded border text-xs transition-colors ${
+                  refFlipY ? "border-primary bg-primary/15 text-primary" : "hover:bg-muted"
+                }`}
+                title={t("fig.flipYHint")}
+              >
+                <FlipVertical size={12} className="mx-auto" />
+              </button>
+              <button
+                onClick={() => setRefRotation((refRotation + 90) % 360)}
+                className="h-7 flex-1 rounded border text-xs transition-colors hover:bg-muted"
+                title={t("fig.rotate90")}
+              >
+                <RotateCw size={12} className="mx-auto" />
+              </button>
             </div>
-          </div>
-          <div className="flex items-center justify-between gap-2">
-            <Label className="text-xs">{t("fig.alongY")}</Label>
-            <div className="flex items-center gap-1">
-              <Switch checked={refShapesY > 0} onCheckedChange={(on) => setRefShapes("y", on ? 4 : 0)} />
-              <NumberInput className="h-7 w-14 text-xs" min={0} max={8} value={refShapesY} onChange={(n) => setRefShapes("y", n)} />
+            <div className="flex items-center gap-2">
+              <input
+                type="range" min={0} max={359} step={1}
+                value={refRotation}
+                onChange={(e) => setRefRotation(+e.target.value)}
+                className="flex-1"
+              />
+              <span className="w-9 text-right font-mono text-[10px] text-muted-foreground">{refRotation}°</span>
             </div>
           </div>
           {(refShapesX > 0 || refShapesY > 0) && (
@@ -318,6 +359,92 @@ export function FigureStylePanel({
           </p>
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+/**
+ * Per-axis reference controls: how many drawings, or — once pinned — the
+ * exact axis values each one sits at, which is what a figure for print
+ * usually needs.
+ */
+function RefAxisControls({
+axis, label, count, pinned, suggested, setRefShapes, setRefPositions, t,
+}: {
+axis: "x" | "y";
+label: string;
+count: number;
+pinned: number[] | null;
+suggested: number[];
+setRefShapes: (axis: "x" | "y", n: number) => void;
+setRefPositions: (axis: "x" | "y", positions: number[] | null) => void;
+t: (key: TranslationKey) => string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <Label className="text-xs">{label}</Label>
+        <div className="flex items-center gap-1">
+          <Switch
+            checked={pinned ? pinned.length > 0 : count > 0}
+            onCheckedChange={(on) => {
+              if (pinned) setRefPositions(axis, on ? suggested : []);
+              else setRefShapes(axis, on ? 4 : 0);
+            }}
+          />
+          {!pinned && (
+            <NumberInput
+              className="h-7 w-14 text-xs" min={0} max={8}
+              value={count}
+              onChange={(n) => setRefShapes(axis, n)}
+            />
+          )}
+        </div>
+      </div>
+
+      {pinned ? (
+        <div className="space-y-1 rounded border bg-muted/30 p-1.5">
+          {pinned.map((value, i) => (
+            <div key={i} className="flex items-center gap-1">
+              <NumberInput
+                className="h-6 flex-1 text-[11px]" allowDecimal
+                value={value}
+                onChange={(v) => setRefPositions(axis, pinned.map((p, j) => (j === i ? v : p)))}
+              />
+              <button
+                onClick={() => setRefPositions(axis, pinned.filter((_, j) => j !== i))}
+                className="px-1 text-muted-foreground hover:text-destructive"
+                title={t("fig.removePosition")}
+              >
+                <X size={11} />
+              </button>
+            </div>
+          ))}
+          <div className="flex gap-1">
+            <button
+              onClick={() => setRefPositions(axis, [...pinned, 0])}
+              className="flex-1 rounded border px-1 py-0.5 text-[10px] hover:bg-muted"
+            >
+              + {t("fig.addPosition")}
+            </button>
+            <button
+              onClick={() => setRefPositions(axis, null)}
+              className="flex-1 rounded border px-1 py-0.5 text-[10px] hover:bg-muted"
+            >
+              {t("fig.backToAuto")}
+            </button>
+          </div>
+        </div>
+      ) : (
+        count > 0 && (
+          <button
+            onClick={() => setRefPositions(axis, suggested)}
+            className="w-full rounded border px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted"
+          >
+            {t("fig.pinPositions")}
+          </button>
+        )
+      )}
     </div>
   );
 }
