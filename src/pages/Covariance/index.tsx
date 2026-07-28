@@ -136,7 +136,7 @@ export default function Covariance() {
                 {!cov ? (
                   <p className="text-sm text-muted-foreground">{t("cov.clickCompute")}</p>
                 ) : (
-                  <div className="overflow-auto">
+                  <div className="flex flex-col items-center overflow-auto">
                     <table className="border-collapse text-[9px]">
                       <tbody>
                         {cov.slice(0, 30).map((row, i) => (

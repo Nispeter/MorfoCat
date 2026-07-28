@@ -108,13 +108,17 @@ export default function LDA() {
 
             <TabsContent value="cm">
               <ChartFrame title="Training Confusion Matrix" filename="lda_confusion_matrix">
-                <ConfusionMatrix matrix={lda.confusion_matrix} labels={lda.groups} title="Training set" />
+                <div className="flex justify-center">
+                  <ConfusionMatrix matrix={lda.confusion_matrix} labels={lda.groups} title="Training set" />
+                </div>
               </ChartFrame>
             </TabsContent>
 
             <TabsContent value="loo">
               <ChartFrame title="Leave-One-Out Cross-Validation" filename="lda_loo_confusion_matrix">
-                <ConfusionMatrix matrix={lda.loo_confusion_matrix} labels={lda.groups} title="LOO cross-validation" />
+                <div className="flex justify-center">
+                  <ConfusionMatrix matrix={lda.loo_confusion_matrix} labels={lda.groups} title="LOO cross-validation" />
+                </div>
               </ChartFrame>
             </TabsContent>
 

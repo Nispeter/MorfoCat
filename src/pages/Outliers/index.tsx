@@ -210,7 +210,7 @@ export default function Outliers() {
                 <Button size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => setReviewIdx(null)}>{t("ui.close")}</Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="grid grid-cols-[1fr_260px] gap-4">
+            <CardContent className="grid grid-cols-[1fr_260px] items-start justify-items-center gap-4">
               <LandmarkViewer2D landmarks={aligned[reviewIdx]} consensus={consensus} showLabels width={420} height={320} />
               <div className="space-y-3 text-sm">
                 <p className="text-xs text-muted-foreground">

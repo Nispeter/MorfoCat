@@ -178,7 +178,7 @@ export default function ProcrustesFit() {
             <>
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t("proc.consensusShape")}</CardTitle></CardHeader>
-                <CardContent>
+                <CardContent className="flex justify-center">
                   {is3D ? (
                     <LandmarkViewer3D landmarks={consensus!} showLabels />
                   ) : (
@@ -206,8 +206,8 @@ export default function ProcrustesFit() {
                       <Bar dataKey="d" name="Procr. dist." fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
-                  <div>
-                    <p className="text-xs text-muted-foreground mb-2">{t("proc.selectedSpecimen")}</p>
+                  <div className="flex flex-col items-center">
+                    <p className="mb-2 self-start text-xs text-muted-foreground">{t("proc.selectedSpecimen")}</p>
                     {is3D ? (
                       <LandmarkViewer3D landmarks={aligned[selectedSpec]} consensus={consensus!} showLabels={false} />
                     ) : (
@@ -219,7 +219,7 @@ export default function ProcrustesFit() {
 
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t("proc.shapeVariation")}</CardTitle></CardHeader>
-                <CardContent className="flex gap-6">
+                <CardContent className="flex justify-center gap-6">
                   <ShapeGrid consensus={consensus!} edges={wireframe} />
                 </CardContent>
               </Card>
