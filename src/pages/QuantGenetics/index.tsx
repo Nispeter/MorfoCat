@@ -115,7 +115,7 @@ export default function QuantGenetics() {
         </TabsList>
 
         <TabsContent value="gmatrix">
-          <div className="grid grid-cols-[260px_1fr] gap-4 mt-4">
+          <div className="grid grid-cols-[320px_1fr] gap-4 mt-4">
             <div className="space-y-3">
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t("qg.halfSib")}</CardTitle></CardHeader>
@@ -174,7 +174,7 @@ export default function QuantGenetics() {
         </TabsContent>
 
         <TabsContent value="selection">
-          <div className="grid grid-cols-[260px_1fr] gap-4 mt-4">
+          <div className="grid grid-cols-[320px_1fr] gap-4 mt-4">
             <div className="space-y-3">
               <Card>
                 <CardHeader className="pb-2"><CardTitle className="text-sm">{t("qg.selectionGradient")}</CardTitle></CardHeader>

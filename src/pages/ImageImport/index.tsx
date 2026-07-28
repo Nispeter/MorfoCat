@@ -223,7 +223,7 @@ export default function ImageImport() {
         </div>
 
         {/* Right: settings */}
-        <div className="flex w-80 flex-col gap-3">
+        <div className="flex w-[320px] flex-col gap-3">
           <Card>
             <CardHeader className="pb-2 pt-3">
               <CardTitle className="text-sm">{t("imgimp.config")}</CardTitle>

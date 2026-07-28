@@ -25,6 +25,9 @@
     --input: 214.3 31.8% 91.4%;
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
+    /* Height of the nav header and every page header, so the rule under
+       each reads as one line straight across the window. */
+    --topbar-h: 4.75rem;
   }
 
   /* Tells the browser to render native widgets (select popups, scrollbars,

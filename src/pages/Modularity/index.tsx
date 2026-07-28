@@ -92,7 +92,7 @@ export default function Modularity() {
         </div>
       }
     >
-      <div className="grid grid-cols-[280px_1fr] gap-4 h-full">
+      <div className="grid grid-cols-[320px_1fr] gap-4 h-full">
         <div className="space-y-3">
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm">{t("mod.defineModules")}</CardTitle></CardHeader>

@@ -249,7 +249,7 @@ export default function PCA() {
           </TabsContent>
 
           <TabsContent value="figure">
-            <div className="grid grid-cols-[1fr_310px] gap-4">
+            <div className="grid grid-cols-[1fr_320px] gap-4">
               <ChartFrame
                 title={`PC${pcX + 1} vs PC${pcY + 1}`}
                 filename={`pca_figure_pc${pcX + 1}_pc${pcY + 1}`}

@@ -12,7 +12,7 @@ export function PanelLayout({ title, description, actions, children }: PanelLayo
     <div className="flex h-full flex-col">
       {/* The header stays put while the page scrolls, so the run and export
           buttons are always reachable on long results pages. */}
-      <div className="sticky top-0 z-10 flex shrink-0 items-start justify-between gap-4 border-b bg-background px-6 py-4">
+      <div className="sticky top-0 z-10 flex h-[var(--topbar-h)] shrink-0 items-center justify-between gap-4 border-b bg-background px-6">
         <div className="min-w-0">
           <h1 className="truncate text-lg font-semibold">{title}</h1>
           {description && (

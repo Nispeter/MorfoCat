@@ -100,7 +100,7 @@ export function Sidebar() {
         "flex h-full flex-col border-r bg-card transition-all duration-200",
         collapsed ? "w-14" : "w-64"
       )}>
-        <div className={cn("flex items-center gap-2 p-4 font-bold text-primary", collapsed && "justify-center")}>
+        <div className={cn("flex h-[var(--topbar-h)] shrink-0 items-center gap-2 px-4 font-bold text-primary", collapsed && "justify-center")}>
           <Cat size={22} className="shrink-0" />
           {!collapsed && <span className="text-base">MorfoCat</span>}
         </div>
