@@ -47,6 +47,9 @@ interface DatasetState {
   toggleSpecimen: (idx: number) => void;
   setGroup: (idx: number, group: string) => void;
   extractClassifier: (name: string, first: number, last: number) => void;
+  extractClassifiers: (
+    fields: Array<{ name: string; first: number; last: number }>
+  ) => { added: number } | { error: string };
   setSpecimenClassifier: (idx: number, name: string, value: string) => void;
   renameClassifier: (oldName: string, newName: string) => void;
   deleteClassifier: (name: string) => void;
@@ -148,6 +151,46 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
         activeClassifier: s.activeClassifier ?? key,
       };
     }),
+
+  /**
+   * Cut several classifiers out of the ID in one pass.
+   *
+   * IDs are usually structured — a running number, a separator, an area code,
+   * a site code — so the useful operation is describing that whole layout by
+   * character position and slicing every field at once, rather than repeating
+   * a one-field extraction. Positions are 1-based and inclusive.
+   */
+  extractClassifiers: (fields) => {
+    const s = get();
+    if (!s.dataset) return { error: "No dataset loaded." };
+
+    const named = fields
+      .map((f) => ({ ...f, name: f.name.trim() }))
+      .filter((f) => f.name);
+    if (named.length === 0) return { error: "Name at least one field." };
+
+    const duplicate = named.find((f, i) => named.findIndex((g) => g.name === f.name) !== i);
+    if (duplicate) return { error: `Two fields are both called "${duplicate.name}".` };
+
+    const specimens = s.dataset.specimens.map((sp) => {
+      const classifiers = { ...(sp.classifiers ?? {}) };
+      for (const f of named) {
+        // Trimmed: IDs taken from file names often carry stray spaces, and a
+        // group called " QN" would sit apart from "QN" for no good reason.
+        classifiers[f.name] = sp.id.slice(Math.max(0, f.first - 1), f.last).trim();
+      }
+      return { ...sp, classifiers };
+    });
+
+    const existing = s.dataset.classifierNames ?? [];
+    const classifierNames = [...existing, ...named.map((f) => f.name).filter((n) => !existing.includes(n))];
+
+    set({
+      dataset: { ...s.dataset, specimens, classifierNames },
+      activeClassifier: s.activeClassifier ?? classifierNames[0] ?? null,
+    });
+    return { added: named.length };
+  },
 
   setSpecimenClassifier: (idx, name, value) =>
     set((s) => {

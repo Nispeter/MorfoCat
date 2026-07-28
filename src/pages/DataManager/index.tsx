@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useDropzone } from "react-dropzone";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
@@ -8,7 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
-import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc";
@@ -93,7 +92,7 @@ export default function DataManager() {
   const t = useT();
   const {
     dataset, setDataset, toggleSpecimen, clear,
-    activeClassifier, extractClassifier, setSpecimenClassifier,
+    activeClassifier, extractClassifiers, setSpecimenClassifier,
     renameClassifier, deleteClassifier, setActiveClassifier, appendSpecimens,
     subsetLandmarks, averageByClassifier, setAllLandmarks, loadProject,
   } = useDatasetStore();
@@ -425,7 +424,7 @@ export default function DataManager() {
               names={dataset.classifierNames ?? []}
               active={activeClassifier}
               ids={dataset.specimens.map((s) => s.id)}
-              onExtract={extractClassifier}
+              onExtractMany={extractClassifiers}
               onActivate={setActiveClassifier}
               onRename={renameClassifier}
               onDelete={deleteClassifier}
@@ -528,61 +527,20 @@ function SpecimenRow({
 }
 
 function ClassifiersCard({
-  names, active, ids, onExtract, onActivate, onRename, onDelete,
+  names, active, ids, onExtractMany, onActivate, onRename, onDelete,
 }: {
   names: string[];
   active: string | null;
   /** Every specimen ID, so the preview can show the real groups. */
   ids: string[];
-  onExtract: (name: string, first: number, last: number) => void;
+  onExtractMany: (
+    fields: Array<{ name: string; first: number; last: number }>
+  ) => { added: number } | { error: string };
   onActivate: (name: string | null) => void;
   onRename: (oldName: string, newName: string) => void;
   onDelete: (name: string) => void;
 }) {
   const t = useT();
-  const [name, setName] = useState("");
-  const [first, setFirst] = useState(1);
-  const [last, setLast] = useState(2);
-
-  // Preview the groups this split would actually create across the whole
-  // sample — the useful question is "how many groups, and how big", not
-  // "what do the first few IDs look like".
-  const preview = useMemo(() => {
-    const lo = Math.max(0, first - 1);
-    const counts = new Map<string, number>();
-    let empty = 0;
-    for (const id of ids) {
-      const value = id.slice(lo, last);
-      if (!value) { empty++; continue; }
-      counts.set(value, (counts.get(value) ?? 0) + 1);
-    }
-    return {
-      groups: [...counts.entries()].sort((a, b) => b[1] - a[1]),
-      empty,
-      example: ids[0] ?? "",
-      exampleValue: (ids[0] ?? "").slice(lo, last),
-    };
-  }, [ids, first, last]);
-
-  const submit = () => {
-    if (!name.trim()) {
-      toast.error(t("data.errNoName"));
-      return;
-    }
-    if (last < first) {
-      toast.error(t("data.errRange"));
-      return;
-    }
-    if (preview.groups.length === 0) {
-      toast.error(t("data.errAllEmpty"));
-      return;
-    }
-    onExtract(name, first, last);
-    toast.success(`${t("data.extractBtn")}: ${name.trim()}`, {
-      description: `${preview.groups.length} ${t("data.groupsFound")}`,
-    });
-    setName("");
-  };
 
   return (
     <Card>
@@ -628,70 +586,181 @@ function ClassifiersCard({
           </div>
         )}
 
-        {/* Extract from ID */}
-        <div className="space-y-2 border-t pt-2">
-          <p className="text-xs text-muted-foreground">{t("data.extractFromId")}</p>
-          <div className="space-y-1">
-            <Label className="text-xs">{t("data.name")}</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. site" className="h-8" />
-          </div>
-          <div className="flex gap-2">
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs">{t("data.firstChar")}</Label>
-              <NumberInput min={1} value={first} onChange={setFirst} className="h-8" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs">{t("data.lastChar")}</Label>
-              <NumberInput min={1} value={last} onChange={setLast} className="h-8" />
-            </div>
-          </div>
-          {ids.length > 0 && (
-            <div className="space-y-1.5 rounded border bg-muted/30 p-2">
-              <p className="text-xs text-muted-foreground">
-                {t("data.previewLabel")}{" "}
-                <span className="font-mono text-foreground">
-                  {preview.example.slice(0, 24)}
-                  {preview.example.length > 24 ? "…" : ""}
-                </span>
-                {" → "}
-                <span className="font-mono font-medium text-primary">
-                  {preview.exampleValue || "∅"}
-                </span>
-              </p>
-
-              {preview.groups.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {preview.groups.slice(0, 8).map(([value, count]) => (
-                    <span key={value} className="rounded-full border bg-background px-1.5 py-0.5 text-[10px]">
-                      <span className="font-mono font-medium">{value}</span>
-                      <span className="ml-1 text-muted-foreground">{count}</span>
-                    </span>
-                  ))}
-                  {preview.groups.length > 8 && (
-                    <span className="px-1 py-0.5 text-[10px] text-muted-foreground">
-                      +{preview.groups.length - 8}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              <p className="text-[10px] text-muted-foreground">
-                {preview.groups.length} {t("data.groupsFound")}
-                {preview.empty > 0 && ` · ${preview.empty} ${t("data.idsTooShort")}`}
-              </p>
-
-              {preview.groups.length === 1 && (
-                <p className="text-[10px] text-amber-600 dark:text-amber-400">{t("data.warnOneGroup")}</p>
-              )}
-              {preview.groups.length === ids.length && ids.length > 1 && (
-                <p className="text-[10px] text-amber-600 dark:text-amber-400">{t("data.warnAllUnique")}</p>
-              )}
-            </div>
-          )}
-          <Button size="sm" className="w-full" onClick={submit}>{t("data.extractBtn")}</Button>
+        {/* Cut the ID into named fields */}
+        <div className="border-t pt-2">
+          <IdSchemeEditor ids={ids} onExtract={onExtractMany} />
         </div>
+
       </CardContent>
     </Card>
+  );
+}
+
+/**
+ * Cut the specimen ID into named fields by character position.
+ *
+ * Lab IDs are structured — something like `01-23QN031242`, where the first two
+ * characters are a running number, the dash is nothing, then a year, an area
+ * code and a site code. Rather than hard-coding any of that, the layout is
+ * described here: click two characters to mark a span, name it, and every span
+ * becomes a classifier. Positions are 1-based and inclusive.
+ */
+function IdSchemeEditor({
+  ids, onExtract,
+}: {
+  ids: string[];
+  onExtract: (
+    fields: Array<{ name: string; first: number; last: number }>
+  ) => { added: number } | { error: string };
+}) {
+  const t = useT();
+  const [fields, setFields] = useState<Array<{ key: number; name: string; first: number; last: number }>>([]);
+  const [pending, setPending] = useState<number | null>(null);
+  const nextKey = useRef(1);
+
+  const sample = ids[0] ?? "";
+  const width = ids.reduce((w, id) => Math.max(w, id.length), 0);
+
+  /** Distinct values, and how many IDs are too short, for one span. */
+  const summarize = (first: number, last: number) => {
+    const counts = new Map<string, number>();
+    let empty = 0;
+    for (const id of ids) {
+      const value = id.slice(Math.max(0, first - 1), last).trim();
+      if (!value) empty++;
+      else counts.set(value, (counts.get(value) ?? 0) + 1);
+    }
+    return { groups: [...counts.entries()].sort((a, b) => b[1] - a[1]), empty };
+  };
+
+  const addField = (first: number, last: number) => {
+    setFields((f) => [...f, { key: nextKey.current++, name: "", first, last }]);
+  };
+
+  const onCharClick = (pos: number) => {
+    if (pending === null) { setPending(pos); return; }
+    addField(Math.min(pending, pos), Math.max(pending, pos));
+    setPending(null);
+  };
+
+  /** Whether a character is already covered by a field — used to tint the ruler. */
+  const isCovered = (pos: number) => fields.some((f) => pos >= f.first && pos <= f.last);
+
+  const apply = () => {
+    const res = onExtract(fields.map(({ name, first, last }) => ({ name, first, last })));
+    if ("error" in res) {
+      toast.error(res.error);
+      return;
+    }
+    toast.success(`${res.added} ${t("data.classifiers")}`);
+    setFields([]);
+  };
+
+  if (ids.length === 0) return null;
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-muted-foreground">{t("data.schemeHint")}</p>
+
+      {/* Character ruler — click two positions to mark a span */}
+      <div className="flex flex-wrap gap-0.5">
+        {Array.from({ length: width }, (_, i) => {
+          const pos = i + 1;
+          const covered = isCovered(pos);
+          const isPending = pending === pos;
+          return (
+            <button
+              key={pos}
+              onClick={() => onCharClick(pos)}
+              title={`${t("data.position")} ${pos}`}
+              className={`flex w-5 shrink-0 flex-col items-center rounded border py-0.5 text-[10px] leading-tight transition-colors ${
+                isPending
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : covered
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "hover:bg-muted"
+              }`}
+            >
+              <span className="font-mono">{sample[i] ?? "·"}</span>
+              <span className="text-[8px] opacity-60">{pos}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {pending !== null && (
+        <p className="text-[10px] text-primary">
+          {t("data.pickSecond").replace("{n}", String(pending))}
+        </p>
+      )}
+
+      {/* One row per field */}
+      {fields.map((f, i) => {
+        const info = summarize(f.first, f.last);
+        return (
+          <div key={f.key} className="space-y-1 rounded border bg-muted/30 p-1.5">
+            <div className="flex items-center gap-1">
+              <Input
+                className="h-6 flex-1 text-[11px]"
+                placeholder={t("data.fieldName")}
+                value={f.name}
+                onChange={(e) =>
+                  setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+                }
+              />
+              <NumberInput
+                className="h-6 w-11 text-[11px]" min={1} max={Math.max(width, 1)}
+                value={f.first}
+                onChange={(v) => setFields((fs) => fs.map((x, j) => (j === i ? { ...x, first: v } : x)))}
+              />
+              <span className="text-[10px] text-muted-foreground">–</span>
+              <NumberInput
+                className="h-6 w-11 text-[11px]" min={1} max={Math.max(width, 1)}
+                value={f.last}
+                onChange={(v) => setFields((fs) => fs.map((x, j) => (j === i ? { ...x, last: v } : x)))}
+              />
+              <button
+                onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
+                className="px-1 text-muted-foreground hover:text-destructive"
+                title={t("data.removeField")}
+              >
+                <X size={11} />
+              </button>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              <span className="font-mono text-foreground">
+                {sample.slice(Math.max(0, f.first - 1), f.last).trim() || "∅"}
+              </span>
+              {" · "}
+              {info.groups.length} {t("data.groupsFound")}
+              {info.empty > 0 && ` · ${info.empty} ${t("data.idsTooShort")}`}
+              {info.groups.length === 1 && ` · ${t("data.sameForAll")}`}
+            </p>
+          </div>
+        );
+      })}
+
+      <div className="flex gap-1">
+        <button
+          onClick={() => addField(1, Math.min(2, Math.max(width, 1)))}
+          className="flex-1 rounded border px-1 py-1 text-[10px] hover:bg-muted"
+        >
+          + {t("data.addField")}
+        </button>
+        {fields.length > 0 && (
+          <button
+            onClick={() => { setFields([]); setPending(null); }}
+            className="flex-1 rounded border px-1 py-1 text-[10px] hover:bg-muted"
+          >
+            {t("action.clear")}
+          </button>
+        )}
+      </div>
+
+      <Button size="sm" className="w-full" disabled={fields.length === 0} onClick={apply}>
+        {t("data.applyScheme")}
+      </Button>
+    </div>
   );
 }
 
