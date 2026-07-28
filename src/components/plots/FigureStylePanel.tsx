@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
@@ -50,16 +50,15 @@ export function FigureStylePanel({
 
   return (
     <div className="space-y-3">
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-1.5 text-sm">
-            <Palette size={13} /> {t("fig.groups")}
-            <Button size="sm" variant="ghost" className="ml-auto h-6 px-1.5 text-xs" onClick={resetStyles} title={t("fig.resetStyles")}>
-              <RotateCcw size={11} />
-            </Button>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
+      <CollapsibleCard
+        title={<><Palette size={13} /> {t("fig.groups")}</>}
+        contentClassName="space-y-3"
+        actions={
+          <Button size="sm" variant="ghost" className="h-6 px-1.5 text-xs" onClick={resetStyles} title={t("fig.resetStyles")}>
+            <RotateCcw size={11} />
+          </Button>
+        }
+      >
           {groups.length === 0 && (
             <p className="text-xs text-muted-foreground">
               {t("fig.noClassifier")}
@@ -115,13 +114,10 @@ export function FigureStylePanel({
               </div>
             );
           })}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       {otherClassifiers.length > 0 && (
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.secondClassifier")}</CardTitle></CardHeader>
-          <CardContent className="space-y-2 text-xs">
+        <CollapsibleCard title={t("fig.secondClassifier")} contentClassName="space-y-2 text-xs">
             <select
               className="w-full rounded border bg-background px-1.5 py-1"
               value={symbolBy ?? ""}
@@ -171,13 +167,10 @@ export function FigureStylePanel({
                 </div>
               );
             })}
-          </CardContent>
-        </Card>
+        </CollapsibleCard>
       )}
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.axes")}</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-xs">
+      <CollapsibleCard title={t("fig.axes")} contentClassName="space-y-2 text-xs">
           <select
             className="w-full rounded border bg-background px-1.5 py-1"
             value={axisMode}
@@ -238,12 +231,9 @@ export function FigureStylePanel({
               </div>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.shapeRefs")}</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-xs">
+      <CollapsibleCard title={t("fig.shapeRefs")} contentClassName="space-y-2 text-xs">
           <select
             className="w-full rounded border bg-background px-1.5 py-1"
             value={refSource}
@@ -354,12 +344,9 @@ export function FigureStylePanel({
             <Switch checked={showLegend} onCheckedChange={setShowLegend} />
           </div>
           <p className="text-muted-foreground">{t("fig.dragLegend")}</p>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
-      <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm">{t("fig.size")}</CardTitle></CardHeader>
-        <CardContent className="space-y-2 text-xs">
+      <CollapsibleCard title={t("fig.size")} defaultOpen={false} contentClassName="space-y-2 text-xs">
           <div className="grid grid-cols-2 gap-2">
             <div className="space-y-0.5">
               <Label className="text-[10px]">{t("fig.width")}</Label>
@@ -395,8 +382,7 @@ export function FigureStylePanel({
               .replace("{w}", String(Math.round(figureWidth * exportScale)))
               .replace("{h}", String(Math.round(figureHeight * exportScale)))}
           </p>
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
     </div>
   );
 }

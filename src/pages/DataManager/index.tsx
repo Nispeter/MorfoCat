@@ -6,6 +6,7 @@ import { imageStem, resolveSpecimenId as resolveId } from "@/lib/specimenId";
 import { PanelLayout } from "@/components/layout/PanelLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CollapsibleCard } from "@/components/ui/collapsible-card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -424,36 +425,28 @@ export default function DataManager() {
               onAverage={averageByClassifier}
               onEstimateMissing={handleEstimateMissing}
             />
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">{t("data.summary")}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-1 text-sm">
+            <CollapsibleCard title={t("data.summary")} contentClassName="space-y-1 text-sm">
                 <Row label={t("data.file")} value={dataset.filename} />
                 <Row label={t("ui.specimens")} value={dataset.specimens.length} />
                 <Row label={t("status.included")} value={dataset.specimens.filter((s) => s.include).length} />
                 <Row label={t("ui.landmarks")} value={dataset.n_landmarks} />
                 <Row label={t("data.dimensions")} value={dataset.dimensions} />
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">{t("data.nextSteps")}</CardTitle>
-              </CardHeader>
-              <CardContent className="text-xs text-muted-foreground space-y-1">
+            </CollapsibleCard>
+            <CollapsibleCard
+              title={t("data.nextSteps")}
+              defaultOpen={false}
+              contentClassName="text-xs text-muted-foreground space-y-1"
+            >
                 <p>1. Run <strong>Procrustes Fit</strong> to align landmarks</p>
                 <p>2. Check <strong>Outlier Detection</strong></p>
                 <p>3. Proceed with <strong>PCA</strong> or other analyses</p>
-              </CardContent>
-            </Card>
+            </CollapsibleCard>
             {recentFiles.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm flex items-center gap-1.5">
-                    <Clock size={12} /> {t("data.recent")}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-1">
+              <CollapsibleCard
+                title={<><Clock size={12} /> {t("data.recent")}</>}
+                defaultOpen={false}
+                contentClassName="space-y-1"
+              >
                   {recentFiles.slice(0, 5).map((rf) => (
                     <button
                       key={rf.name}
@@ -464,8 +457,7 @@ export default function DataManager() {
                       <span className="ml-auto shrink-0 text-muted-foreground">{formatRelTime(rf.timestamp)}</span>
                     </button>
                   ))}
-                </CardContent>
-              </Card>
+              </CollapsibleCard>
             )}
           </div>
         </div>
@@ -533,13 +525,10 @@ function ClassifiersCard({
   const schemeKey = JSON.stringify(scheme);
 
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-1.5">
-          <Tags size={13} /> {t("data.classifiers")}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <CollapsibleCard
+      title={<><Tags size={13} /> {t("data.classifiers")}</>}
+      contentClassName="space-y-3"
+    >
         {/* Existing classifiers */}
         {names.length > 0 && (
           <div className="space-y-1.5">
@@ -592,8 +581,7 @@ function ClassifiersCard({
           />
         </div>
 
-      </CardContent>
-    </Card>
+    </CollapsibleCard>
   );
 }
 
@@ -842,13 +830,10 @@ function TransformCard({
 
   return (
     <>
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm flex items-center gap-1.5">
-            <Wand2 size={13} /> {t("data.transform")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
+      <CollapsibleCard
+        title={<><Wand2 size={13} /> {t("data.transform")}</>}
+        contentClassName="space-y-2"
+      >
           <Button size="sm" variant="outline" className="w-full justify-start" onClick={openSubset}>
             <Scissors size={13} /> {t("data.chooseLandmarks")}
           </Button>
@@ -876,8 +861,7 @@ function TransformCard({
               </Button>
             </div>
           )}
-        </CardContent>
-      </Card>
+      </CollapsibleCard>
 
       <Dialog open={subsetOpen} onOpenChange={setSubsetOpen}>
         <DialogContent className="max-w-md">
