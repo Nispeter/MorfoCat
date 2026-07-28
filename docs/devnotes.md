@@ -8,5 +8,10 @@
 - interactividad (valores al pasar el mouse) en PLS, modularidad y correlación
   de matrices
 - toasts y textos de ayuda dentro de las tarjetas siguen en inglés
+- firma gratuita (SignPath Foundation): el workflow ya la hace, pero queda
+  inerte hasta que postules el proyecto y cargues en el repo las variables
+  SIGNPATH_ORGANIZATION_ID / SIGNPATH_PROJECT_SLUG / SIGNPATH_POLICY_SLUG y el
+  secreto SIGNPATH_API_TOKEN; exigen repo público con licencia OSI (ya está,
+  MIT)
 - ojo: el repo tiene finales de línea mezclados (LF y CRLF); si editás con
   scripts, escribí bytes respetando el salto de línea de cada archivo

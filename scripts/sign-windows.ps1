@@ -15,6 +15,11 @@
 
     With neither set the script exits without signing, so an ordinary build
     still works on a machine that has no certificate.
+
+    Released installers are not signed here: SignPath Foundation signs them for
+    free from .github/workflows/build.yml, because it will only sign artifacts
+    it can trace back to a CI run. This script is for signing a local build with
+    your own certificate.
 #>
 param(
     [Parameter(Mandatory = $true, Position = 0)]
