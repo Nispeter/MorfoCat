@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { NumberInput } from "@/components/ui/number-input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
 import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc";
@@ -555,10 +554,6 @@ function ClassifiersCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          {t("data.whatIsClassifier")}
-        </p>
-
         {/* Existing classifiers */}
         {names.length > 0 && (
           <div className="space-y-1.5">
@@ -603,7 +598,6 @@ function ClassifiersCard({
 
         {/* Cut the ID into named fields */}
         <div className="space-y-2 border-t pt-2">
-          <p className="text-xs font-medium">{t("data.fromId")}</p>
           <IdSchemeEditor ids={ids} onExtract={onExtractMany} />
         </div>
 
@@ -615,11 +609,10 @@ function ClassifiersCard({
 /**
  * Cut the specimen ID into named fields by character position.
  *
- * Lab IDs are structured — something like `01-23QN031242`, where the first two
- * characters are a running number, the dash is nothing, then a year, an area
- * code and a site code. Rather than hard-coding any of that, the layout is
- * described here: click two characters to mark a span, name it, and every span
- * becomes a classifier. Positions are 1-based and inclusive.
+ * Lab IDs are structured — `01-23QN031242` is a running number, a dash, a year,
+ * an area code and a site code — so the layout is described by dragging across
+ * the characters that belong together. Each span becomes a classifier.
+ * Positions are 1-based and inclusive.
  */
 function IdSchemeEditor({
   ids, onExtract,
@@ -631,7 +624,7 @@ function IdSchemeEditor({
 }) {
   const t = useT();
   const [fields, setFields] = useState<Array<{ key: number; name: string; first: number; last: number }>>([]);
-  const [pending, setPending] = useState<number | null>(null);
+  const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
   const nextKey = useRef(1);
 
   const sample = ids[0] ?? "";
@@ -646,21 +639,21 @@ function IdSchemeEditor({
       if (!value) empty++;
       else counts.set(value, (counts.get(value) ?? 0) + 1);
     }
-    return { groups: [...counts.entries()].sort((a, b) => b[1] - a[1]), empty };
+    return { groups: counts.size, empty };
   };
 
-  const addField = (first: number, last: number) => {
+  const addField = (first: number, last: number) =>
     setFields((f) => [...f, { key: nextKey.current++, name: "", first, last }]);
+
+  const finishDrag = () => {
+    if (!drag) return;
+    addField(Math.min(drag.from, drag.to), Math.max(drag.from, drag.to));
+    setDrag(null);
   };
 
-  const onCharClick = (pos: number) => {
-    if (pending === null) { setPending(pos); return; }
-    addField(Math.min(pending, pos), Math.max(pending, pos));
-    setPending(null);
-  };
-
-  /** Whether a character is already covered by a field — used to tint the ruler. */
-  const isCovered = (pos: number) => fields.some((f) => pos >= f.first && pos <= f.last);
+  const inDrag = (pos: number) =>
+    drag !== null && pos >= Math.min(drag.from, drag.to) && pos <= Math.max(drag.from, drag.to);
+  const inField = (pos: number) => fields.some((f) => pos >= f.first && pos <= f.last);
 
   const apply = () => {
     const res = onExtract(fields.map(({ name, first, last }) => ({ name, first, last })));
@@ -674,112 +667,81 @@ function IdSchemeEditor({
 
   if (ids.length === 0) return null;
 
-  return (
-    <div className="space-y-2">
-      <div className="space-y-0.5 text-[10px] leading-relaxed text-muted-foreground">
-        <p>{t("data.step1")}</p>
-        <p>{t("data.step2")}</p>
-        <p>{t("data.step3")}</p>
-      </div>
+  // Nothing to slice: the file had no IMAGE= names, so the IDs are bare
+  // numbers and carry no site or area code to pull apart.
+  if (width < 3) {
+    return (
+      <p className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
+        {t("data.idsTooPlain").replace("{id}", sample || "—")}
+      </p>
+    );
+  }
 
-      {/* Character ruler — click two positions to mark a span */}
-      <div className="flex flex-wrap gap-0.5">
+  return (
+    <div className="space-y-2" onPointerUp={finishDrag} onPointerLeave={finishDrag}>
+      <p className="text-[11px] text-muted-foreground">{t("data.dragHint")}</p>
+
+      {/* The ID, character by character — drag across the ones that go together */}
+      <div className="flex select-none flex-wrap gap-0.5">
         {Array.from({ length: width }, (_, i) => {
           const pos = i + 1;
-          const covered = isCovered(pos);
-          const isPending = pending === pos;
+          const marked = inDrag(pos);
+          const taken = inField(pos);
           return (
             <button
               key={pos}
-              onClick={() => onCharClick(pos)}
-              title={`${t("data.position")} ${pos}`}
-              className={`flex w-5 shrink-0 flex-col items-center rounded border py-0.5 text-[10px] leading-tight transition-colors ${
-                isPending
+              onPointerDown={() => setDrag({ from: pos, to: pos })}
+              onPointerEnter={() => drag && setDrag((d) => (d ? { ...d, to: pos } : d))}
+              className={`flex h-8 w-5 shrink-0 flex-col items-center justify-center rounded border text-[11px] leading-none transition-colors ${
+                marked
                   ? "border-primary bg-primary text-primary-foreground"
-                  : covered
+                  : taken
                     ? "border-primary/50 bg-primary/10 text-primary"
                     : "hover:bg-muted"
               }`}
             >
               <span className="font-mono">{sample[i] ?? "·"}</span>
-              <span className="text-[8px] opacity-60">{pos}</span>
+              <span className="mt-0.5 text-[8px] opacity-60">{pos}</span>
             </button>
           );
         })}
       </div>
 
-      {pending !== null && (
-        <p className="text-[10px] text-primary">
-          {t("data.pickSecond").replace("{n}", String(pending))}
-        </p>
-      )}
-
       {/* One row per field */}
       {fields.map((f, i) => {
         const info = summarize(f.first, f.last);
+        const value = sample.slice(Math.max(0, f.first - 1), f.last).trim();
         return (
-          <div key={f.key} className="space-y-1 rounded border bg-muted/30 p-1.5">
-            <div className="flex items-center gap-1">
-              <Input
-                className="h-6 flex-1 text-[11px]"
-                placeholder={t("data.fieldName")}
-                value={f.name}
-                onChange={(e) =>
-                  setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
-                }
-              />
-              <NumberInput
-                className="h-6 w-11 text-[11px]" min={1} max={Math.max(width, 1)}
-                value={f.first}
-                onChange={(v) => setFields((fs) => fs.map((x, j) => (j === i ? { ...x, first: v } : x)))}
-              />
-              <span className="text-[10px] text-muted-foreground">–</span>
-              <NumberInput
-                className="h-6 w-11 text-[11px]" min={1} max={Math.max(width, 1)}
-                value={f.last}
-                onChange={(v) => setFields((fs) => fs.map((x, j) => (j === i ? { ...x, last: v } : x)))}
-              />
-              <button
-                onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
-                className="px-1 text-muted-foreground hover:text-destructive"
-                title={t("data.removeField")}
-              >
-                <X size={11} />
-              </button>
-            </div>
-            <p className="text-[10px] text-muted-foreground">
-              <span className="font-mono text-foreground">
-                {sample.slice(Math.max(0, f.first - 1), f.last).trim() || "∅"}
-              </span>
-              {" · "}
-              {info.groups.length} {t("data.groupsFound")}
-              {info.empty > 0 && ` · ${info.empty} ${t("data.idsTooShort")}`}
-              {info.groups.length === 1 && ` · ${t("data.sameForAll")}`}
-            </p>
+          <div key={f.key} className="flex items-center gap-1.5">
+            <Input
+              className="h-7 flex-1 text-xs"
+              placeholder={t("data.fieldName")}
+              autoFocus={i === fields.length - 1 && !f.name}
+              value={f.name}
+              onChange={(e) =>
+                setFields((fs) => fs.map((x, j) => (j === i ? { ...x, name: e.target.value } : x)))
+              }
+            />
+            <span className="shrink-0 whitespace-nowrap text-[10px] text-muted-foreground">
+              <span className="font-mono text-foreground">{value || "∅"}</span>
+              {" · "}{info.groups} {t("data.groupsFound")}
+            </span>
+            <button
+              onClick={() => setFields((fs) => fs.filter((_, j) => j !== i))}
+              className="shrink-0 px-0.5 text-muted-foreground hover:text-destructive"
+              title={t("data.removeField")}
+            >
+              <X size={12} />
+            </button>
           </div>
         );
       })}
 
-      <div className="flex gap-1">
-        <button
-          onClick={() => addField(1, Math.min(2, Math.max(width, 1)))}
-          className="flex-1 rounded border px-1 py-1 text-[10px] hover:bg-muted"
-        >
-          + {t("data.addField")}
-        </button>
-        {fields.length > 0 && (
-          <button
-            onClick={() => { setFields([]); setPending(null); }}
-            className="flex-1 rounded border px-1 py-1 text-[10px] hover:bg-muted"
-          >
-            {t("action.clear")}
-          </button>
-        )}
-      </div>
-
-      <Button size="sm" className="w-full" disabled={fields.length === 0} onClick={apply}>
-        {t("data.applyScheme")}
-      </Button>
+      {fields.length > 0 && (
+        <Button size="sm" className="w-full" onClick={apply}>
+          {t("data.applyScheme")}
+        </Button>
+      )}
     </div>
   );
 }
