@@ -1,6 +1,10 @@
 /**
- * Renders a 2D consensus shape with optional deformation arrows.
- * Uses SVG scaled to the container.
+ * A 2D consensus shape with, optionally, where each landmark moves to.
+ *
+ * The displacement is drawn as a plain line from the mean position to the
+ * deformed one — no arrowheads and no dots at either end. At the sizes these
+ * drawings are printed, markers crowd the outline and hide the very shape
+ * change they are meant to show; a bare line reads as direction on its own.
  */
 interface ShapeGridProps {
   consensus: number[][];
@@ -12,7 +16,7 @@ interface ShapeGridProps {
   edges?: [number, number][];
 }
 
-export function ShapeGrid({ consensus, deformed, width = 260, height = 220, showWire = true, edges }: ShapeGridProps) {
+export function ShapeGrid({ consensus, deformed, width = 340, height = 300, showWire = true, edges }: ShapeGridProps) {
   if (!consensus?.length) return <div className="flex h-40 items-center justify-center text-xs text-muted-foreground">No consensus shape</div>;
 
   const pad = 20;
@@ -46,35 +50,22 @@ export function ShapeGrid({ consensus, deformed, width = 260, height = 220, show
             return <line key={i} x1={p.cx} y1={p.cy} x2={next.cx} y2={next.cy} stroke="hsl(var(--muted-foreground))" strokeWidth={0.8} opacity={0.5} />;
           }))}
 
-      {/* Deformation vectors */}
+      {/* Where each landmark moves to */}
       {defPts && pts.map((p, i) => {
         const d = defPts[i];
-        const dx = d.cx - p.cx;
-        const dy = d.cy - p.cy;
-        if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return null;
+        if (Math.abs(d.cx - p.cx) < 0.5 && Math.abs(d.cy - p.cy) < 0.5) return null;
         return (
           <line key={`def-${i}`} x1={p.cx} y1={p.cy} x2={d.cx} y2={d.cy}
-            stroke="hsl(var(--primary))" strokeWidth={1.5} markerEnd="url(#arrowBlue)" />
+            stroke="hsl(var(--primary))" strokeWidth={1.6} strokeLinecap="round" />
         );
       })}
 
-      <defs>
-        <marker id="arrowBlue" viewBox="0 -4 8 8" refX={6} refY={0} markerWidth={4} markerHeight={4} orient="auto">
-          <path d="M0,-4L8,0L0,4" fill="hsl(var(--primary))" />
-        </marker>
-      </defs>
-
-      {/* Landmarks */}
-      {pts.map((p, i) => (
+      {/* Landmarks — hidden once displacements are drawn, so the lines read cleanly */}
+      {!defPts && pts.map((p, i) => (
         <g key={i}>
-          <circle cx={p.cx} cy={p.cy} r={3.5} fill="hsl(var(--primary))" opacity={0.8} />
+          <circle cx={p.cx} cy={p.cy} r={3} fill="hsl(var(--primary))" opacity={0.8} />
           <title>LM {i + 1}</title>
         </g>
-      ))}
-
-      {/* Deformed landmarks */}
-      {defPts?.map((p, i) => (
-        <circle key={`def-lm-${i}`} cx={p.cx} cy={p.cy} r={3.5} fill="hsl(var(--destructive))" opacity={0.7} />
       ))}
     </svg>
   );
