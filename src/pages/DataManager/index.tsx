@@ -380,8 +380,9 @@ export default function DataManager() {
                   <thead className="sticky top-0 border-b bg-card text-xs text-muted-foreground">
                     <tr>
                       <th className="px-4 py-2 text-left font-medium">{t("ui.include")}</th>
-                      <th className="px-4 py-2 text-left font-medium">ID</th>
-                      <th className="px-4 py-2 text-left font-medium">{activeClassifier ?? "Group"}</th>
+                      <th className="px-4 py-2 text-right font-medium">ID</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("ui.name")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{activeClassifier ?? t("ui.category")}</th>
                       <th className="px-4 py-2 text-left font-medium">{t("ui.scale")}</th>
                     </tr>
                   </thead>
@@ -389,6 +390,7 @@ export default function DataManager() {
                     {dataset.specimens.map((sp, i) => (
                       <SpecimenRow
                         key={i}
+                        number={i + 1}
                         specimen={sp}
                         active={activeClassifier}
                         onToggle={() => toggleSpecimen(i)}
@@ -473,8 +475,10 @@ export default function DataManager() {
 }
 
 function SpecimenRow({
-  specimen, active, onToggle, onSetClassifier,
+  number, specimen, active, onToggle, onSetClassifier,
 }: {
+  /** Position in the file — a short handle, since the name can be long. */
+  number: number;
   specimen: Specimen;
   active: string | null;
   onToggle: () => void;
@@ -488,6 +492,7 @@ function SpecimenRow({
           {specimen.include ? <Eye size={14} /> : <EyeOff size={14} />}
         </button>
       </td>
+      <td className="px-4 py-1.5 text-right font-mono text-xs text-muted-foreground">{number}</td>
       <td className="px-4 py-1.5 font-mono text-xs">{specimen.id}</td>
       <td className="px-4 py-1.5">
         {active ? (
