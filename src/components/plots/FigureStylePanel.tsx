@@ -449,7 +449,12 @@ function RefAxisControls({
           ))}
           <div className="flex gap-1">
             <button
-              onClick={() => setRefPositions(axis, [...pinned, options[0] ?? 0])}
+              onClick={() =>
+                setRefPositions(axis, [
+                  ...pinned,
+                  options.find((o) => !pinned.includes(o)) ?? options[0] ?? 0,
+                ])
+              }
               className="flex-1 rounded border px-1 py-0.5 text-[10px] hover:bg-muted"
             >
               + {t("fig.addPosition")}

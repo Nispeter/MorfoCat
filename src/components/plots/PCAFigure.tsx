@@ -137,10 +137,10 @@ export function PCAFigure({
    */
   function references(pc: number, positions: number[], sign: number) {
     if (refSource === "deformation") {
-      return positions.map((position) => {
+      return positions.map((position, slot) => {
         const shape = deform(pc, position * sign);
         return {
-          key: `d${position}`,
+          key: `d${slot}-${position}`,
           at: position,
           shape: shape ? orientShape(shape, orientation) : null,
           photo: undefined as string | undefined,
@@ -150,10 +150,10 @@ export function PCAFigure({
       });
     }
     return referenceSpecimens(scores, pc, positions.map((p) => p * sign)).map(
-      ({ position, index }) => {
+      ({ position, index }, slot) => {
         const shape = aligned?.[index] ?? null;
         return {
-          key: `s${position}-${index}`,
+          key: `s${slot}-${position}-${index}`,
           at: position * sign, // back to display coordinates
           shape: shape ? orientShape(shape, orientation) : null,
           photo: refSource === "photo" ? photos[index] : undefined,
@@ -167,10 +167,15 @@ export function PCAFigure({
   // A pinned position can sit outside the axis after the limits change; drawing
   // it would put the shape off the canvas, so it waits until the axis covers it.
   const within = ([lo, hi]: [number, number]) => (v: number) => v >= lo && v <= hi;
-  const positionsX = resolveRefPositions(refPositionsX, refShapesX, domain.x[0], domain.x[1])
-    .filter(within(domain.x));
-  const positionsY = resolveRefPositions(refPositionsY, refShapesY, domain.y[0], domain.y[1])
-    .filter(within(domain.y));
+  // Duplicates would collide on their React key and leave a stale drawing on
+  // screen, so a position is only ever drawn once.
+  const distinct = (vs: number[]) => [...new Set(vs)];
+  const positionsX = distinct(
+    resolveRefPositions(refPositionsX, refShapesX, domain.x[0], domain.x[1]).filter(within(domain.x))
+  );
+  const positionsY = distinct(
+    resolveRefPositions(refPositionsY, refShapesY, domain.y[0], domain.y[1]).filter(within(domain.y))
+  );
 
   const onLegendDown = (e: React.PointerEvent) => {
     dragging.current = true;
