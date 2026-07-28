@@ -13,7 +13,7 @@ import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc"
 import { buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION } from "@/lib/project";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
-import { useDatasetStore, type Specimen } from "@/store/datasetStore";
+import { useDatasetStore, type Specimen, type IdField } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { useRecentFilesStore } from "@/store/recentFilesStore";
 import {
@@ -428,6 +428,7 @@ export default function DataManager() {
               names={dataset.classifierNames ?? []}
               active={activeClassifier}
               ids={dataset.specimens.map((s) => s.id)}
+              scheme={dataset.idScheme ?? []}
               onExtractMany={extractClassifiers}
               onActivate={setActiveClassifier}
               onRename={renameClassifier}
@@ -531,20 +532,21 @@ function SpecimenRow({
 }
 
 function ClassifiersCard({
-  names, active, ids, onExtractMany, onActivate, onRename, onDelete,
+  names, active, ids, scheme, onExtractMany, onActivate, onRename, onDelete,
 }: {
   names: string[];
   active: string | null;
   /** Every specimen ID, so the preview can show the real groups. */
   ids: string[];
-  onExtractMany: (
-    fields: Array<{ name: string; first: number; last: number }>
-  ) => { added: number } | { error: string };
+  scheme: IdField[];
+  onExtractMany: (fields: IdField[]) => { added: number } | { error: string };
   onActivate: (name: string | null) => void;
   onRename: (oldName: string, newName: string) => void;
   onDelete: (name: string) => void;
 }) {
   const t = useT();
+  // Remount the editor when the stored scheme changes, so it picks the spans up.
+  const schemeKey = JSON.stringify(scheme);
 
   return (
     <Card>
@@ -598,7 +600,12 @@ function ClassifiersCard({
 
         {/* Cut the ID into named fields */}
         <div className="space-y-2 border-t pt-2">
-          <IdSchemeEditor ids={ids} onExtract={onExtractMany} />
+          <IdSchemeEditor
+            key={schemeKey}
+            ids={ids}
+            scheme={scheme}
+            onExtract={onExtractMany}
+          />
         </div>
 
       </CardContent>
@@ -615,17 +622,19 @@ function ClassifiersCard({
  * Positions are 1-based and inclusive.
  */
 function IdSchemeEditor({
-  ids, onExtract,
+  ids, scheme, onExtract,
 }: {
   ids: string[];
-  onExtract: (
-    fields: Array<{ name: string; first: number; last: number }>
-  ) => { added: number } | { error: string };
+  /** The spans already in use, so they can be adjusted rather than redrawn. */
+  scheme: IdField[];
+  onExtract: (fields: IdField[]) => { added: number } | { error: string };
 }) {
   const t = useT();
-  const [fields, setFields] = useState<Array<{ key: number; name: string; first: number; last: number }>>([]);
+  const [fields, setFields] = useState<Array<{ key: number; name: string; first: number; last: number }>>(
+    () => scheme.map((f, i) => ({ key: i + 1, ...f }))
+  );
   const [drag, setDrag] = useState<{ from: number; to: number } | null>(null);
-  const nextKey = useRef(1);
+  const nextKey = useRef(scheme.length + 1);
 
   const sample = ids[0] ?? "";
   const width = ids.reduce((w, id) => Math.max(w, id.length), 0);
@@ -662,7 +671,6 @@ function IdSchemeEditor({
       return;
     }
     toast.success(`${res.added} ${t("data.classifiers")}`);
-    setFields([]);
   };
 
   if (ids.length === 0) return null;

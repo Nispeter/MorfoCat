@@ -20,6 +20,18 @@ export interface Dataset {
   classifierNames?: string[];
   /** Folder holding the specimen images, so `Specimen.image` can be resolved. */
   imageDir?: string | null;
+  /**
+   * How the ID was carved into classifiers, kept so the spans can be adjusted
+   * later instead of being redrawn from scratch. Saved with the project.
+   */
+  idScheme?: IdField[];
+}
+
+/** One named span of the specimen ID. Positions are 1-based and inclusive. */
+export interface IdField {
+  name: string;
+  first: number;
+  last: number;
 }
 
 interface DatasetState {
@@ -47,9 +59,7 @@ interface DatasetState {
   toggleSpecimen: (idx: number) => void;
   setGroup: (idx: number, group: string) => void;
   extractClassifier: (name: string, first: number, last: number) => void;
-  extractClassifiers: (
-    fields: Array<{ name: string; first: number; last: number }>
-  ) => { added: number } | { error: string };
+  extractClassifiers: (fields: IdField[]) => { added: number } | { error: string };
   setSpecimenClassifier: (idx: number, name: string, value: string) => void;
   renameClassifier: (oldName: string, newName: string) => void;
   deleteClassifier: (name: string) => void;
@@ -186,7 +196,8 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
     const classifierNames = [...existing, ...named.map((f) => f.name).filter((n) => !existing.includes(n))];
 
     set({
-      dataset: { ...s.dataset, specimens, classifierNames },
+      // The scheme is kept so the spans can be reopened and nudged later.
+      dataset: { ...s.dataset, specimens, classifierNames, idScheme: named },
       activeClassifier: s.activeClassifier ?? classifierNames[0] ?? null,
     });
     return { added: named.length };
