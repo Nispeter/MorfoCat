@@ -27,7 +27,7 @@
     --radius: 0.5rem;
     /* Height of the nav header and every page header, so the rule under
        each reads as one line straight across the window. */
-    --topbar-h: 4.75rem;
+    --topbar-h: 4.25rem;
   }
 
   /* Tells the browser to render native widgets (select popups, scrollbars,
