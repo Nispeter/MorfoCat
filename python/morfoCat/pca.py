@@ -4,6 +4,26 @@ import numpy as np
 from typing import Any
 
 
+def _fix_signs(eigenvectors: np.ndarray) -> np.ndarray:
+    """
+    Give every component a deterministic sign.
+
+    An eigenvector is only defined up to sign, so `eigh` may hand back either
+    direction and a plot can come out mirrored from one run to the next — or
+    against a figure made in another program. Forcing the largest-magnitude
+    entry of each component to be positive (the convention scikit-learn uses)
+    makes the orientation reproducible. Whether it matches some other program's
+    choice is a separate question, which is why the figure also lets the axis be
+    flipped by hand.
+    """
+    if eigenvectors.size == 0:
+        return eigenvectors
+    dominant = np.argmax(np.abs(eigenvectors), axis=0)
+    signs = np.sign(eigenvectors[dominant, np.arange(eigenvectors.shape[1])])
+    signs[signs == 0] = 1.0
+    return eigenvectors * signs
+
+
 def run_pca(
     aligned: list,
     cov_matrix: list | None = None,
@@ -29,6 +49,8 @@ def run_pca(
     pos_mask = eigenvalues > 1e-12
     eigenvalues = eigenvalues[pos_mask]
     eigenvectors = eigenvectors[:, pos_mask]
+
+    eigenvectors = _fix_signs(eigenvectors)
 
     # Percent variance explained
     total_var = eigenvalues.sum()

@@ -30,6 +30,7 @@ export function FigureStylePanel({
     styles, setStyle, resetStyles,
     symbolBy, setSymbolBy, symbolStyles, setSymbolStyle,
     axisMode, setAxisMode, manualLimits, setManualLimits,
+    invertX, invertY, setInvert,
     refShapesX, refShapesY, setRefShapes,
     refSource, setRefSource, refShowIds, setRefShowIds,
     refSize, setRefSize,
@@ -190,6 +191,30 @@ export function FigureStylePanel({
                 ? t("fig.axisManualHint")
                 : t("fig.axisAutoHint")}
           </p>
+
+          {/* The sign of a principal component is arbitrary, so an axis may
+              come out reversed from a figure published elsewhere. */}
+          <div className="space-y-1 border-t pt-2">
+            <p className="text-muted-foreground">{t("fig.invertAxis")}</p>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => setInvert("x", !invertX)}
+                className={`h-7 flex-1 rounded border text-xs transition-colors ${
+                  invertX ? "border-primary bg-primary/15 text-primary" : "hover:bg-muted"
+                }`}
+              >
+                ↔ X
+              </button>
+              <button
+                onClick={() => setInvert("y", !invertY)}
+                className={`h-7 flex-1 rounded border text-xs transition-colors ${
+                  invertY ? "border-primary bg-primary/15 text-primary" : "hover:bg-muted"
+                }`}
+              >
+                ↕ Y
+              </button>
+            </div>
+          </div>
           {axisMode === "manual" && (
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-0.5">
@@ -291,7 +316,15 @@ export function FigureStylePanel({
                 onChange={(e) => setRefRotation(+e.target.value)}
                 className="flex-1"
               />
-              <span className="w-9 text-right font-mono text-[10px] text-muted-foreground">{refRotation}°</span>
+              <div className="flex items-center gap-0.5">
+                <NumberInput
+                  className="h-7 w-14 text-xs"
+                  min={0} max={359}
+                  value={refRotation}
+                  onChange={setRefRotation}
+                />
+                <span className="text-[10px] text-muted-foreground">°</span>
+              </div>
             </div>
           </div>
           {(refShapesX > 0 || refShapesY > 0) && (

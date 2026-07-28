@@ -41,7 +41,8 @@ export function PCAFigure({
 }: PCAFigureProps) {
   const {
     styles, symbolBy, symbolStyles,
-    axisMode, manualLimits, refShapesX, refShapesY, refSource, refShowIds, refSize,
+    axisMode, manualLimits, invertX, invertY,
+    refShapesX, refShapesY, refSource, refShowIds, refSize,
     refFlipX, refFlipY, refRotation, refPositionsX, refPositionsY,
     legendPos, showLegend, setLegendPos,
   } = usePlotStyleStore();
@@ -69,8 +70,12 @@ export function PCAFigure({
   const plotW = width - MARGIN.left - MARGIN.right;
   const plotH = height - MARGIN.top - MARGIN.bottom;
 
-  const xs = scores.map((s) => s[pcX] ?? 0);
-  const ys = scores.map((s) => s[pcY] ?? 0);
+  // Everything below works in display coordinates; the sign carries the axis
+  // inversion so the scatter, the ticks and the reference drawings all agree.
+  const signX = invertX ? -1 : 1;
+  const signY = invertY ? -1 : 1;
+  const xs = scores.map((s) => (s[pcX] ?? 0) * signX);
+  const ys = scores.map((s) => (s[pcY] ?? 0) * signY);
 
   const domain = useMemo(
     () => figureDomain(xs, ys, axisMode, manualLimits),
@@ -132,10 +137,10 @@ export function PCAFigure({
    * that's the mean shape pushed to that PC score; otherwise it's the real
    * specimen that sits closest to that point on the axis.
    */
-  function references(pc: number, positions: number[]) {
+  function references(pc: number, positions: number[], sign: number) {
     if (refSource === "deformation") {
       return positions.map((position) => {
-        const shape = deform(pc, position);
+        const shape = deform(pc, position * sign);
         return {
           key: `d${position}`,
           at: position,
@@ -146,17 +151,19 @@ export function PCAFigure({
         };
       });
     }
-    return referenceSpecimens(scores, pc, positions).map(({ position, index }) => {
-      const shape = aligned?.[index] ?? null;
-      return {
-        key: `s${position}-${index}`,
-        at: position,
-        shape: shape ? orientShape(shape, orientation) : null,
-        photo: refSource === "photo" ? photos[index] : undefined,
-        label: (scores[index]?.[pc] ?? position).toFixed(2),
-        caption: refShowIds ? ids[index] : undefined,
-      };
-    });
+    return referenceSpecimens(scores, pc, positions.map((p) => p * sign)).map(
+      ({ position, index }) => {
+        const shape = aligned?.[index] ?? null;
+        return {
+          key: `s${position}-${index}`,
+          at: position * sign, // back to display coordinates
+          shape: shape ? orientShape(shape, orientation) : null,
+          photo: refSource === "photo" ? photos[index] : undefined,
+          label: ((scores[index]?.[pc] ?? position) * sign).toFixed(2),
+          caption: refShowIds ? ids[index] : undefined,
+        };
+      }
+    );
   }
 
   // A pinned position can sit outside the axis after the limits change; drawing
@@ -242,7 +249,7 @@ export function PCAFigure({
       </text>
 
       {/* Reference drawings below the x axis */}
-      {references(pcX, positionsX).map((r) => (
+      {references(pcX, positionsX, signX).map((r) => (
         <RefShape
           key={`rx-${r.key}`}
           shape={r.shape}
@@ -257,7 +264,7 @@ export function PCAFigure({
       ))}
 
       {/* Reference drawings left of the y axis */}
-      {references(pcY, positionsY).map((r) => (
+      {references(pcY, positionsY, signY).map((r) => (
         <RefShape
           key={`ry-${r.key}`}
           shape={r.shape}

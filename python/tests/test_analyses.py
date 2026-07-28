@@ -674,3 +674,41 @@ class TestTPSRealWorldQuirks:
         content = "LM=2\n1.0 2.0\n3.0 4.0\nLM=1\n5.0 6.0\n"
         with pytest.raises(ValueError):
             parse_tps(content)
+
+
+# ── PCA sign convention ───────────────────────────────────────────────────────
+
+class TestPCASignConvention:
+    def _data(self, seed=0, n=30):
+        rng = np.random.default_rng(seed)
+        raw = [rng.standard_normal((5, 2)).tolist() for _ in range(n)]
+        return procrustes_gpa(raw)["aligned"]
+
+    def test_dominant_loading_is_positive(self):
+        """Each component points the same way every time it is computed."""
+        res = run_pca(self._data())
+        L = np.array(res["loadings"])
+        for k in range(L.shape[1]):
+            col = L[:, k]
+            assert col[np.argmax(np.abs(col))] > 0
+
+    def test_repeated_runs_agree(self):
+        aligned = self._data(seed=1)
+        a = np.array(run_pca(aligned)["scores"])
+        b = np.array(run_pca(aligned)["scores"])
+        assert np.allclose(a, b)
+
+    def test_sign_fix_preserves_variance(self):
+        """Flipping signs must not disturb the eigenvalues."""
+        aligned = self._data(seed=2)
+        res = run_pca(aligned)
+        assert abs(sum(res["pct_variance"]) - 100.0) < 1e-6
+
+    def test_scores_still_reconstruct_the_data(self):
+        """scores @ loadings.T returns the centred coordinates."""
+        aligned = self._data(seed=3)
+        res = run_pca(aligned)
+        X = np.array(aligned).reshape(len(aligned), -1)
+        Xc = X - X.mean(axis=0)
+        approx = np.array(res["scores"]) @ np.array(res["loadings"]).T
+        assert np.allclose(approx, Xc, atol=1e-8)

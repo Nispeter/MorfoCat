@@ -49,6 +49,10 @@ interface PlotStyleState {
   symbolStyles: Record<string, SymbolGroupStyle>;
   axisMode: AxisMode;
   manualLimits: AxisLimits;
+  /** Flip an axis so the plot matches a figure made elsewhere. The sign of a
+   *  principal component is arbitrary, so this is presentation, not data. */
+  invertX: boolean;
+  invertY: boolean;
   /** Number of reference shapes drawn along each axis (0 hides them). */
   refShapesX: number;
   refShapesY: number;
@@ -83,6 +87,7 @@ interface PlotStyleState {
   ensureSymbolGroups: (values: string[]) => void;
   setSymbolStyle: (value: string, patch: Partial<SymbolGroupStyle>) => void;
   setAxisMode: (mode: AxisMode) => void;
+  setInvert: (axis: "x" | "y", on: boolean) => void;
   setManualLimits: (patch: Partial<AxisLimits>) => void;
   setRefShapes: (axis: "x" | "y", n: number) => void;
   setRefSource: (source: RefSource) => void;
@@ -104,6 +109,8 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       symbolBy: null,
       symbolStyles: {},
       axisMode: "auto",
+      invertX: false,
+      invertY: false,
       manualLimits: { xMin: -0.1, xMax: 0.1, yMin: -0.1, yMax: 0.1 },
       refShapesX: 4,
       refShapesY: 4,
@@ -169,6 +176,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
         }),
 
       setAxisMode: (axisMode) => set({ axisMode }),
+      setInvert: (axis, on) => set(axis === "x" ? { invertX: on } : { invertY: on }),
       setManualLimits: (patch) => set((s) => ({ manualLimits: { ...s.manualLimits, ...patch } })),
       setRefShapes: (axis, n) =>
         set(axis === "x" ? { refShapesX: n } : { refShapesY: n }),
