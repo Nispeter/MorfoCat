@@ -1,9 +1,12 @@
-- revisar el espejado del TPS con datos reales: el digitalizador ahora guarda en
-  coordenadas TPS (y hacia arriba) y sólo voltea al dibujar sobre la foto, pero eso
-  no se probó abriendo MM.TPS sobre sus imágenes
-- probar todo por GUI: nada de lo hecho se manejó dentro de la app, sólo compila y
-  pasa los 68 tests de Python
-- interactividad (valores al pasar el mouse) en PLS, modularidad y correlación de matrices
+- probar todo por GUI: nada de lo hecho se manejó dentro de la app, sólo compila
+  y pasa los 72 tests de Python
+- ACP figura: la Figura 58 de la tesis llega a y −0.10 y estos datos sólo a
+  −0.062; si es otra submuestra o otra parte de la vasija, decirlo para verificar
+- ACP figura: el signo de cada CP es arbitrario y MorphoJ no sigue ninguna
+  convención (probadas 5, ninguna se cumple), así que "invertir eje" seguirá
+  siendo manual — se guarda en el proyecto
+- interactividad (valores al pasar el mouse) en PLS, modularidad y correlación
+  de matrices
 - toasts y textos de ayuda dentro de las tarjetas siguen en inglés
-- ojo: el repo tiene finales de línea mezclados (LF y CRLF); si editás con scripts,
-  escribí bytes respetando el salto de línea de cada archivo
+- ojo: el repo tiene finales de línea mezclados (LF y CRLF); si editás con
+  scripts, escribí bytes respetando el salto de línea de cada archivo
