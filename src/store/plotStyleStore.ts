@@ -247,6 +247,6 @@ export const usePlotStyleStore = create<PlotStyleState>()(
           ) as Partial<PlotStyleState>
         ),
     }),
-    { name: "morfocat-plot-style" }
+    { name: "morphocat-plot-style" }
   )
 );

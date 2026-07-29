@@ -1,4 +1,4 @@
-# Developing MorfoCat
+# Developing MorphoCat
 
 Everything a contributor needs. Users want [the README](../README.md) instead.
 
@@ -10,7 +10,7 @@ a JSON request over stdin and reads a JSON response from stdout. That split is
 why the app can ship SciPy without asking anyone to install Python.
 
 ```
-morfoCat/
+morphoCat/
 ├── src/                  # React + TypeScript frontend
 │   ├── components/       # UI, layout, plots, landmark viewers
 │   ├── pages/            # One page per analysis module
@@ -20,7 +20,7 @@ morfoCat/
 │   └── src/commands.rs   # IPC bridge: invoke() -> Python sidecar
 ├── python/               # Scientific computing sidecar
 │   ├── sidecar.py        # Entry point (JSON in on stdin, JSON out on stdout)
-│   └── morfoCat/         # Analysis modules
+│   └── morphoCat/         # Analysis modules
 │       ├── io/           # TPS, NTS, Morphologika parsers
 │       ├── procrustes.py # GPA
 │       ├── pca.py        # PCA
@@ -103,7 +103,7 @@ signs the Windows installers if signing is configured, and opens a **draft**
 GitHub Release with everything attached.
 
 ```bash
-git tag -a v0.1.0 -m "MorfoCat v0.1.0"
+git tag -a v0.1.0 -m "MorphoCat v0.1.0"
 git push origin v0.1.0
 ```
 
@@ -130,7 +130,7 @@ unless these exist on the repository:
 | Secret | `SIGNPATH_API_TOKEN` |
 
 `scripts/sign-windows.ps1` is a separate path for signing a local build with your
-own certificate, driven by `MORFOCAT_SIGN_THUMBPRINT` or `MORFOCAT_SIGN_COMMAND`.
+own certificate, driven by `MORPHOCAT_SIGN_THUMBPRINT` or `MORPHOCAT_SIGN_COMMAND`.
 It is not what releases use.
 
 ## Conventions

@@ -1,5 +1,5 @@
 """
-Numerical correctness tests for MorfoCat analysis modules.
+Numerical correctness tests for MorphoCat analysis modules.
 
 All tests use synthetic data with analytically known answers so no MorphoJ
 binary is required. Tests verify that each implementation matches the
@@ -13,23 +13,23 @@ import math
 import numpy as np
 import pytest
 
-# Add project root to path so morfoCat package is importable
+# Add project root to path so morphoCat package is importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from morfoCat.procrustes import procrustes_gpa
-from morfoCat.pca import run_pca
-from morfoCat.outliers import detect_outliers
-from morfoCat.covariance import compute_covariance
-from morfoCat.matrix_corr import matrix_correlation
-from morfoCat.pls import two_block_pls
-from morfoCat.modularity import test_modularity as run_modularity
-from morfoCat.cva import run_cva
-from morfoCat.lda import run_lda
-from morfoCat.dfa import run_pairwise_dfa
-from morfoCat.covmatrix_compare import compare_covariance_matrices
-from morfoCat.phylo import run_phylogenetic_signal
-from morfoCat.quantgen import run_selection_gradient
-from morfoCat.io.tps import parse_tps, write_tps
+from morphoCat.procrustes import procrustes_gpa
+from morphoCat.pca import run_pca
+from morphoCat.outliers import detect_outliers
+from morphoCat.covariance import compute_covariance
+from morphoCat.matrix_corr import matrix_correlation
+from morphoCat.pls import two_block_pls
+from morphoCat.modularity import test_modularity as run_modularity
+from morphoCat.cva import run_cva
+from morphoCat.lda import run_lda
+from morphoCat.dfa import run_pairwise_dfa
+from morphoCat.covmatrix_compare import compare_covariance_matrices
+from morphoCat.phylo import run_phylogenetic_signal
+from morphoCat.quantgen import run_selection_gradient
+from morphoCat.io.tps import parse_tps, write_tps
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -525,7 +525,7 @@ class TestPhylogeneticSignal:
 
     def test_brownian_data_gives_k_near_one(self):
         """Data simulated on the tree's own covariance should give Kmult ≈ 1."""
-        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        from morphoCat.phylo import _parse_newick, _phylo_covariance
         C, tips = _phylo_covariance(_parse_newick(self.TREE))
         rng = np.random.default_rng(0)
         L = np.linalg.cholesky(C + np.eye(len(tips)) * 1e-9)
@@ -570,17 +570,17 @@ class TestPhylogeneticSignal:
 
 class TestNewickParsing:
     def test_tip_order_follows_the_string(self):
-        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        from morphoCat.phylo import _parse_newick, _phylo_covariance
         _, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
         assert tips == ["A", "B", "C"]
 
     def test_covariance_diagonal_is_root_to_tip_distance(self):
-        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        from morphoCat.phylo import _parse_newick, _phylo_covariance
         C, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
         assert np.allclose(np.diag(C), [2.0, 2.0, 2.0])
 
     def test_shared_path_equals_mrca_depth(self):
-        from morfoCat.phylo import _parse_newick, _phylo_covariance
+        from morphoCat.phylo import _parse_newick, _phylo_covariance
         C, tips = _phylo_covariance(_parse_newick("((A:1,B:1):1,C:2);"))
         i, j, k = tips.index("A"), tips.index("B"), tips.index("C")
         assert C[i, j] == pytest.approx(1.0)   # A and B share the inner branch

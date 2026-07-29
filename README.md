@@ -1,10 +1,10 @@
-# MorfoCat
+# MorphoCat
 
 Geometric morphometrics on your desktop. Place landmarks on photographs, align
 them, and get the analyses and publication figures a shape study needs — without
 installing Python, R, or anything else.
 
-MorfoCat is a free, open-source reimplementation of MorphoJ. It runs entirely on
+MorphoCat is a free, open-source reimplementation of MorphoJ. It runs entirely on
 your computer: nothing is uploaded, nothing is tracked, and it works offline.
 
 **Español:** [léeme en español](README.es.md)
@@ -14,16 +14,16 @@ your computer: nothing is uploaded, nothing is tracked, and it works offline.
 ## Install
 
 Download the file for your system from the
-[Releases page](https://github.com/Nispeter/MorfoCat/releases) and open it.
+[Releases page](https://github.com/Nispeter/MorphoCat/releases) and open it.
 Everything the app needs is inside — there is nothing else to install.
 
 | Your system | Download this | Then |
 | --- | --- | --- |
-| Windows | `MorfoCat_<version>_x64-setup.exe` | Double-click → Next → Install |
-| Windows, managed by IT | `MorfoCat_<version>_x64_en-US.msi` | For network deployment |
-| macOS | `MorfoCat_<version>.dmg` | Drag MorfoCat to Applications |
-| Linux (Debian/Ubuntu) | `MorfoCat_<version>_amd64.deb` | `sudo apt install ./MorfoCat_*.deb` |
-| Linux (anything else) | `MorfoCat_<version>.AppImage` | Make it executable and run it |
+| Windows | `MorphoCat_<version>_x64-setup.exe` | Double-click → Next → Install |
+| Windows, managed by IT | `MorphoCat_<version>_x64_en-US.msi` | For network deployment |
+| macOS | `MorphoCat_<version>.dmg` | Drag MorphoCat to Applications |
+| Linux (Debian/Ubuntu) | `MorphoCat_<version>_amd64.deb` | `sudo apt install ./MorphoCat_*.deb` |
+| Linux (anything else) | `MorphoCat_<version>.AppImage` | Make it executable and run it |
 
 > **If Windows says "Windows protected your PC"** — click **More info**, then
 > **Run anyway**. On macOS, right-click the app and choose **Open** the first
@@ -76,7 +76,7 @@ Data Manager with your data ready.
 ### 2. Turn your IDs into categories
 
 Most people encode information in the specimen name — site, level, material,
-sex. MorfoCat can cut that code into **categories** you can then colour and group
+sex. MorphoCat can cut that code into **categories** you can then colour and group
 by.
 
 Open the **Categories** card in the Data Manager. With an ID like
@@ -113,7 +113,7 @@ cross-validation, phylogenetic comparative methods, and quantitative genetics.
 
 ### 6. Save your work
 
-**Save project** writes a single `.morfocat.json` file holding your data, your
+**Save project** writes a single `.morphocat.json` file holding your data, your
 categories, your alignment, your figure styling, and your digitizing session.
 Open it later and everything comes back as you left it.
 
@@ -127,7 +127,7 @@ figures.
 **Do I need Python or R installed?** No. The computation engine is bundled inside
 the app.
 
-**Does it send my data anywhere?** No. MorfoCat makes no network requests at all.
+**Does it send my data anywhere?** No. MorphoCat makes no network requests at all.
 Your images and files stay on your computer.
 
 **My antivirus flagged it.** This is a known false positive with the way the
@@ -144,7 +144,7 @@ CSV for export.
 
 ## For developers
 
-Building MorfoCat from source, running the test suite, and the release process
+Building MorphoCat from source, running the test suite, and the release process
 are documented in **[docs/DEVELOPING.md](docs/DEVELOPING.md)**.
 
 How releases are signed is described in
@@ -154,7 +154,7 @@ How releases are signed is described in
 
 ## Citing
 
-If MorfoCat contributed to published research, please also cite the software it
+If MorphoCat contributed to published research, please also cite the software it
 reimplements:
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric

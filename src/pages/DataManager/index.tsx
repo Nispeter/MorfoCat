@@ -16,7 +16,9 @@ import { basename, openTPSForDigitizing } from "@/lib/digitizeSession";
 import { NewSessionDialog } from "@/components/NewSessionDialog";
 import { useDigitizerStore } from "@/store/digitizerStore";
 import { useNavStore } from "@/store/navStore";
-import { buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION } from "@/lib/project";
+import {
+  buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION, PROJECT_EXTENSIONS,
+} from "@/lib/project";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
 import { useDatasetStore, type Specimen } from "@/store/datasetStore";
@@ -232,7 +234,7 @@ export default function DataManager() {
     if (!s.dataset) return;
     const path = await saveDialog({
       defaultPath: defaultProjectName(s.dataset.filename),
-      filters: [{ name: "MorfoCat project", extensions: [PROJECT_EXTENSION, "json"] }],
+      filters: [{ name: "MorphoCat project", extensions: [PROJECT_EXTENSION, "json"] }],
     });
     if (!path) return;
     try {
@@ -263,7 +265,7 @@ export default function DataManager() {
 
   const handleOpenProject = useCallback(async () => {
     const picked = await openDialog({
-      filters: [{ name: "MorfoCat project", extensions: [PROJECT_EXTENSION, "json"] }],
+      filters: [{ name: "MorphoCat project", extensions: PROJECT_EXTENSIONS }],
     });
     if (!picked || Array.isArray(picked)) return;
     try {

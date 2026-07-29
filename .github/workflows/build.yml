@@ -1,4 +1,4 @@
-name: Build MorfoCat
+name: Build MorphoCat
 
 on:
   push:
@@ -55,14 +55,14 @@ jobs:
         run: |
           pip install -r python/requirements.txt
           pip install pyinstaller
-          python -m PyInstaller --onefile --name morfocat-sidecar \
+          python -m PyInstaller --onefile --name morphocat-sidecar \
             --distpath src-tauri/binaries \
             --workpath python/build \
             --specpath python \
             --noconfirm python/sidecar.py
           TRIPLE=$(rustc -vV | grep host | cut -d' ' -f2)
           EXT="${{ matrix.platform == 'windows-latest' && '.exe' || '' }}"
-          mv "src-tauri/binaries/morfocat-sidecar${EXT}" "src-tauri/binaries/morfocat-sidecar-${TRIPLE}${EXT}"
+          mv "src-tauri/binaries/morphocat-sidecar${EXT}" "src-tauri/binaries/morphocat-sidecar-${TRIPLE}${EXT}"
 
       - name: Install npm deps
         run: npm ci
@@ -177,7 +177,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "MorfoCat ${{ github.ref_name }}"
+          name: "MorphoCat ${{ github.ref_name }}"
           generate_release_notes: true
           draft: true
           files: release/*

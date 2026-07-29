@@ -14,7 +14,7 @@ fn sidecar_program() -> (String, Vec<String>) {
         let python = if cfg!(target_os = "windows") { "python" } else { "python3" };
         (python.to_string(), vec![sidecar_path()])
     } else {
-        ("morfocat-sidecar".to_string(), vec![])
+        ("morphocat-sidecar".to_string(), vec![])
     }
 }
 

@@ -13,5 +13,5 @@ pub fn run() {
             commands::list_dir_images,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running MorfoCat");
+        .expect("error while running MorphoCat");
 }

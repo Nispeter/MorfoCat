@@ -1,6 +1,6 @@
 # Code signing policy
 
-MorfoCat's Windows installers are digitally signed so that Windows can show who
+MorphoCat's Windows installers are digitally signed so that Windows can show who
 published them and confirm the file has not been altered on its way to you.
 
 ## Certificate
@@ -17,7 +17,7 @@ submitted.
 
 ## Team roles
 
-MorfoCat is maintained by one person, who therefore holds all three roles:
+MorphoCat is maintained by one person, who therefore holds all three roles:
 
 | Role | Who | Responsibility |
 | --- | --- | --- |
@@ -31,7 +31,7 @@ they are granted any of these roles.
 
 ## Privacy
 
-MorfoCat does not collect anything.
+MorphoCat does not collect anything.
 
 - No telemetry, analytics, crash reporting, or usage statistics.
 - No network requests: every analysis runs locally, in a bundled Python engine
@@ -44,7 +44,7 @@ privacy policy to accept.
 
 ## Uninstalling
 
-The Windows installer registers MorfoCat with **Settings › Apps › Installed
+The Windows installer registers MorphoCat with **Settings › Apps › Installed
 apps**, where it can be removed like any other program. Uninstalling removes the
 application and its bundled engine; project and landmark files you created are
 left alone, since they live wherever you saved them.
@@ -52,6 +52,6 @@ left alone, since they live wherever you saved them.
 ## Reporting a problem
 
 If an installer appears to be signed but behaves unexpectedly, or if you find a
-copy of MorfoCat distributed somewhere unofficial, please open an issue at
-<https://github.com/Nispeter/MorfoCat/issues>. Official releases are published
+copy of MorphoCat distributed somewhere unofficial, please open an issue at
+<https://github.com/Nispeter/MorphoCat/issues>. Official releases are published
 only on that repository's Releases page.

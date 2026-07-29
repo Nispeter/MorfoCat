@@ -3,7 +3,7 @@ import type { PlotStyleSnapshot } from "@/store/plotStyleStore";
 import type { DigitizerSnapshot } from "@/store/digitizerStore";
 
 /**
- * `.morfocat.json` project files: the dataset plus everything the user set up
+ * `.morphocat.json` project files: the dataset plus everything the user set up
  * around it (classifiers, wireframe, symmetry) and the Procrustes fit, so a
  * session can be put down and picked up later.
  *
@@ -11,7 +11,18 @@ import type { DigitizerSnapshot } from "@/store/digitizerStore";
  * simply come back without one, which is what they always had.
  */
 export const PROJECT_VERSION = 2;
-export const PROJECT_EXTENSION = "morfocat.json";
+export const PROJECT_EXTENSION = "morphocat.json";
+
+/**
+ * What the app was called before it was MorphoCat. Files written under the old
+ * name are still someone's research, so they keep opening — only the extension
+ * offered when saving has moved on.
+ */
+const LEGACY_EXTENSION = "morfocat.json";
+const FORMATS = ["morphocat-project", "morfocat-project"];
+
+/** Extensions the open dialog should offer, newest first. */
+export const PROJECT_EXTENSIONS = [PROJECT_EXTENSION, LEGACY_EXTENSION, "json"];
 
 export interface ProjectAlignment {
   aligned: number[][][];
@@ -21,7 +32,7 @@ export interface ProjectAlignment {
 }
 
 export interface ProjectFile {
-  format: "morfocat-project";
+  format: "morphocat-project";
   version: number;
   savedAt: string;
   dataset: Dataset;
@@ -43,7 +54,7 @@ export function buildProject(
   input: Omit<ProjectFile, "format" | "version" | "savedAt">
 ): ProjectFile {
   return {
-    format: "morfocat-project",
+    format: "morphocat-project",
     version: PROJECT_VERSION,
     savedAt: new Date().toISOString(),
     ...input,
@@ -60,18 +71,18 @@ export function parseProject(text: string): ProjectFile {
   }
 
   const p = raw as Partial<ProjectFile>;
-  if (p?.format !== "morfocat-project") {
-    throw new Error("This is not a MorfoCat project file.");
+  if (!FORMATS.includes(p?.format as string)) {
+    throw new Error("This is not a MorphoCat project file.");
   }
   if (typeof p.version !== "number" || p.version > PROJECT_VERSION) {
-    throw new Error(`Project was saved by a newer version of MorfoCat (v${p.version}).`);
+    throw new Error(`Project was saved by a newer version of MorphoCat (v${p.version}).`);
   }
   if (!p.dataset?.specimens?.length) {
     throw new Error("Project contains no specimens.");
   }
 
   return {
-    format: "morfocat-project",
+    format: "morphocat-project",
     version: p.version,
     savedAt: p.savedAt ?? "",
     dataset: p.dataset,

@@ -103,7 +103,7 @@ export function Sidebar() {
             header draws it — a separate 1px element sat one pixel lower. */}
         <div className={cn("flex h-[var(--topbar-h)] shrink-0 items-center gap-2 border-b px-4 font-bold text-primary", collapsed && "justify-center")}>
           <Cat size={22} className="shrink-0" />
-          {!collapsed && <span className="text-base">MorfoCat</span>}
+          {!collapsed && <span className="text-base">MorphoCat</span>}
         </div>
 
         <ScrollArea className="flex-1 px-2 py-2">

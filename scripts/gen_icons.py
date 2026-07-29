@@ -1,4 +1,4 @@
-"""Generate placeholder icons for MorfoCat Tauri build."""
+"""Generate placeholder icons for MorphoCat Tauri build."""
 from PIL import Image, ImageDraw, ImageFont
 import os
 

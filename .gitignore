@@ -44,6 +44,6 @@ desktop.ini
 *.suo
 *.user
 
-# ── MorfoCat project files (user data, not source) ───────────────────────────
-*.morfocat
+# ── MorphoCat project files (user data, not source) ───────────────────────────
+*.morphocat
 CLAUDE.md

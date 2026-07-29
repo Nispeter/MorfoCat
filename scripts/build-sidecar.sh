@@ -12,7 +12,7 @@ pip3 install -r "$PY_SRC/requirements.txt" -q
 echo "Building sidecar with PyInstaller…"
 python3 -m PyInstaller \
     --onefile \
-    --name morfocat-sidecar \
+    --name morphocat-sidecar \
     --distpath "$OUT_DIR" \
     --workpath "$PY_SRC/build" \
     --specpath "$PY_SRC" \
@@ -21,6 +21,6 @@ python3 -m PyInstaller \
 
 # Rename to include Rust target triple (required by Tauri)
 TRIPLE=$(rustc -vV | grep host | cut -d' ' -f2)
-mv "$OUT_DIR/morfocat-sidecar" "$OUT_DIR/morfocat-sidecar-$TRIPLE"
-chmod +x "$OUT_DIR/morfocat-sidecar-$TRIPLE"
-echo "Sidecar built: $OUT_DIR/morfocat-sidecar-$TRIPLE"
+mv "$OUT_DIR/morphocat-sidecar" "$OUT_DIR/morphocat-sidecar-$TRIPLE"
+chmod +x "$OUT_DIR/morphocat-sidecar-$TRIPLE"
+echo "Sidecar built: $OUT_DIR/morphocat-sidecar-$TRIPLE"

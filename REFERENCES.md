@@ -1,17 +1,17 @@
 # Mathematical Foundations & References
 
-MorfoCat implements the full suite of geometric morphometrics analyses pioneered by the Klingenberg lab and codified in MorphoJ. This document lists every primary reference, algorithm source, and software dependency used in the implementation.
+MorphoCat implements the full suite of geometric morphometrics analyses pioneered by the Klingenberg lab and codified in MorphoJ. This document lists every primary reference, algorithm source, and software dependency used in the implementation.
 
 ---
 
 ## Acknowledgments
 
-MorfoCat is a reimplementation of **MorphoJ**, created by **Christian Peter Klingenberg** at the University of Manchester. The original software, its algorithms, and its documentation are the intellectual foundation of this project.
+MorphoCat is a reimplementation of **MorphoJ**, created by **Christian Peter Klingenberg** at the University of Manchester. The original software, its algorithms, and its documentation are the intellectual foundation of this project.
 
 > Klingenberg, C. P. (2011). MorphoJ: an integrated software package for geometric morphometrics.
 > *Molecular Ecology Resources*, 11(2), 353–357. https://doi.org/10.1111/j.1755-0998.2010.02924.x
 
-If you use MorfoCat in published research, please also cite the original MorphoJ paper above, along with the primary methodological references relevant to the analyses you performed (listed below).
+If you use MorphoCat in published research, please also cite the original MorphoJ paper above, along with the primary methodological references relevant to the analyses you performed (listed below).
 
 The foundational textbook for the entire discipline is:
 
@@ -35,7 +35,7 @@ Geometric morphometrics is the statistical analysis of biological shape using la
 
 ### 1. Generalized Procrustes Analysis (GPA)
 
-**Implementation:** `python/morfoCat/procrustes.py`
+**Implementation:** `python/morphoCat/procrustes.py`
 
 GPA superimposes landmark configurations by iteratively removing differences in position, scale (centroid size), and orientation using least-squares rotation (SVD). Bilateral symmetry enforcement follows the reflection-averaging approach.
 
@@ -53,7 +53,7 @@ GPA superimposes landmark configurations by iteratively removing differences in 
 
 ### 2. Outlier Detection
 
-**Implementation:** `python/morfoCat/outliers.py`
+**Implementation:** `python/morphoCat/outliers.py`
 
 Outliers are identified as specimens with unusually large Procrustes distance from the consensus (mean) configuration. Z-scores are computed on the distribution of distances.
 
@@ -63,7 +63,7 @@ Outliers are identified as specimens with unusually large Procrustes distance fr
 
 ### 3. Covariance Matrix
 
-**Implementation:** `python/morfoCat/covariance.py`
+**Implementation:** `python/morphoCat/covariance.py`
 
 Computes the standard variance-covariance matrix, and the pooled within-group covariance matrix (MANOVA-style), which removes between-group variation to estimate within-group shape variance.
 
@@ -75,7 +75,7 @@ Computes the standard variance-covariance matrix, and the pooled within-group co
 
 ### 4. Principal Component Analysis (PCA)
 
-**Implementation:** `python/morfoCat/pca.py`
+**Implementation:** `python/morphoCat/pca.py`
 
 PCA is applied to Procrustes shape coordinates (or a provided covariance matrix) via eigendecomposition of the variance-covariance matrix (`numpy.linalg.eigh`). Shape deformation grids are computed by projecting ±N standard deviations along each PC loading vector back into landmark space.
 
@@ -89,7 +89,7 @@ PCA is applied to Procrustes shape coordinates (or a provided covariance matrix)
 
 ### 5. Matrix Correlation (Mantel Test)
 
-**Implementation:** `python/morfoCat/matrix_corr.py`
+**Implementation:** `python/morphoCat/matrix_corr.py`
 
 The matrix correlation between two symmetric matrices is computed as the Pearson correlation of their upper-triangle elements. Statistical significance is assessed by a permutation test (random row/column permutations of one matrix).
 
@@ -103,7 +103,7 @@ The matrix correlation between two symmetric matrices is computed as the Pearson
 
 ### 6. Two-Block Partial Least Squares (PLS)
 
-**Implementation:** `python/morfoCat/pls.py`
+**Implementation:** `python/morphoCat/pls.py`
 
 Two-block PLS finds pairs of linear combinations (singular axes) of two landmark blocks that maximise their covariance, via SVD of the cross-covariance matrix. Integration between blocks is measured by the RV coefficient (Escoufier 1973). The significance of the first singular value is assessed by permutation.
 
@@ -117,7 +117,7 @@ Two-block PLS finds pairs of linear combinations (singular axes) of two landmark
 
 ### 7. Regression & Allometry
 
-**Implementation:** `python/morfoCat/regression.py`
+**Implementation:** `python/morphoCat/regression.py`
 
 Ordinary least-squares (OLS) multivariate regression of shape on size (log centroid size) or other predictors. Pooled within-group regression removes between-group differences before estimating the within-group allometric trajectory. The regression score (projection of shape onto the regression vector) follows Monteiro (1999).
 
@@ -131,7 +131,7 @@ Ordinary least-squares (OLS) multivariate regression of shape on size (log centr
 
 ### 8. Modularity Testing (RV & CR)
 
-**Implementation:** `python/morfoCat/modularity.py`
+**Implementation:** `python/morphoCat/modularity.py`
 
 Tests whether a hypothesised modular structure fits the data better than expected by chance. The **RV coefficient** measures overall integration between two blocks. The **covariance ratio (CR)** extends this to more than two modules. Significance is assessed by permutation (random reassignment of landmarks to modules preserving module sizes).
 
@@ -147,7 +147,7 @@ Tests whether a hypothesised modular structure fits the data better than expecte
 
 ### 9. Canonical Variate Analysis (CVA)
 
-**Implementation:** `python/morfoCat/cva.py`
+**Implementation:** `python/morphoCat/cva.py`
 
 CVA (also called canonical discriminant analysis) finds linear combinations of shape variables that maximally separate predefined groups. It solves the generalised eigenvalue problem **B·v = λ·W·v** (between-group vs within-group covariance). Mahalanobis distances between group centroids and a permutation test on the first eigenvalue are also computed.
 
@@ -161,7 +161,7 @@ CVA (also called canonical discriminant analysis) finds linear combinations of s
 
 ### 10. Linear Discriminant Analysis + Cross-Validation (LDA)
 
-**Implementation:** `python/morfoCat/lda.py`
+**Implementation:** `python/morphoCat/lda.py`
 
 LDA classifies specimens to predefined groups based on shape coordinates, using scikit-learn's `LinearDiscriminantAnalysis`. Leave-one-out (LOO) cross-validation is performed to estimate classification accuracy without bias.
 
@@ -175,7 +175,7 @@ LDA classifies specimens to predefined groups based on shape coordinates, using 
 
 ### 11. Phylogenetic Mapping & Independent Contrasts (PIC/PGLS)
 
-**Implementation:** `python/morfoCat/phylo.py`
+**Implementation:** `python/morphoCat/phylo.py`
 
 **Ancestral state reconstruction** maps shape variables onto a phylogeny using squared-change parsimony (equivalent to Brownian motion ML reconstruction). **Phylogenetic independent contrasts (PIC)** removes phylogenetic non-independence by computing contrasts at internal nodes, weighted by branch lengths, following Felsenstein (1985).
 
@@ -195,7 +195,7 @@ LDA classifies specimens to predefined groups based on shape coordinates, using 
 
 ### 12. Quantitative Genetics: G Matrix & Selection Gradient
 
-**Implementation:** `python/morfoCat/quantgen.py`
+**Implementation:** `python/morphoCat/quantgen.py`
 
 **G matrix estimation** uses the half-sib ANOVA method: the additive genetic variance-covariance matrix is estimated as G = 4 × (MS_between_sires − MS_within_sires) / n̄, where sire mean-square components are derived from a MANOVA-style partitioning and n̄ is the harmonic mean family size. This assumes a half-sib breeding design in which half-sibs share 1/4 of additive genetic variance (Lynch & Walsh 1998, Ch. 18).
 
@@ -248,8 +248,8 @@ The TPS format is the *de facto* standard for storing 2D landmark coordinate dat
 
 ## License
 
-MorfoCat is released under the **Apache License 2.0**.
+MorphoCat is released under the **Apache License 2.0**.
 
 The mathematical algorithms implemented here are based on published academic work and are not themselves copyrightable. The specific implementations are original code. Where a published algorithm is reproduced closely, the relevant citation is noted inline in the source file.
 
-MorphoJ (Klingenberg 2011) is a separate, closed-source Java application. MorfoCat shares no source code with MorphoJ; it independently reimplements the same published methods using Python (NumPy/SciPy) as the computational backend.
+MorphoJ (Klingenberg 2011) is a separate, closed-source Java application. MorphoCat shares no source code with MorphoJ; it independently reimplements the same published methods using Python (NumPy/SciPy) as the computational backend.

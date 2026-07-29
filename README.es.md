@@ -1,10 +1,10 @@
-# MorfoCat
+# MorphoCat
 
 Morfometría geométrica en tu computadora. Coloca landmarks sobre fotografías,
 alinéalos y obtén los análisis y las figuras que necesita un estudio de forma,
 sin instalar Python, R ni nada más.
 
-MorfoCat es una reimplementación libre y de código abierto de MorphoJ. Funciona
+MorphoCat es una reimplementación libre y de código abierto de MorphoJ. Funciona
 por completo en tu equipo: no sube nada, no registra nada y anda sin conexión.
 
 **English:** [read me in English](README.md)
@@ -14,16 +14,16 @@ por completo en tu equipo: no sube nada, no registra nada y anda sin conexión.
 ## Instalación
 
 Descarga el archivo que corresponda a tu sistema desde la
-[página de versiones](https://github.com/Nispeter/MorfoCat/releases) y ábrelo.
+[página de versiones](https://github.com/Nispeter/MorphoCat/releases) y ábrelo.
 Todo lo que la aplicación necesita viene adentro; no hay nada más que instalar.
 
 | Tu sistema | Descarga esto | Después |
 | --- | --- | --- |
-| Windows | `MorfoCat_<versión>_x64-setup.exe` | Doble clic → Siguiente → Instalar |
-| Windows gestionado por IT | `MorfoCat_<versión>_x64_en-US.msi` | Para despliegue en red |
-| macOS | `MorfoCat_<versión>.dmg` | Arrastra MorfoCat a Aplicaciones |
-| Linux (Debian/Ubuntu) | `MorfoCat_<versión>_amd64.deb` | `sudo apt install ./MorfoCat_*.deb` |
-| Linux (cualquier otro) | `MorfoCat_<versión>.AppImage` | Dale permiso de ejecución y ábrelo |
+| Windows | `MorphoCat_<versión>_x64-setup.exe` | Doble clic → Siguiente → Instalar |
+| Windows gestionado por IT | `MorphoCat_<versión>_x64_en-US.msi` | Para despliegue en red |
+| macOS | `MorphoCat_<versión>.dmg` | Arrastra MorphoCat a Aplicaciones |
+| Linux (Debian/Ubuntu) | `MorphoCat_<versión>_amd64.deb` | `sudo apt install ./MorphoCat_*.deb` |
+| Linux (cualquier otro) | `MorphoCat_<versión>.AppImage` | Dale permiso de ejecución y ábrelo |
 
 > **Si Windows dice "Windows protegió su PC"**, haz clic en **Más información** y
 > luego en **Ejecutar de todas formas**. En macOS, haz clic derecho sobre la
@@ -74,7 +74,7 @@ de datos**. Vuelves al Gestor de Datos con los datos listos.
 ### 2. Convierte los IDs en categorías
 
 Casi siempre el nombre del espécimen codifica información: sitio, nivel,
-material, sexo. MorfoCat puede recortar ese código en **categorías** para después
+material, sexo. MorphoCat puede recortar ese código en **categorías** para después
 colorear y agrupar por ellas.
 
 Abre la tarjeta **Categorías** en el Gestor de Datos. Con un ID como
@@ -112,7 +112,7 @@ cuantitativa.
 
 ### 6. Guarda tu trabajo
 
-**Guardar proyecto** escribe un único archivo `.morfocat.json` con tus datos, tus
+**Guardar proyecto** escribe un único archivo `.morphocat.json` con tus datos, tus
 categorías, la alineación, el estilo de la figura y la sesión de digitalización.
 Ábrelo más adelante y todo vuelve como lo dejaste.
 
@@ -126,7 +126,7 @@ PNG o SVG para las figuras.
 **¿Necesito tener Python o R instalado?** No. El motor de cálculo viene dentro de
 la aplicación.
 
-**¿Envía mis datos a algún lado?** No. MorfoCat no hace ninguna conexión de red.
+**¿Envía mis datos a algún lado?** No. MorphoCat no hace ninguna conexión de red.
 Tus imágenes y archivos se quedan en tu computadora.
 
 **El antivirus lo marcó.** Es un falso positivo conocido, por la forma en que se
@@ -143,14 +143,14 @@ para exportar.
 
 ## Para quien programa
 
-Cómo compilar MorfoCat desde el código fuente, ejecutar las pruebas y publicar
+Cómo compilar MorphoCat desde el código fuente, ejecutar las pruebas y publicar
 versiones está en **[docs/DEVELOPING.md](docs/DEVELOPING.md)** (en inglés).
 
 ---
 
 ## Cómo citarlo
 
-Si MorfoCat contribuyó a una investigación publicada, cita también el programa
+Si MorphoCat contribuyó a una investigación publicada, cita también el programa
 que reimplementa:
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric

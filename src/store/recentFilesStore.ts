@@ -32,6 +32,6 @@ export const useRecentFilesStore = create<RecentFilesState>()(
         set((s) => ({ files: s.files.filter((f) => f.name !== name) })),
       clearRecent: () => set({ files: [] }),
     }),
-    { name: "morfocat-recent-files" }
+    { name: "morphocat-recent-files" }
   )
 );

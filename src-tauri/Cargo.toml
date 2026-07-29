@@ -1,8 +1,8 @@
 [package]
-name = "morfocat"
+name = "morphocat"
 version = "0.1.0"
-description = "MorfoCat — Modern Geometric Morphometrics"
-authors = ["MorfoCat Contributors"]
+description = "MorphoCat — Modern Geometric Morphometrics"
+authors = ["MorphoCat Contributors"]
 license = "Apache-2.0"
 edition = "2021"
 rust-version = "1.70"

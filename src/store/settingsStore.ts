@@ -19,6 +19,6 @@ export const useSettingsStore = create<SettingsState>()(
       setTheme: (theme) => set({ theme }),
       setLang: (lang) => set({ lang }),
     }),
-    { name: "morfocat-settings" }
+    { name: "morphocat-settings" }
   )
 );

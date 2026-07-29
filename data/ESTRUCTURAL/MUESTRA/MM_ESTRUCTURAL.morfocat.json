@@ -1,7 +1,7 @@
 {
   "format": "morfocat-project",
-  "version": 1,
-  "savedAt": "2026-07-28T21:35:37.159Z",
+  "version": 2,
+  "savedAt": "2026-07-29T18:08:02.688Z",
   "dataset": {
     "specimens": [
       {
@@ -5611,19 +5611,19 @@
       },
       "LR": {
         "label": "La Reina",
-        "color": "#ef4444",
+        "color": "#fe2020",
         "symbol": "square",
         "filled": true
       },
       "LT": {
         "label": "Las Tinajas",
-        "color": "#e17c09",
+        "color": "#e1cf09",
         "symbol": "triangle",
         "filled": true
       },
       "MA": {
         "label": "Marcoleta",
-        "color": "#f5d60a",
+        "color": "#ffdd00",
         "symbol": "diamond",
         "filled": true
       },
@@ -5635,7 +5635,7 @@
       },
       "PC": {
         "label": "PC",
-        "color": "#06b6d4",
+        "color": "#07d586",
         "symbol": "plus",
         "filled": true
       },
@@ -5647,7 +5647,7 @@
       },
       "QL": {
         "label": "Quilicura-1",
-        "color": "#84cc16",
+        "color": "#00ffee",
         "symbol": "circle",
         "filled": true
       },
@@ -5659,7 +5659,7 @@
       },
       "SC": {
         "label": "Sector Chena",
-        "color": "#3d0066",
+        "color": "#621098",
         "symbol": "triangle",
         "filled": true
       },
@@ -5773,6 +5773,7 @@
     "refSource": "wireframe",
     "refShowIds": true,
     "refSize": 116,
+    "refGap": 12,
     "refFlipX": false,
     "refFlipY": false,
     "refRotation": 269,
@@ -5790,10 +5791,11 @@
     "figureHeight": 707,
     "exportScale": 4,
     "legendPos": {
-      "x": 0.8780737704918032,
-      "y": 0.42857142857142855
+      "x": 0.8793460637722932,
+      "y": 0.4349271213989674
     },
     "legendScale": 0.75,
     "showLegend": true
-  }
+  },
+  "digitizer": null
 }

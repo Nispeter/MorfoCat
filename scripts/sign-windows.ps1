@@ -6,10 +6,10 @@
     argument. Which signer runs is decided by environment variables, so the
     certificate never has to live in the repository:
 
-      MORFOCAT_SIGN_THUMBPRINT   SHA1 thumbprint of a certificate installed in
+      MORPHOCAT_SIGN_THUMBPRINT   SHA1 thumbprint of a certificate installed in
                                  the Windows certificate store.
 
-      MORFOCAT_SIGN_COMMAND      Any other signer, as a command line containing
+      MORPHOCAT_SIGN_COMMAND      Any other signer, as a command line containing
                                  {file} where the path should go - for Azure
                                  Trusted Signing or a cloud HSM.
 
@@ -35,18 +35,18 @@ if (-not (Test-Path $FilePath)) {
 
 # Timestamping is not optional: without it every signature stops validating the
 # day the certificate expires, including on copies already installed.
-$TimestampUrl = if ($env:MORFOCAT_SIGN_TIMESTAMP) { $env:MORFOCAT_SIGN_TIMESTAMP }
+$TimestampUrl = if ($env:MORPHOCAT_SIGN_TIMESTAMP) { $env:MORPHOCAT_SIGN_TIMESTAMP }
                 else { "http://timestamp.digicert.com" }
 
-if ($env:MORFOCAT_SIGN_COMMAND) {
-    $command = $env:MORFOCAT_SIGN_COMMAND.Replace("{file}", $FilePath)
+if ($env:MORPHOCAT_SIGN_COMMAND) {
+    $command = $env:MORPHOCAT_SIGN_COMMAND.Replace("{file}", $FilePath)
     Write-Host "Signing $FilePath with the configured command..."
     cmd /c $command
     if ($LASTEXITCODE -ne 0) { Write-Error "Signing command failed ($LASTEXITCODE)." }
     exit 0
 }
 
-if ($env:MORFOCAT_SIGN_THUMBPRINT) {
+if ($env:MORPHOCAT_SIGN_THUMBPRINT) {
     $signtoolPath = (Get-Command signtool.exe -ErrorAction SilentlyContinue).Source
 
     if (-not $signtoolPath) {
@@ -60,15 +60,15 @@ if ($env:MORFOCAT_SIGN_THUMBPRINT) {
         }
     }
     if (-not $signtoolPath) {
-        Write-Error "signtool.exe not found - install the Windows SDK, or use MORFOCAT_SIGN_COMMAND."
+        Write-Error "signtool.exe not found - install the Windows SDK, or use MORPHOCAT_SIGN_COMMAND."
     }
 
-    Write-Host "Signing $FilePath with certificate $env:MORFOCAT_SIGN_THUMBPRINT..."
-    & $signtoolPath sign /sha1 $env:MORFOCAT_SIGN_THUMBPRINT /fd sha256 /td sha256 /tr $TimestampUrl $FilePath
+    Write-Host "Signing $FilePath with certificate $env:MORPHOCAT_SIGN_THUMBPRINT..."
+    & $signtoolPath sign /sha1 $env:MORPHOCAT_SIGN_THUMBPRINT /fd sha256 /td sha256 /tr $TimestampUrl $FilePath
     if ($LASTEXITCODE -ne 0) { Write-Error "signtool failed ($LASTEXITCODE)." }
     exit 0
 }
 
 Write-Host "No signing credentials set - leaving '$FilePath' unsigned."
-Write-Host "  Set MORFOCAT_SIGN_THUMBPRINT or MORFOCAT_SIGN_COMMAND to sign."
+Write-Host "  Set MORPHOCAT_SIGN_THUMBPRINT or MORPHOCAT_SIGN_COMMAND to sign."
 exit 0

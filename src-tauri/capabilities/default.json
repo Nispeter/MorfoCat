@@ -1,7 +1,7 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capability for MorfoCat",
+  "description": "Default capability for MorphoCat",
   "windows": ["main"],
   "permissions": [
     "core:default",

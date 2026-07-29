@@ -1,29 +1,29 @@
-"""MorfoCat Python sidecar — reads one JSON request from stdin, writes one JSON response to stdout."""
+"""MorphoCat Python sidecar — reads one JSON request from stdin, writes one JSON response to stdout."""
 import sys
 import json
 import traceback
 
 sys.path.insert(0, str(__import__("pathlib").Path(__file__).parent))
 
-from morfoCat.io.tps import parse_tps, write_tps
-from morfoCat.io.nts import parse_nts, write_nts
-from morfoCat.io.morphologika import parse_morphologika, write_morphologika
-from morfoCat.procrustes import procrustes_gpa
-from morfoCat.outliers import detect_outliers
-from morfoCat.covariance import compute_covariance
-from morfoCat.covmatrix_compare import compare_covariance_matrices
-from morfoCat.dfa import run_pairwise_dfa
-from morfoCat.pca import run_pca
-from morfoCat.matrix_corr import matrix_correlation
-from morfoCat.pls import two_block_pls
-from morfoCat.regression import run_regression
-from morfoCat.modularity import test_modularity
-from morfoCat.cva import run_cva
-from morfoCat.lda import run_lda
-from morfoCat.phylo import (
+from morphoCat.io.tps import parse_tps, write_tps
+from morphoCat.io.nts import parse_nts, write_nts
+from morphoCat.io.morphologika import parse_morphologika, write_morphologika
+from morphoCat.procrustes import procrustes_gpa
+from morphoCat.outliers import detect_outliers
+from morphoCat.covariance import compute_covariance
+from morphoCat.covmatrix_compare import compare_covariance_matrices
+from morphoCat.dfa import run_pairwise_dfa
+from morphoCat.pca import run_pca
+from morphoCat.matrix_corr import matrix_correlation
+from morphoCat.pls import two_block_pls
+from morphoCat.regression import run_regression
+from morphoCat.modularity import test_modularity
+from morphoCat.cva import run_cva
+from morphoCat.lda import run_lda
+from morphoCat.phylo import (
     run_phylo_mapping, run_independent_contrasts, run_phylogenetic_signal,
 )
-from morfoCat.quantgen import run_g_matrix, run_selection_gradient
+from morphoCat.quantgen import run_g_matrix, run_selection_gradient
 
 DISPATCH = {
     "parse_tps": lambda p: parse_tps(p["content"]),

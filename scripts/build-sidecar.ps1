@@ -15,7 +15,7 @@ python -m pip install -r "$PySrc\requirements.txt" --quiet
 Write-Host "Building sidecar with PyInstaller..."
 python -m PyInstaller `
     --onefile `
-    --name morfocat-sidecar `
+    --name morphocat-sidecar `
     --distpath "$OutDir" `
     --workpath "$PySrc\build" `
     --specpath "$PySrc" `
@@ -23,14 +23,14 @@ python -m PyInstaller `
     "$PySrc\sidecar.py"
 
 # Tauri expects binaries named with the target triple, e.g.:
-# morfocat-sidecar-x86_64-pc-windows-msvc.exe  (Windows)
-# morfocat-sidecar-x86_64-unknown-linux-gnu     (Linux)
-# morfocat-sidecar-x86_64-apple-darwin          (macOS)
+# morphocat-sidecar-x86_64-pc-windows-msvc.exe  (Windows)
+# morphocat-sidecar-x86_64-unknown-linux-gnu     (Linux)
+# morphocat-sidecar-x86_64-apple-darwin          (macOS)
 
 $Triple = (rustc -vV | Select-String "host:").ToString().Split(":")[1].Trim()
-$Src = Join-Path $OutDir "morfocat-sidecar.exe"
+$Src = Join-Path $OutDir "morphocat-sidecar.exe"
 if (Test-Path $Src) {
-    $Dst = Join-Path $OutDir "morfocat-sidecar-$Triple.exe"
+    $Dst = Join-Path $OutDir "morphocat-sidecar-$Triple.exe"
     Copy-Item $Src $Dst -Force
     Write-Host "Sidecar built: $Dst"
 } else {
