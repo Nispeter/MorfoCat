@@ -14,17 +14,17 @@ import { Label } from "@/components/ui/label";
 import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
-import { useDigitizerStore, type LandmarkPoint, type DigitizerSpecimen } from "@/store/digitizerStore";
+import { useDigitizerStore, type LandmarkPoint, type PendingTemplate } from "@/store/digitizerStore";
 import { useNavStore } from "@/store/navStore";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
-import { parseTPS, writeTPS } from "@/lib/parsers";
-import { readFileB64, readTextFile, writeTextFile } from "@/lib/ipc";
+import { writeTPS } from "@/lib/parsers";
+import { readFileB64, writeTextFile, listDirImages } from "@/lib/ipc";
 import { resolveSpecimenId } from "@/lib/specimenId";
-import { StartSession } from "./StartSession";
+import { basename, dirname, openTPSForDigitizing } from "@/lib/digitizeSession";
 import {
-  ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen,
-  CheckCircle2, Circle, Import, Spline, Ruler,
+  ChevronLeft, ChevronRight, Undo2, Trash2, Download, FolderOpen, Images,
+  CheckCircle2, Circle, Import, Spline, Ruler, PanelsTopLeft,
 } from "lucide-react";
 
 // ── Canvas drawing ────────────────────────────────────────────────────────────
@@ -142,16 +142,6 @@ function drawCanvas(
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-function basename(p: string) {
-  return p.replace(/\\/g, "/").split("/").pop() ?? p;
-}
-
-function dirname(p: string) {
-  const norm = p.replace(/\\/g, "/");
-  const idx = norm.lastIndexOf("/");
-  return idx === -1 ? "" : norm.slice(0, idx);
-}
-
 function extMime(path: string): string {
   const ext = path.split(".").pop()?.toLowerCase();
   if (ext === "jpg" || ext === "jpeg") return "image/jpeg";
@@ -163,8 +153,9 @@ function extMime(path: string): string {
 export default function Digitizer() {
   const t = useT();
   const {
-    specimens, currentIdx, nLandmarks, nSemi, sourceFile,
+    specimens, currentIdx, nLandmarks, nSemi, sourceFile, pendingTemplate,
     addLandmark, undoLandmark, clearSpecimen, setScale, navigate, setSession,
+    appendSpecimens, setPendingTemplate,
   } = useDigitizerStore();
 
   const navNavigate = useNavStore((s) => s.navigate);
@@ -184,11 +175,6 @@ export default function Digitizer() {
   const [scaleDialog, setScaleDialog] = useState<{ pixelDist: number } | null>(null);
   const [scaleLength, setScaleLength] = useState("");
   const [scaleUnit, setScaleUnit] = useState("mm");
-  // A template opened from TpsUtil, waiting for the user to say how many
-  // landmarks each specimen should get.
-  const [template, setTemplate] = useState<
-    { specimens: DigitizerSpecimen[]; dir: string; filePath: string } | null
-  >(null);
   const [templateLandmarks, setTemplateLandmarks] = useState(10);
   const [templateSemi, setTemplateSemi] = useState(0);
 
@@ -328,55 +314,88 @@ export default function Digitizer() {
     setScaleMode(false);
   }, [scaleDialog, scaleLength, scaleUnit, setScale]);
 
-  // ── Open TPS for digitizing ─────────────────────────────────────────────────
-  const handleOpenTPS = useCallback(async () => {
-    const result = await open({
-      filters: [{ name: "TPS files", extensions: ["tps"] }],
-    });
-    if (!result || Array.isArray(result)) return;
-    const filePath = result as string;
-    try {
-      const parsed = parseTPS(await readTextFile(filePath));
-      const dir = dirname(filePath);
-      const digiSpecimens = parsed.specimens.map((sp, i) => {
-        // TpsUtil writes absolute paths; only the file name is useful here,
-        // since the images sit next to the TPS file.
-        const imgBase = sp.image ? basename(sp.image) : null;
-        const imgPath = imgBase ? (dir ? `${dir}/${imgBase}` : imgBase) : "";
-        return {
-          id: resolveSpecimenId(sp.id, imgBase, i),
-          imagePath: imgPath,
-          imageBase: imgBase ?? "",
-          scale: sp.scale ?? undefined,
-          landmarks: sp.landmarks.map((pt) => ({
-            x: pt[0],
-            y: pt[1],
-            isSemi: false, // plain TPS carries no semilandmark information
-          })),
-        };
-      });
-      const hasImages = digiSpecimens.some((sp) => sp.imagePath);
-      if (!hasImages) {
-        toast.warning("TPS file has no IMAGE= references", {
-          description: "Landmark coordinates were loaded but images cannot be displayed without IMAGE= fields.",
-        });
-      }
+  // ── Add more specimens to the session already open ──────────────────────────
+  // Starting a session is the Data Manager's job; from here on the digitizer
+  // only ever grows the one in progress.
+  const reportAdded = useCallback((added: number) => {
+    if (added === 0) toast.info(t("digi.nothingNew"));
+    else toast.success(t("digi.addedSpecimens").replace("{n}", String(added)));
+  }, [t]);
 
-      // A TpsUtil template lists the images but has no coordinates yet, so ask
-      // how many landmarks to place before starting the session.
-      if (parsed.n_landmarks === 0) {
-        setTemplate({ specimens: digiSpecimens, dir, filePath });
+  const addImagePaths = useCallback((paths: string[]) => {
+    const { added } = appendSpecimens(
+      paths.map((p, i) => ({
+        id: String(specimens.length + i + 1),
+        imagePath: p,
+        imageBase: basename(p),
+        landmarks: [],
+      }))
+    );
+    reportAdded(added);
+  }, [appendSpecimens, specimens.length, reportAdded]);
+
+  const handleAddImages = useCallback(async () => {
+    const result = await open({
+      multiple: true,
+      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "tif", "tiff", "bmp"] }],
+    });
+    if (!result) return;
+    addImagePaths(Array.isArray(result) ? result : [result]);
+  }, [addImagePaths]);
+
+  const handleAddFolder = useCallback(async () => {
+    const folder = await open({ directory: true, multiple: false });
+    if (!folder || Array.isArray(folder)) return;
+    try {
+      const found = await listDirImages(folder);
+      if (found.length === 0) {
+        toast.error(t("imgimp.noneInFolder"), { description: t("imgimp.lookedFor") });
         return;
       }
-
-      setSession(digiSpecimens, parsed.n_landmarks, 0, dir, filePath);
-      toast.success(`Loaded ${basename(filePath)}`, {
-        description: `${parsed.specimens.length} specimens · ${parsed.n_landmarks} landmarks`,
-      });
+      addImagePaths(found);
     } catch (e) {
-      toast.error("Failed to load TPS", { description: String(e) });
+      toast.error(t("imgimp.folderFailed"), { description: e instanceof Error ? e.message : String(e) });
     }
-  }, [setSession]);
+  }, [addImagePaths, t]);
+
+  const handleAddFromTPS = useCallback(async () => {
+    const result = await open({ filters: [{ name: "TPS files", extensions: ["tps"] }] });
+    if (!result || Array.isArray(result)) return;
+    try {
+      const opened = await openTPSForDigitizing(result as string);
+      // Merging a file digitized at a different landmark count would leave the
+      // session with specimens that can never be completed.
+      if (opened.nLandmarks > 0 && opened.nLandmarks !== nLandmarks) {
+        toast.error(t("digi.countMismatch")
+          .replace("{a}", String(opened.nLandmarks))
+          .replace("{b}", String(nLandmarks)));
+        return;
+      }
+      if (opened.missingImages.length > 0) {
+        toast.warning(
+          t("digi.tpsMissingImages").replace("{n}", String(opened.missingImages.length)),
+          { description: t("digi.tpsSameFolder") }
+        );
+      }
+      reportAdded(appendSpecimens(opened.specimens).added);
+    } catch (e) {
+      toast.error(t("digi.tpsFailed"), { description: String(e) });
+    }
+  }, [appendSpecimens, nLandmarks, reportAdded, t]);
+
+  // A template opened in the Data Manager lands here with no landmark count;
+  // the dialog asks for one, and then the session can start.
+  const startPendingTemplate = useCallback(() => {
+    if (!pendingTemplate) return;
+    setSession(
+      pendingTemplate.specimens, templateLandmarks, templateSemi,
+      pendingTemplate.dir, pendingTemplate.filePath
+    );
+    toast.success(basename(pendingTemplate.filePath), {
+      description: `${pendingTemplate.specimens.length} ${t("status.specimens")} · ${templateLandmarks} ${t("ui.landmarks")}`,
+    });
+    setPendingTemplate(null);
+  }, [pendingTemplate, templateLandmarks, templateSemi, setSession, setPendingTemplate, t]);
 
   // ── Export TPS ──────────────────────────────────────────────────────────────
   const handleExportTPS = useCallback(async () => {
@@ -437,13 +456,32 @@ export default function Digitizer() {
   }, [allComplete, specimens, nLandmarks, sourceFile, setDataset, clearAnalyses, navNavigate]);
 
   // ── Empty state ─────────────────────────────────────────────────────────────
+  // No session, and no way to start one here: images and TPS files come in
+  // through the Data Manager. The pending-template dialog still renders, since
+  // that is how a template opened over there finishes setting itself up.
   if (specimens.length === 0) {
     return (
       <PanelLayout
         title={t("page.digitizer.title")}
         description={t("page.digitizer.desc")}
       >
-        <StartSession onOpenTPS={handleOpenTPS} />
+        <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+          <Images size={36} className="text-muted-foreground" />
+          <p className="text-sm font-medium">{t("digi.noSession")}</p>
+          <p className="max-w-sm text-xs text-muted-foreground">{t("digi.noSessionDesc")}</p>
+          <Button size="sm" onClick={() => navNavigate("data")}>
+            <PanelsTopLeft size={14} /> {t("digi.goToData")}
+          </Button>
+        </div>
+        <TemplateDialog
+          template={pendingTemplate}
+          nLandmarks={templateLandmarks}
+          nSemi={templateSemi}
+          onNLandmarks={setTemplateLandmarks}
+          onNSemi={setTemplateSemi}
+          onCancel={() => setPendingTemplate(null)}
+          onStart={startPendingTemplate}
+        />
       </PanelLayout>
     );
   }
@@ -459,15 +497,12 @@ export default function Digitizer() {
       description={`${specimens.length} specimens · ${nLandmarks} landmarks${nSemi > 0 ? ` (${nSemi} semi)` : ""}`}
       actions={
         <>
-          <Button variant="outline" size="sm" onClick={handleOpenTPS}>
-            <FolderOpen size={14} /> Open TPS…
-          </Button>
           <Button variant="outline" size="sm" onClick={handleExportTPS} disabled={specimens.every((sp) => sp.landmarks.length === 0)}>
-            <Download size={14} /> Export TPS
+            <Download size={14} /> {t("action.exportTPS")}
           </Button>
           {allComplete && (
             <Button size="sm" onClick={handleLoadAsDataset}>
-              <Import size={14} /> Load as Dataset
+              <Import size={14} /> {t("action.loadDataset")}
             </Button>
           )}
         </>
@@ -577,6 +612,23 @@ export default function Digitizer() {
             </CardContent>
           </Card>
 
+          {/* Grow the session — starting one belongs to the Data Manager */}
+          <Card>
+            <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("digi.addMore")}</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleAddImages}>
+                <Images size={13} /> {t("digi.addImages")}
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleAddFolder}>
+                <FolderOpen size={13} /> {t("digi.addFolder")}
+              </Button>
+              <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleAddFromTPS}>
+                <FolderOpen size={13} /> {t("digi.addFromTPS")}
+              </Button>
+              <p className="text-[11px] text-muted-foreground">{t("digi.tpsSameFolder")}</p>
+            </CardContent>
+          </Card>
+
           {/* Progress */}
           <Card>
             <CardHeader className="pb-2 pt-3"><CardTitle className="text-sm">{t("ui.progress")}</CardTitle></CardHeader>
@@ -671,47 +723,15 @@ export default function Digitizer() {
         </div>
       </div>
 
-      {/* Landmark count for a template that has none yet */}
-      <Dialog open={template !== null} onOpenChange={(o) => { if (!o) setTemplate(null); }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>{t("digi.templateTitle")}</DialogTitle>
-            <DialogDescription>
-              {template
-                ? t("digi.templateDesc").replace("{n}", String(template.specimens.length))
-                : ""}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label>{t("imgimp.totalLandmarks")}</Label>
-              <NumberInput min={1} value={templateLandmarks} onChange={setTemplateLandmarks} />
-            </div>
-            <div className="space-y-1">
-              <Label>{t("imgimp.semilandmarks")}</Label>
-              <NumberInput min={0} max={templateLandmarks - 1} value={templateSemi} onChange={setTemplateSemi} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" size="sm" onClick={() => setTemplate(null)}>
-              {t("action.cancel")}
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                if (!template) return;
-                setSession(template.specimens, templateLandmarks, templateSemi, template.dir, template.filePath);
-                toast.success(`${t("action.loadDataset")} · ${basename(template.filePath)}`, {
-                  description: `${template.specimens.length} ${t("status.specimens")} · ${templateLandmarks} ${t("ui.landmarks")}`,
-                });
-                setTemplate(null);
-              }}
-            >
-              {t("digi.startDigitizing")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <TemplateDialog
+        template={pendingTemplate}
+        nLandmarks={templateLandmarks}
+        nSemi={templateSemi}
+        onNLandmarks={setTemplateLandmarks}
+        onNSemi={setTemplateSemi}
+        onCancel={() => setPendingTemplate(null)}
+        onStart={startPendingTemplate}
+      />
 
       {/* Scale reference dialog */}
       <Dialog open={scaleDialog !== null} onOpenChange={(o) => { if (!o) { setScaleDialog(null); setScalePts([]); } }}>
@@ -757,10 +777,56 @@ export default function Digitizer() {
             <Button variant="outline" size="sm" onClick={() => { setScaleDialog(null); setScalePts([]); }}>
               {t("action.cancel")}
             </Button>
-            <Button size="sm" onClick={confirmScale}>Set scale</Button>
+            <Button size="sm" onClick={confirmScale}>{t("digi.setScale")}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </PanelLayout>
+  );
+}
+
+/**
+ * Asks how many landmarks a TpsUtil-style template should get. Kept at module
+ * scope so typing in the number inputs does not remount it and lose focus.
+ */
+function TemplateDialog({
+  template, nLandmarks, nSemi, onNLandmarks, onNSemi, onCancel, onStart,
+}: {
+  template: PendingTemplate | null;
+  nLandmarks: number;
+  nSemi: number;
+  onNLandmarks: (n: number) => void;
+  onNSemi: (n: number) => void;
+  onCancel: () => void;
+  onStart: () => void;
+}) {
+  const t = useT();
+  return (
+    <Dialog open={template !== null} onOpenChange={(o) => { if (!o) onCancel(); }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{t("digi.templateTitle")}</DialogTitle>
+          <DialogDescription>
+            {template
+              ? t("digi.templateDesc").replace("{n}", String(template.specimens.length))
+              : ""}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label>{t("imgimp.totalLandmarks")}</Label>
+            <NumberInput min={1} value={nLandmarks} onChange={onNLandmarks} />
+          </div>
+          <div className="space-y-1">
+            <Label>{t("imgimp.semilandmarks")}</Label>
+            <NumberInput min={0} max={nLandmarks - 1} value={nSemi} onChange={onNSemi} />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" size="sm" onClick={onCancel}>{t("action.cancel")}</Button>
+          <Button size="sm" onClick={onStart}>{t("digi.startDigitizing")}</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

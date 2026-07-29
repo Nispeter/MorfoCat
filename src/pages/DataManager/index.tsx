@@ -11,7 +11,11 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { writeTPS, procrustesFit, readTextFile, writeTextFile } from "@/lib/ipc";
+import { writeTPS, procrustesFit, readTextFile, writeTextFile, listDirImages } from "@/lib/ipc";
+import { basename, openTPSForDigitizing } from "@/lib/digitizeSession";
+import { NewSessionDialog } from "@/components/NewSessionDialog";
+import { useDigitizerStore } from "@/store/digitizerStore";
+import { useNavStore } from "@/store/navStore";
 import { buildProject, parseProject, defaultProjectName, PROJECT_EXTENSION } from "@/lib/project";
 import { parseTPS, parseNTS, parseMorphologika } from "@/lib/parsers";
 import { countMissing, estimateMissingLandmarks, isMissingPoint } from "@/lib/missing";
@@ -25,7 +29,7 @@ import { useRecentFilesStore } from "@/store/recentFilesStore";
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
-import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma, Save, FolderOpen } from "lucide-react";
+import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma, Save, FolderOpen, Images } from "lucide-react";
 
 function formatRelTime(ts: number) {
   const s = Math.floor((Date.now() - ts) / 1000);
@@ -87,6 +91,13 @@ export default function DataManager() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const appendInputRef = useRef<HTMLInputElement>(null);
+  // Digitizing starts here, since this is where data enters the app; the
+  // digitizer page only ever adds to a session that is already open.
+  const [sessionOpen, setSessionOpen] = useState(false);
+  const [sessionImages, setSessionImages] = useState<string[]>([]);
+  const navNavigate = useNavStore((s) => s.navigate);
+  const setDigitizerSession = useDigitizerStore((s) => s.setSession);
+  const setPendingTemplate = useDigitizerStore((s) => s.setPendingTemplate);
 
   const load = useCallback(
     async (name: string, content: string) => {
@@ -267,6 +278,68 @@ export default function DataManager() {
     toast.info("Dataset cleared");
   };
 
+  // ── Digitizing entry points ─────────────────────────────────────────────────
+  const pickImagesToDigitize = useCallback(async () => {
+    const result = await openDialog({
+      multiple: true,
+      filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "tif", "tiff", "bmp"] }],
+    });
+    if (!result) return;
+    setSessionImages(Array.isArray(result) ? result : [result]);
+    setSessionOpen(true);
+  }, []);
+
+  const pickFolderToDigitize = useCallback(async () => {
+    const folder = await openDialog({ directory: true, multiple: false });
+    if (!folder || Array.isArray(folder)) return;
+    try {
+      const found = await listDirImages(folder);
+      if (found.length === 0) {
+        toast.error(t("imgimp.noneInFolder"), { description: t("imgimp.lookedFor") });
+        return;
+      }
+      setSessionImages(found);
+      setSessionOpen(true);
+    } catch (e) {
+      toast.error(t("imgimp.folderFailed"), { description: e instanceof Error ? e.message : String(e) });
+    }
+  }, [t]);
+
+  /**
+   * Open a TPS to carry on digitizing it — not to analyse it. A file that
+   * already has coordinates becomes a session on those; one that only lists
+   * images is a template, and the digitizer asks how many landmarks to place.
+   * Dropping a file on the zone below is the path for analysis instead.
+   */
+  const openTPSToDigitize = useCallback(async () => {
+    const picked = await openDialog({ filters: [{ name: "TPS files", extensions: ["tps"] }] });
+    if (!picked || Array.isArray(picked)) return;
+    try {
+      const opened = await openTPSForDigitizing(picked as string);
+      if (opened.noImageRefs) {
+        toast.warning(t("digi.tpsNoImages"), { description: t("digi.tpsNoImagesDesc") });
+      } else if (opened.missingImages.length > 0) {
+        toast.warning(
+          t("digi.tpsMissingImages").replace("{n}", String(opened.missingImages.length)),
+          { description: t("digi.tpsSameFolder") }
+        );
+      }
+      if (opened.nLandmarks === 0) {
+        setPendingTemplate({ specimens: opened.specimens, dir: opened.dir, filePath: opened.filePath });
+      } else {
+        setDigitizerSession(
+          opened.specimens, opened.nLandmarks, 0, opened.dir, opened.filePath
+        );
+        toast.success(basename(opened.filePath), {
+          description: `${opened.specimens.length} ${t("status.specimens")} · ${opened.nLandmarks} ${t("ui.landmarks")}`,
+        });
+      }
+      navNavigate("digitizer");
+    } catch (e) {
+      toast.error(t("digi.tpsFailed"), { description: String(e) });
+    }
+  }, [t, navNavigate, setDigitizerSession, setPendingTemplate]);
+
   return (
     <PanelLayout
       title={t("page.data.title")}
@@ -308,8 +381,35 @@ export default function DataManager() {
         </>
       }
     >
+      <NewSessionDialog
+        open={sessionOpen}
+        onOpenChange={setSessionOpen}
+        initialImages={sessionImages}
+        onStarted={() => navNavigate("digitizer")}
+      />
       {!dataset ? (
         <div className="flex h-full flex-col items-center justify-center gap-4">
+          {/* Start from photographs rather than from an existing landmark file */}
+          <div className="w-full max-w-lg space-y-1.5">
+            <p className="text-xs font-medium">{t("data.digitize")}</p>
+            <div className="flex flex-wrap gap-2">
+              <DigitizeButtons
+                onImages={pickImagesToDigitize}
+                onFolder={pickFolderToDigitize}
+                onTPS={openTPSToDigitize}
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">{t("data.digitizeHint")}</p>
+          </div>
+
+          <div className="flex w-full max-w-lg items-center gap-2">
+            <span className="h-px flex-1 bg-border" />
+            <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+              {t("data.orLoad")}
+            </span>
+            <span className="h-px flex-1 bg-border" />
+          </div>
+
           {/* Recent files */}
           {recentFiles.length > 0 && (
             <div className="w-full max-w-lg">
@@ -410,6 +510,19 @@ export default function DataManager() {
 
           {/* Summary card */}
           <div className="flex flex-col gap-3">
+            <CollapsibleCard
+              title={<><Images size={13} /> {t("data.digitize")}</>}
+              defaultOpen={false}
+              contentClassName="space-y-2"
+            >
+              <DigitizeButtons
+                stacked
+                onImages={pickImagesToDigitize}
+                onFolder={pickFolderToDigitize}
+                onTPS={openTPSToDigitize}
+              />
+              <p className="text-[11px] text-muted-foreground">{t("data.digitizeReplaces")}</p>
+            </CollapsibleCard>
             <ClassifiersCard
               names={dataset.classifierNames ?? []}
               active={activeClassifier}
@@ -467,6 +580,32 @@ export default function DataManager() {
         </div>
       )}
     </PanelLayout>
+  );
+}
+
+/** The three ways into a digitizing session, shared by both page states. */
+function DigitizeButtons({
+  stacked, onImages, onFolder, onTPS,
+}: {
+  stacked?: boolean;
+  onImages: () => void;
+  onFolder: () => void;
+  onTPS: () => void;
+}) {
+  const t = useT();
+  const cls = stacked ? "w-full justify-start" : "";
+  return (
+    <>
+      <Button variant="outline" size="sm" className={cls} onClick={onImages}>
+        <Images size={14} /> {t("action.pickFiles")}
+      </Button>
+      <Button variant="outline" size="sm" className={cls} onClick={onFolder}>
+        <FolderOpen size={14} /> {t("action.pickFolder2")}
+      </Button>
+      <Button variant="outline" size="sm" className={cls} onClick={onTPS}>
+        <FolderOpen size={14} /> {t("action.openTPS")}
+      </Button>
+    </>
   );
 }
 
