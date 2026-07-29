@@ -10,13 +10,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Every leg builds for its own runner's architecture. A universal macOS
+        # binary would need the Python sidecar built for both architectures at
+        # once, and PyInstaller can only target the interpreter it is running
+        # on — so Apple Silicon and Intel get a build each instead.
         include:
           - platform: ubuntu-22.04
-            args: ""
-          - platform: macos-latest
-            args: "--target universal-apple-darwin"
+          - platform: macos-latest      # Apple Silicon
+          - platform: macos-13          # Intel
           - platform: windows-latest
-            args: ""
 
     runs-on: ${{ matrix.platform }}
 
@@ -36,8 +38,6 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Cache Rust
         uses: swatinem/rust-cache@v2
@@ -60,9 +60,13 @@ jobs:
             --workpath python/build \
             --specpath python \
             --noconfirm python/sidecar.py
+          # Tauri looks for the sidecar under the target triple it is building
+          # for. Every leg builds for its own host, so the host triple is the
+          # right suffix by construction.
           TRIPLE=$(rustc -vV | grep host | cut -d' ' -f2)
           EXT="${{ matrix.platform == 'windows-latest' && '.exe' || '' }}"
           mv "src-tauri/binaries/morphocat-sidecar${EXT}" "src-tauri/binaries/morphocat-sidecar-${TRIPLE}${EXT}"
+          ls -la src-tauri/binaries
 
       - name: Install npm deps
         run: npm ci
@@ -71,8 +75,6 @@ jobs:
       # in the release job below, after the Windows installers have been signed.
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
-        with:
-          args: ${{ matrix.args }}
 
       - name: Collect bundles
         shell: bash
@@ -158,20 +160,24 @@ jobs:
           pattern: bundles-*
           merge-multiple: false
 
-      # Prefer the signed Windows installers when the signing job produced them.
+      # Take every platform's bundles, but drop the unsigned Windows ones when
+      # the signing job produced signed replacements. Written as a loop over
+      # whatever arrived so adding a platform to the matrix needs no change here.
       - name: Choose bundles
         shell: bash
         run: |
           mkdir -p release
-          if [ -d all/bundles-windows-signed ]; then
-            cp all/bundles-windows-signed/* release/
-          elif [ -d all/bundles-windows-latest ]; then
-            cp all/bundles-windows-latest/* release/
-          fi
-          for dir in all/bundles-macos-latest all/bundles-ubuntu-22.04; do
-            if [ -d "$dir" ]; then cp "$dir"/* release/; fi
+          for dir in all/*/; do
+            name=$(basename "$dir")
+            if [ "$name" = "bundles-windows-latest" ] && [ -d all/bundles-windows-signed ]; then
+              echo "skipping $name, signed versions are present"
+              continue
+            fi
+            cp "$dir"* release/ 2>/dev/null || true
           done
           ls -la release
+          # An empty release would publish as a tag with no installers at all.
+          [ -n "$(ls -A release)" ] || { echo "no bundles to release"; exit 1; }
 
       - name: Draft release
         uses: softprops/action-gh-release@v2
