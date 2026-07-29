@@ -160,6 +160,7 @@ export default function Digitizer() {
 
   const navNavigate = useNavStore((s) => s.navigate);
   const setDataset = useDatasetStore((s) => s.setDataset);
+  const dataset = useDatasetStore((s) => s.dataset);
   const clearAnalyses = useAnalysisStore((s) => s.clearAll);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -383,6 +384,37 @@ export default function Digitizer() {
     }
   }, [appendSpecimens, nLandmarks, reportAdded, t]);
 
+  /**
+   * Rebuild a session from the dataset currently loaded.
+   *
+   * Projects saved before the session was part of the file come back with the
+   * dataset but nothing to digitize on; this puts the images back under the
+   * landmarks. `imageDir` is only ever set by the hand-off at the bottom of
+   * this page, which multiplies every coordinate by the specimen's scale, so
+   * that multiplication is undone here to get back to image pixels.
+   */
+  const rebuildFromDataset = useCallback(() => {
+    if (!dataset?.imageDir) return;
+    const dir = dataset.imageDir;
+    setSession(
+      dataset.specimens.map((sp) => {
+        const k = sp.scale ?? 0;
+        const toPx = (v: number) => (k > 0 ? v / k : v);
+        return {
+          id: sp.id,
+          imagePath: sp.image ? `${dir}/${sp.image}` : "",
+          imageBase: sp.image ?? "",
+          scale: sp.scale ?? undefined,
+          landmarks: sp.landmarks.map((pt) => ({ x: toPx(pt[0]), y: toPx(pt[1]), isSemi: false })),
+        };
+      }),
+      dataset.n_landmarks, 0, dir, dataset.filename
+    );
+    toast.success(t("digi.rebuilt"), {
+      description: `${dataset.specimens.length} ${t("status.specimens")} · ${dataset.n_landmarks} ${t("ui.landmarks")}`,
+    });
+  }, [dataset, setSession, t]);
+
   // A template opened in the Data Manager lands here with no landmark count;
   // the dialog asks for one, and then the session can start.
   const startPendingTemplate = useCallback(() => {
@@ -472,6 +504,16 @@ export default function Digitizer() {
           <Button size="sm" onClick={() => navNavigate("data")}>
             <PanelsTopLeft size={14} /> {t("digi.goToData")}
           </Button>
+          {/* A project saved before sessions were stored still knows where its
+              images are, which is enough to carry on digitizing it. */}
+          {dataset?.imageDir && dataset.specimens.some((sp) => sp.image) && (
+            <div className="mt-2 flex max-w-sm flex-col items-center gap-1.5 border-t pt-3">
+              <Button variant="outline" size="sm" onClick={rebuildFromDataset}>
+                <Images size={14} /> {t("digi.rebuild")}
+              </Button>
+              <p className="text-xs text-muted-foreground">{t("digi.rebuildHint")}</p>
+            </div>
+          )}
         </div>
         <TemplateDialog
           template={pendingTemplate}
