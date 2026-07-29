@@ -1,167 +1,106 @@
 # MorphoCat
 
-Geometric morphometrics on your desktop. Place landmarks on photographs, align
-them, and get the analyses and publication figures a shape study needs — without
-installing Python, R, or anything else.
+Geometric morphometrics on your desktop: digitize landmarks, align them, run the
+analyses, export publication figures. No Python or R to install. Works offline.
 
-MorphoCat is a free, open-source reimplementation of MorphoJ. It runs entirely on
-your computer: nothing is uploaded, nothing is tracked, and it works offline.
+Free and open source, and a reimplementation of MorphoJ.
 
-**Español:** [léeme en español](README.es.md)
-
----
+[Español](README.es.md)
 
 ## Install
 
-Download the file for your system from the
-[Releases page](https://github.com/Nispeter/MorphoCat/releases) and open it.
-Everything the app needs is inside — there is nothing else to install.
+Download from [Releases](https://github.com/Nispeter/MorphoCat/releases) and open it.
 
-| Your system | Download this | Then |
-| --- | --- | --- |
-| Windows | `MorphoCat_<version>_x64-setup.exe` | Double-click → Next → Install |
-| Windows, managed by IT | `MorphoCat_<version>_x64_en-US.msi` | For network deployment |
-| macOS | `MorphoCat_<version>.dmg` | Drag MorphoCat to Applications |
-| Linux (Debian/Ubuntu) | `MorphoCat_<version>_amd64.deb` | `sudo apt install ./MorphoCat_*.deb` |
-| Linux (anything else) | `MorphoCat_<version>.AppImage` | Make it executable and run it |
-
-> **If Windows says "Windows protected your PC"** — click **More info**, then
-> **Run anyway**. On macOS, right-click the app and choose **Open** the first
-> time. This happens with small independent projects and does not mean anything
-> is wrong with the file.
-
-The app is in English and Spanish. Switch language in **Settings**.
-
----
-
-## How to use it
-
-The short version: get your landmarks in, align them, then analyse. Everything
-starts in the **Data Manager**, which is the first page you see.
-
-### 1. Get your landmarks in
-
-**If you already have a landmark file** (`.tps`, `.nts`, or Morphologika `.txt`),
-drag it onto the drop zone in the Data Manager. Done — skip to step 2.
-
-**If you are starting from photographs**, use the buttons at the top of the Data
-Manager:
-
-- **Pick Images** — choose the photos one by one
-- **Add Folder** — take every photo in a folder at once
-- **Open TPS** — carry on with a file you started digitizing earlier
-
-Choosing photos opens a small window where you say how many landmarks each
-specimen gets, and where to save the `.tps` file.
-
-> **Keep the `.tps` file in the same folder as your photos.** A TPS file records
-> the *name* of each image, not the path to it. If the two get separated, the app
-> cannot find your photos — it will tell you when this happens, but it is easier
-> to avoid.
-
-Then, in the **Landmark Digitizer**:
-
-| To do this | Do that |
+| System | File |
 | --- | --- |
-| Place a landmark | Click on the photo |
-| Place a semilandmark | Hold **Shift** and click |
-| Undo the last one | **Ctrl+Z** |
-| Next / previous specimen | **→** / **←**, or the arrows above the image |
-| Set the real-world scale | **Set scale**, click two points, type the real distance |
-| Add more photos later | **Add specimens** in the right-hand panel |
+| Windows | `MorphoCat_<version>_x64-setup.exe` |
+| Windows (IT deployment) | `MorphoCat_<version>_x64_en-US.msi` |
+| macOS | `MorphoCat_<version>.dmg` |
+| Debian / Ubuntu | `MorphoCat_<version>_amd64.deb` |
+| Other Linux | `MorphoCat_<version>.AppImage` |
 
-When every specimen is finished, click **Load as Dataset**. You are back in the
-Data Manager with your data ready.
+If Windows says *"Windows protected your PC"*: **More info → Run anyway**. On
+macOS, right-click the app → **Open**, the first time only.
 
-### 2. Turn your IDs into categories
+English and Spanish — switch in **Settings**.
 
-Most people encode information in the specimen name — site, level, material,
-sex. MorphoCat can cut that code into **categories** you can then colour and group
-by.
+## Use
 
-Open the **Categories** card in the Data Manager. With an ID like
-`26-13MA020230`, drag across the characters that belong together and give the
-piece a name. If your IDs use a separator instead (`ficu_F_031`), switch to
-**By separator** and click the part you want. Add as many categories as you like,
-then **Apply**.
+Everything starts in the **Data Manager**.
 
-### 3. Align the shapes
+### 1. Load your landmarks
 
-Go to **Procrustes Fit** and click **Run**. This removes differences in position,
-size, and rotation so that only shape is left. Every other analysis needs this
-first.
+Already have a `.tps`, `.nts` or Morphologika `.txt`? Drag it onto the drop zone.
 
-### 4. Look for mistakes
+Starting from photographs? **Pick Images** or **Add Folder**, then set how many
+landmarks each specimen gets and where to save the `.tps`.
 
-**Outlier Detection** shows how far each specimen sits from the average shape. A
-specimen sticking far out is usually a digitizing slip, not a discovery — click
-it to review its landmarks. If two landmark numbers got swapped, you can fix the
-order right there and it applies to the whole dataset.
+> Keep the `.tps` in the same folder as the photos. TPS files store image
+> *names*, not paths — separate them and the app cannot find your images.
 
-### 5. Analyse
+### 2. Digitize
 
-**PCA** is where most studies start: it shows the main directions of shape
-variation and where each specimen falls along them.
+| | |
+| --- | --- |
+| Place a landmark | Click |
+| Place a semilandmark | **Shift** + click |
+| Undo | **Ctrl+Z** |
+| Next / previous specimen | **→** / **←** |
+| Real-world scale | **Set scale** → click two points → type the distance |
+| More photos later | **Add specimens** |
 
-Its **Figure** tab builds a publication-ready plot — colour by one category and
-symbol by another, place small shape drawings along the axes, drag the legend
-where you want it, and export as PNG or SVG.
+When all specimens are done: **Load as Dataset**.
 
-The rest of the analyses are in the sidebar: covariance matrices, matrix
-correlation, two-block PLS, regression and allometry, modularity, CVA, LDA with
-cross-validation, phylogenetic comparative methods, and quantitative genetics.
+### 3. Split IDs into categories
 
-### 6. Save your work
+Open **Categories**. Drag across the characters that belong together and name
+them — `26-13MA020230` becomes site, level, whatever you encoded. For separated
+IDs like `ficu_F_031`, switch to **By separator** and click a part. Then
+**Apply**.
 
-**Save project** writes a single `.morphocat.json` file holding your data, your
-categories, your alignment, your figure styling, and your digitizing session.
-Open it later and everything comes back as you left it.
+### 4. Align
 
-Every table and chart also exports on its own — CSV for numbers, PNG or SVG for
-figures.
+**Procrustes Fit → Run.** Removes position, size and rotation. Every other
+analysis needs it first.
 
----
+### 5. Check for mistakes
 
-## Common questions
+**Outlier Detection** ranks specimens by distance from the mean shape. A far
+outlier is usually a digitizing slip — click to review it. Swapped landmark
+numbers can be fixed there, across the whole dataset.
 
-**Do I need Python or R installed?** No. The computation engine is bundled inside
-the app.
+### 6. Analyse
 
-**Does it send my data anywhere?** No. MorphoCat makes no network requests at all.
-Your images and files stay on your computer.
+**PCA** first, normally. Its **Figure** tab builds the publication plot: colour
+by one category, symbols by another, shape drawings along the axes, draggable
+legend, PNG or SVG export.
 
-**My antivirus flagged it.** This is a known false positive with the way the
-computation engine is packaged. The installer from the Releases page is the only
-official one.
+Also in the sidebar: covariance matrices, matrix correlation, two-block PLS,
+regression and allometry, modularity, CVA, LDA with cross-validation,
+phylogenetic comparative methods, quantitative genetics.
 
-**Can I use it for 3D data?** Import and the core analyses work in 3D. Landmark
-estimation for missing points is 2D only for now.
+### 7. Save
 
-**Which file formats can I open?** TPS, NTS, and Morphologika for import; TPS and
-CSV for export.
+**Save project** writes one `.morphocat.json` holding data, categories,
+alignment, figure styling and your digitizing session. Tables export to CSV,
+charts to PNG or SVG.
 
----
+## Notes
 
-## For developers
+- Nothing is uploaded or tracked. There are no network requests.
+- Import: TPS, NTS, Morphologika. Export: TPS, CSV.
+- 3D works for import and the core analyses; missing-landmark estimation is 2D.
+- Antivirus false positives happen with how the compute engine is packaged. The
+  Releases page is the only official source.
 
-Building MorphoCat from source, running the test suite, and the release process
-are documented in **[docs/DEVELOPING.md](docs/DEVELOPING.md)**.
+## More
 
-How releases are signed is described in
-**[docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md)**.
+[Building from source](docs/DEVELOPING.md) ·
+[Code signing](docs/CODE_SIGNING_POLICY.md) ·
+[References](REFERENCES.md) ·
+[MIT licence](LICENSE)
 
----
-
-## Citing
-
-If MorphoCat contributed to published research, please also cite the software it
-reimplements:
+Citing MorphoCat? Cite MorphoJ too:
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric
 > morphometrics. *Molecular Ecology Resources* 11: 353–357.
-
----
-
-## Licence
-
-MIT — see [LICENSE](LICENSE). Free to use, including for commercial work.
