@@ -1,224 +1,167 @@
 # MorfoCat
 
-Modern geometric morphometrics — a full-featured reimplementation of MorphoJ built with Tauri v2, React 18, TypeScript, and a Python scientific computing sidecar.
+Geometric morphometrics on your desktop. Place landmarks on photographs, align
+them, and get the analyses and publication figures a shape study needs — without
+installing Python, R, or anything else.
 
-## Features
+MorfoCat is a free, open-source reimplementation of MorphoJ. It runs entirely on
+your computer: nothing is uploaded, nothing is tracked, and it works offline.
 
-- **Procrustes GPA** — 2D & 3D, with/without object symmetry  
-- **Outlier detection** — Procrustes distance Z-scores with include/exclude  
-- **PCA** — Scree plot, biplot, shape deformation grids (±N SD)  
-- **Covariance matrices** — Standard and pooled within-group  
-- **Matrix correlation** — Permutation test  
-- **Two-block PLS** — RV coefficient, singular values, block scores  
-- **Regression** — Allometry correction, pooled within-group  
-- **Modularity** — RV coefficient, covariance ratio (CR), permutation test  
-- **CVA** — Canonical variate scores, Mahalanobis distances, permutation test  
-- **LDA** — Leave-one-out cross-validation, confusion matrices  
-- **Phylogenetics** — Ancestral shape reconstruction, independent contrasts  
-- **Quantitative genetics** — G matrix estimation, selection gradient β  
-- **Formats** — TPS, NTS, Morphologika import/export  
-- **Dark/light mode** · interactive 2D/3D landmark viewers · collapsible sidebar
+**Español:** [léeme en español](README.es.md)
 
 ---
 
-## Installing (for end users)
+## Install
 
-If someone shared an installer file with you, or you downloaded one from the project's
-**Releases** page, you do **not** need Node, Rust, or Python — everything (including the
-Python computation engine) is bundled inside. Just install and run.
+Download the file for your system from the
+[Releases page](https://github.com/Nispeter/MorfoCat/releases) and open it.
+Everything the app needs is inside — there is nothing else to install.
 
-### Windows
+| Your system | Download this | Then |
+| --- | --- | --- |
+| Windows | `MorfoCat_<version>_x64-setup.exe` | Double-click → Next → Install |
+| Windows, managed by IT | `MorfoCat_<version>_x64_en-US.msi` | For network deployment |
+| macOS | `MorfoCat_<version>.dmg` | Drag MorfoCat to Applications |
+| Linux (Debian/Ubuntu) | `MorfoCat_<version>_amd64.deb` | `sudo apt install ./MorfoCat_*.deb` |
+| Linux (anything else) | `MorfoCat_<version>.AppImage` | Make it executable and run it |
 
-1. Download the installer:
-   - **`MorfoCat_<version>_x64-setup.exe`** — recommended for individuals (simple wizard, installs per-user, no admin rights needed)
-   - **`MorfoCat_<version>_x64_en-US.msi`** — better for IT / networked deployment
-2. **Double-click** it → **Next** → **Install** → **Finish**.
-3. Launch **MorfoCat** from the Start menu. That's it — no other tools required.
+> **If Windows says "Windows protected your PC"** — click **More info**, then
+> **Run anyway**. On macOS, right-click the app and choose **Open** the first
+> time. This happens with small independent projects and does not mean anything
+> is wrong with the file.
 
-> **"Windows protected your PC" warning.** Because the build is not code-signed, Windows
-> SmartScreen may block it on first launch. Click **More info → Run anyway**. Some antivirus
-> tools may also flag it as a false positive (common for PyInstaller-packed apps). This is
-> expected for an unsigned build.
-
-### macOS / Linux
-
-Install the artifact for your platform (`.dmg`, `.deb`, or `.AppImage`) — see the formats
-table under [Building for distribution](#building-for-distribution-installer). On macOS you
-may need to right-click → **Open** the first time to bypass Gatekeeper on an unsigned app.
-
-**Sharing the installer:** it is a single (~70 MB) file. That exceeds most email limits
-(e.g. Gmail's 25 MB), so share it via Google Drive, OneDrive, WeTransfer, or a USB drive —
-the recipient just double-clicks it.
-
-> **Maintainers:** the installer does not exist until someone builds it. See
-> [Building for distribution](#building-for-distribution-installer) to produce it locally, or
-> push a version tag to let CI build and attach installers to a GitHub Release.
+The app is in English and Spanish. Switch language in **Settings**.
 
 ---
 
-## Prerequisites
+## How to use it
 
-| Tool | Version | Install |
-|------|---------|---------|
-| Node.js | ≥ 18 | https://nodejs.org |
-| Rust | stable | https://rustup.rs |
-| Python | ≥ 3.10 | https://python.org |
-| WebView2 | (Windows only) | Ships with Win 10/11; download at https://developer.microsoft.com/en-us/microsoft-edge/webview2/ |
+The short version: get your landmarks in, align them, then analyse. Everything
+starts in the **Data Manager**, which is the first page you see.
 
----
+### 1. Get your landmarks in
 
-## Running in development (debug)
+**If you already have a landmark file** (`.tps`, `.nts`, or Morphologika `.txt`),
+drag it onto the drop zone in the Data Manager. Done — skip to step 2.
 
-```powershell
-# 1. Install Python scientific libraries (first time only)
-pip install -r python/requirements.txt
+**If you are starting from photographs**, use the buttons at the top of the Data
+Manager:
 
-# 2. Install Node dependencies (first time only)
-npm install
+- **Pick Images** — choose the photos one by one
+- **Add Folder** — take every photo in a folder at once
+- **Open TPS** — carry on with a file you started digitizing earlier
 
-# 3. Launch the dev server + Tauri window
-npm run tauri dev
-```
+Choosing photos opens a small window where you say how many landmarks each
+specimen gets, and where to save the `.tps` file.
 
-The app hot-reloads on React changes. Python sidecar runs directly from `python/sidecar.py` — no build step needed for development.
+> **Keep the `.tps` file in the same folder as your photos.** A TPS file records
+> the *name* of each image, not the path to it. If the two get separated, the app
+> cannot find your photos — it will tell you when this happens, but it is easier
+> to avoid.
 
-**What happens under the hood:**
-- `vite` serves the React frontend at `http://localhost:1420`
-- Tauri opens a native window pointing at that URL
-- When you run an analysis, Tauri spawns `python python/sidecar.py`, pipes a JSON request via stdin, and reads the JSON response from stdout
+Then, in the **Landmark Digitizer**:
 
----
+| To do this | Do that |
+| --- | --- |
+| Place a landmark | Click on the photo |
+| Place a semilandmark | Hold **Shift** and click |
+| Undo the last one | **Ctrl+Z** |
+| Next / previous specimen | **→** / **←**, or the arrows above the image |
+| Set the real-world scale | **Set scale**, click two points, type the real distance |
+| Add more photos later | **Add specimens** in the right-hand panel |
 
-## Building for distribution (installer)
+When every specimen is finished, click **Load as Dataset**. You are back in the
+Data Manager with your data ready.
 
-One command does both steps:
+### 2. Turn your IDs into categories
 
-```powershell
-npm run package:win     # macOS / Linux: npm run package:unix
-```
+Most people encode information in the specimen name — site, level, material,
+sex. MorfoCat can cut that code into **categories** you can then colour and group
+by.
 
-> **Always rebuild the sidecar before packaging.** `src-tauri/binaries/` is
-> gitignored, so whatever binary is sitting there is from whenever you last built
-> it. Tauri bundles it without checking, and an out-of-date sidecar ships an app
-> whose analyses silently answer `Unknown method`. The `package:*` scripts above
-> rebuild it every time; the two steps below are what they run.
+Open the **Categories** card in the Data Manager. With an ID like
+`26-13MA020230`, drag across the characters that belong together and give the
+piece a name. If your IDs use a separator instead (`ficu_F_031`), switch to
+**By separator** and click the part you want. Add as many categories as you like,
+then **Apply**.
 
-### Step 1 — Build the Python sidecar
+### 3. Align the shapes
 
-The Python code must be compiled to a standalone binary so the installer works on machines without Python.
+Go to **Procrustes Fit** and click **Run**. This removes differences in position,
+size, and rotation so that only shape is left. Every other analysis needs this
+first.
 
-**Windows (PowerShell):**
-```powershell
-pip install pyinstaller
-.\scripts\build-sidecar.ps1
-```
+### 4. Look for mistakes
 
-**macOS / Linux (bash):**
-```bash
-pip3 install pyinstaller
-bash scripts/build-sidecar.sh
-```
+**Outlier Detection** shows how far each specimen sits from the average shape. A
+specimen sticking far out is usually a digitizing slip, not a discovery — click
+it to review its landmarks. If two landmark numbers got swapped, you can fix the
+order right there and it applies to the whole dataset.
 
-This produces `src-tauri/binaries/morfocat-sidecar-<triple>[.exe]`.
+### 5. Analyse
 
-### Step 2 — Build Tauri
+**PCA** is where most studies start: it shows the main directions of shape
+variation and where each specimen falls along them.
 
-```powershell
-npm run tauri build
-```
+Its **Figure** tab builds a publication-ready plot — colour by one category and
+symbol by another, place small shape drawings along the axes, drag the legend
+where you want it, and export as PNG or SVG.
 
-Outputs (in `src-tauri/target/release/bundle/`):
+The rest of the analyses are in the sidebar: covariance matrices, matrix
+correlation, two-block PLS, regression and allometry, modularity, CVA, LDA with
+cross-validation, phylogenetic comparative methods, and quantitative genetics.
 
-| Platform | Location | Format |
-|----------|----------|--------|
-| Windows | `bundle/msi/*.msi` | MSI installer |
-| Windows | `bundle/nsis/*.exe` | NSIS installer |
-| macOS | `bundle/dmg/*.dmg` | DMG disk image |
-| macOS | `bundle/macos/*.app` | App bundle |
-| Linux | `bundle/deb/*.deb` | Debian package |
-| Linux | `bundle/appimage/*.AppImage` | AppImage |
+### 6. Save your work
 
-Distribute either the `.msi` (Windows), `.dmg` (macOS), or `.deb`/`.AppImage` (Linux) — recipients do **not** need Python, Node, or Rust installed.
+**Save project** writes a single `.morfocat.json` file holding your data, your
+categories, your alignment, your figure styling, and your digitizing session.
+Open it later and everything comes back as you left it.
 
----
-
-## Running the test suite
-
-MorfoCat ships a Python test suite that verifies the numerical correctness of every analysis module using synthetic data with analytically known answers — no MorphoJ installation required.
-
-```bash
-# Install pytest (one-time)
-pip install pytest
-
-# Run all tests
-python -m pytest python/tests/ -v
-```
-
-Expected output: **38 tests, all passing**, covering:
-
-| Module | Tests |
-|--------|-------|
-| Procrustes GPA | Identity, rotation invariance, centred consensus, output shape |
-| PCA | Variance sums to 100 %, orthonormal loadings, zero-mean scores |
-| Outlier detection | Zero z-scores for identical specimens, correct output length |
-| Covariance | Symmetric, positive semi-definite, pooled label |
-| Matrix correlation | Self-correlation = 1.0, permutations vary across runs |
-| Two-block PLS | RV in [0,1], % covariance sums to 100 %, correlated blocks → high RV |
-| Modularity | Permutation null ≠ observed (bug-fix regression), perfect blocks → low RV |
-| CVA | Separated groups captured by first CV, n_CVs ≤ groups−1 |
-| LDA | Perfect separation → LOO accuracy ≥ 95 %, confusion matrix shape |
-| Selection gradient | β length matches shape variables |
-| TPS I/O | Parse → write → re-parse: coordinates identical |
+Every table and chart also exports on its own — CSV for numbers, PNG or SVG for
+figures.
 
 ---
 
-## Automated CI builds (GitHub Actions)
+## Common questions
 
-Push a version tag to trigger cross-platform builds and a draft GitHub Release with all installers attached:
+**Do I need Python or R installed?** No. The computation engine is bundled inside
+the app.
 
-```bash
-git tag v0.1.0
-git push origin v0.1.0
-```
+**Does it send my data anywhere?** No. MorfoCat makes no network requests at all.
+Your images and files stay on your computer.
 
-The workflow at `.github/workflows/build.yml` builds on:
-- `windows-latest` → `.msi` + `.exe`
-- `macos-latest` → `.dmg` (universal binary — Intel + Apple Silicon)
-- `ubuntu-22.04` → `.deb` + `.AppImage`
+**My antivirus flagged it.** This is a known false positive with the way the
+computation engine is packaged. The installer from the Releases page is the only
+official one.
 
----
+**Can I use it for 3D data?** Import and the core analyses work in 3D. Landmark
+estimation for missing points is 2D only for now.
 
-## Project structure
-
-```
-morfoCat/
-├── src/                  # React + TypeScript frontend
-│   ├── components/       # UI, layout, plots, landmark viewers
-│   ├── pages/            # One page per analysis module
-│   ├── store/            # Zustand state (dataset + analysis results)
-│   └── lib/ipc.ts        # Typed wrappers for every Tauri→Python call
-├── src-tauri/            # Rust/Tauri shell
-│   └── src/commands.rs   # IPC bridge: invoke() → Python sidecar
-├── python/               # Scientific computing sidecar
-│   ├── sidecar.py        # Entry point (reads JSON from stdin, writes JSON to stdout)
-│   └── morfoCat/         # Analysis modules
-│       ├── io/           # TPS, NTS, Morphologika parsers
-│       ├── procrustes.py # GPA
-│       ├── pca.py        # PCA
-│       ├── cva.py        # CVA
-│       ├── lda.py        # LDA + cross-validation
-│       ├── regression.py # Regression
-│       ├── pls.py        # Two-block PLS
-│       ├── modularity.py # Modularity (RV, CR)
-│       ├── phylo.py      # Phylogenetic methods
-│       └── quantgen.py   # G matrix, selection gradient
-└── scripts/              # build-sidecar.sh / build-sidecar.ps1
-```
+**Which file formats can I open?** TPS, NTS, and Morphologika for import; TPS and
+CSV for export.
 
 ---
 
-## Citation
+## For developers
 
-When using MorfoCat for research, please also cite the original MorphoJ paper:
+Building MorfoCat from source, running the test suite, and the release process
+are documented in **[docs/DEVELOPING.md](docs/DEVELOPING.md)**.
 
-> Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric morphometrics. *Molecular Ecology Resources* 11: 353–357.
+How releases are signed is described in
+**[docs/CODE_SIGNING_POLICY.md](docs/CODE_SIGNING_POLICY.md)**.
+
+---
+
+## Citing
+
+If MorfoCat contributed to published research, please also cite the software it
+reimplements:
+
+> Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric
+> morphometrics. *Molecular Ecology Resources* 11: 353–357.
+
+---
+
+## Licence
+
+MIT — see [LICENSE](LICENSE). Free to use, including for commercial work.
