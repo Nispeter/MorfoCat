@@ -2,6 +2,12 @@
   y pasa los 72 tests de Python. Lo más urgente de probar es el flujo nuevo:
   gestor de datos → elegir imágenes / carpeta / abrir TPS → digitalizador, y
   añadir especímenes a una sesión ya abierta
+- proyectos: el formato pasó a v2 (ahora guarda la sesión del digitalizador).
+  Los v1 se abren igual pero vuelven sin sesión; para esos está el botón
+  "digitalizar el dataset cargado", que sólo aparece si el dataset trae
+  imageDir. Ojo con la ambigüedad de fondo: si imageDir está seteado las
+  coordenadas vienen multiplicadas por la escala, y si no, están en píxeles —
+  conviene marcar el origen del dataset en vez de deducirlo
 - ACP figura: la Figura 58 de la tesis llega a y −0.10 y estos datos sólo a
   −0.062; si es otra submuestra o otra parte de la vasija, decirlo para verificar
 - ACP figura: el signo de cada CP es arbitrario y MorphoJ no sigue ninguna
