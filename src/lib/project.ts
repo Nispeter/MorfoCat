@@ -1,12 +1,16 @@
 import type { Dataset } from "@/store/datasetStore";
 import type { PlotStyleSnapshot } from "@/store/plotStyleStore";
+import type { DigitizerSnapshot } from "@/store/digitizerStore";
 
 /**
  * `.morfocat.json` project files: the dataset plus everything the user set up
  * around it (classifiers, wireframe, symmetry) and the Procrustes fit, so a
  * session can be put down and picked up later.
+ *
+ * Version 2 added the digitizing session. Version 1 files still open; they
+ * simply come back without one, which is what they always had.
  */
-export const PROJECT_VERSION = 1;
+export const PROJECT_VERSION = 2;
 export const PROJECT_EXTENSION = "morfocat.json";
 
 export interface ProjectAlignment {
@@ -28,6 +32,11 @@ export interface ProjectFile {
   alignment: ProjectAlignment | null;
   /** How the PCA figure is styled, so a saved figure comes back as it was. */
   plotStyle: PlotStyleSnapshot | null;
+  /**
+   * The digitizing session, if one was open. Null for a project built from an
+   * imported landmark file, which never had one.
+   */
+  digitizer: DigitizerSnapshot | null;
 }
 
 export function buildProject(
@@ -72,6 +81,7 @@ export function parseProject(text: string): ProjectFile {
     midlineLms: p.midlineLms ?? [],
     alignment: p.alignment ?? null,
     plotStyle: p.plotStyle ?? null,
+    digitizer: p.digitizer ?? null,
   };
 }
 

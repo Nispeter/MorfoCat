@@ -28,6 +28,20 @@ export interface PendingTemplate {
   filePath: string;
 }
 
+/**
+ * The part of a session worth writing to a project file. Landmarks are kept in
+ * image pixels here, unlike the dataset's, which may have been multiplied by
+ * each specimen's scale — that is why the session cannot be rebuilt from the
+ * dataset and has to be saved in its own right.
+ */
+export interface DigitizerSnapshot {
+  specimens: DigitizerSpecimen[];
+  nLandmarks: number;
+  nSemi: number;
+  tpsDir: string;
+  sourceFile: string;
+}
+
 interface DigitizerState {
   specimens: DigitizerSpecimen[];
   currentIdx: number;
@@ -36,6 +50,11 @@ interface DigitizerState {
   tpsDir: string;
   sourceFile: string;
   pendingTemplate: PendingTemplate | null;
+
+  /** Null when no session is open, so saving a project stays cheap. */
+  snapshot: () => DigitizerSnapshot | null;
+  /** Null clears the session, so opening a project never leaves the old one. */
+  restore: (snap: DigitizerSnapshot | null | undefined) => void;
 
   setSession: (
     specimens: DigitizerSpecimen[],
@@ -78,6 +97,31 @@ export const useDigitizerStore = create<DigitizerState>((set, get) => ({
   },
 
   setPendingTemplate: (pendingTemplate) => set({ pendingTemplate }),
+
+  snapshot: () => {
+    const { specimens, nLandmarks, nSemi, tpsDir, sourceFile } = get();
+    if (specimens.length === 0) return null;
+    return { specimens, nLandmarks, nSemi, tpsDir, sourceFile };
+  },
+
+  restore: (snap) => {
+    if (!snap || !snap.specimens?.length) {
+      set({
+        specimens: [], currentIdx: 0, nLandmarks: 0, nSemi: 0,
+        tpsDir: "", sourceFile: "", pendingTemplate: null,
+      });
+      return;
+    }
+    set({
+      specimens: snap.specimens,
+      nLandmarks: snap.nLandmarks,
+      nSemi: snap.nSemi ?? 0,
+      tpsDir: snap.tpsDir ?? "",
+      sourceFile: snap.sourceFile ?? "",
+      currentIdx: 0,
+      pendingTemplate: null,
+    });
+  },
 
   addLandmark: (x, y, isSemi) =>
     set((s) => {

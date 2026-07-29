@@ -245,6 +245,7 @@ export default function DataManager() {
             }
           : null,
         plotStyle: usePlotStyleStore.getState().snapshot(),
+        digitizer: useDigitizerStore.getState().snapshot(),
       });
       // Indented so the file can be read, diffed and hand-edited.
       await writeTextFile(path, JSON.stringify(project, null, 2));
@@ -264,6 +265,9 @@ export default function DataManager() {
       clearAnalyses();
       loadProject(project);
       if (project.plotStyle) usePlotStyleStore.getState().restore(project.plotStyle);
+      // Always called, including with null: otherwise the previous project's
+      // session would still be sitting in the digitizer.
+      useDigitizerStore.getState().restore(project.digitizer);
       toast.success("Project opened", {
         description: `${project.dataset.specimens.length} specimens · ${project.dataset.n_landmarks} landmarks`,
       });
