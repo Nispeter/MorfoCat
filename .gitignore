@@ -47,3 +47,4 @@ desktop.ini
 # ── MorphoCat project files (user data, not source) ───────────────────────────
 *.morphocat
 CLAUDE.md
+.claude/
