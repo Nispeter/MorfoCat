@@ -49,11 +49,13 @@ export default function Phylogenetics() {
     try {
       const res = await runPhyloMapping(aligned, newick.trim(), ids);
       setPhyloMapping(res);
-      toast.success("Phylogenetic mapping complete", { description: `${Object.keys(res.node_values).length} nodes reconstructed` });
+      toast.success(t("msg.analysisDone", { a: t("an.phyloMap") }), {
+        description: t("msg.nNodes", { n: Object.keys(res.node_values).length }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("phylo", msg);
-      toast.error("Phylogenetic mapping failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.phyloMap") }), { description: msg });
     } finally {
       setLoading("phylo", false);
     }
@@ -66,11 +68,13 @@ export default function Phylogenetics() {
     try {
       const res = await runIndependentContrasts(aligned, newick.trim(), ids);
       setPIC(res);
-      toast.success("Independent contrasts complete", { description: `${res.n_contrasts} contrasts computed` });
+      toast.success(t("msg.analysisDone", { a: t("an.contrasts") }), {
+        description: t("msg.nContrasts", { n: res.n_contrasts }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("pic", msg);
-      toast.error("Independent contrasts failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.contrasts") }), { description: msg });
     } finally {
       setLoading("pic", false);
     }
@@ -83,13 +87,13 @@ export default function Phylogenetics() {
     try {
       const res = await runPhylogeneticSignal(aligned, newick.trim(), ids);
       setPhyloSignal(res);
-      toast.success("Phylogenetic signal computed", {
+      toast.success(t("msg.analysisDone", { a: t("an.phyloSignal") }), {
         description: `K = ${res.k_mult.toFixed(3)} · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}`,
       });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("phyloSignal", msg);
-      toast.error("Phylogenetic signal failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.phyloSignal") }), { description: msg });
     } finally {
       setLoading("phyloSignal", false);
     }

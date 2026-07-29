@@ -36,11 +36,13 @@ export default function LDA() {
     try {
       const res = await runLDA(aligned, groups);
       setLDA(res);
-      toast.success("LDA complete", { description: `LOO accuracy: ${(res.loo_accuracy * 100).toFixed(1)}%` });
+      toast.success(t("msg.analysisDone", { a: t("an.lda") }), {
+        description: t("msg.looAccuracy", { v: (res.loo_accuracy * 100).toFixed(1) }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("lda", msg);
-      toast.error("LDA failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.lda") }), { description: msg });
     } finally {
       setLoading("lda", false);
     }
@@ -63,7 +65,7 @@ export default function LDA() {
                 ...lda.groups.map((g) => lda.loo_confusion_matrix[lda.groups.indexOf(groups[i])]?.[lda.groups.indexOf(g)] ?? ""),
               ]);
               downloadCSV("lda_loo_predictions", headers, rows);
-              toast.success("LDA LOO predictions exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.looPred") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>
@@ -147,11 +149,13 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
     try {
       const res = await runPairwiseDFA(aligned, groups, permutations);
       setPairwiseDFA(res);
-      toast.success("Pairwise DFA complete", { description: `${res.pairs.length} group pairs compared` });
+      toast.success(t("msg.analysisDone", { a: t("an.dfa") }), {
+        description: t("msg.nPairsCompared", { n: res.pairs.length }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("dfa", msg);
-      toast.error("Pairwise DFA failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.dfa") }), { description: msg });
     } finally {
       setLoading("dfa", false);
     }
@@ -174,7 +178,7 @@ function PairwiseDFACard({ aligned, groups }: { aligned: number[][][]; groups: s
                     p.mahalanobis_distance, p.p_mahalanobis, p.loo_accuracy,
                   ])
                 );
-                toast.success("Pairwise DFA exported");
+                toast.success(t("msg.exportedThing", { a: t("an.dfa") }));
               }}>
                 <Download size={12} /> CSV
               </Button>

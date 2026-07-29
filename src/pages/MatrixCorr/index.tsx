@@ -36,11 +36,11 @@ export default function MatrixCorr() {
       const res = await matrixCorrelation(cov1.covariance, cov2.covariance, permutations);
       setMatrixCorr(res);
       setStatus("");
-      toast.success("Matrix correlation complete", { description: `r = ${res.r.toFixed(4)} · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` });
+      toast.success(t("msg.analysisDone", { a: t("nav.matrixCorr") }), { description: `r = ${res.r.toFixed(4)} · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("matrixCorr", msg);
-      toast.error("Matrix correlation failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.matrixCorr") }), { description: msg });
       setStatus("");
     } finally {
       setLoading("matrixCorr", false);

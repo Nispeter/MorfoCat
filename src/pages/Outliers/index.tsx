@@ -40,11 +40,13 @@ export default function Outliers() {
       const res = await detectOutliers(aligned);
       setOutliers(res);
       const nFlagged = res.z_scores.filter((z) => Math.abs(z) > threshold).length;
-      toast.success("Outlier detection complete", { description: nFlagged > 0 ? `${nFlagged} specimen(s) flagged` : "No outliers detected" });
+      toast.success(t("msg.analysisDone", { a: t("nav.outliers") }), {
+        description: nFlagged > 0 ? t("msg.nFlagged", { n: nFlagged }) : t("msg.noOutliers"),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("outliers", msg);
-      toast.error("Outlier detection failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.outliers") }), { description: msg });
     } finally {
       setLoading("outliers", false);
     }
@@ -232,7 +234,9 @@ export default function Outliers() {
                   onClick={() => {
                     swapLandmarks(swapA, swapB);
                     setReviewIdx(null);
-                    toast.success(`Swapped landmarks ${swapA + 1} and ${swapB + 1}`, { description: "Re-run Procrustes Fit to update the alignment." });
+                    toast.success(t("msg.swapped", { a: swapA + 1, b: swapB + 1 }), {
+                      description: t("msg.rerunProcrustes"),
+                    });
                   }}
                 >
                   <ArrowLeftRight size={13} /> {t("out.swapBtn")}

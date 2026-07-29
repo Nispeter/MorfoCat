@@ -37,11 +37,11 @@ export default function TwoBlockPLS() {
       const block2 = aligned.map((sp) => sp.slice(split));
       const res = await twoBlockPLS(block1, block2, permutations);
       setPLS(res);
-      toast.success("PLS complete", { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_sv1 < 0.001 ? "< 0.001" : res.p_value_sv1.toFixed(3)}` });
+      toast.success(t("msg.analysisDone", { a: t("nav.pls") }), { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_sv1 < 0.001 ? "< 0.001" : res.p_value_sv1.toFixed(3)}` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("pls", msg);
-      toast.error("PLS failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.pls") }), { description: msg });
     } finally {
       setLoading("pls", false);
     }

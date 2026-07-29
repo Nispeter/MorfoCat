@@ -146,11 +146,13 @@ export default function PCA() {
     try {
       const res = await runPCA(aligned);
       setPCA(res);
-      toast.success("PCA complete", { description: `PC1 explains ${res.pct_variance[0]?.toFixed(1)}% of variance` });
+      toast.success(t("msg.analysisDone", { a: t("nav.pca") }), {
+        description: t("msg.pc1Explains", { v: res.pct_variance[0]?.toFixed(1) ?? "?" }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("pca", msg);
-      toast.error("PCA failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.pca") }), { description: msg });
     } finally {
       setLoading("pca", false);
     }
@@ -185,7 +187,7 @@ export default function PCA() {
               const headers = ["ID", ...Array.from({ length: nPCs }, (_, i) => `PC${i + 1}`)];
               const rows = pca.scores.map((row, i) => [ids[i], ...row.slice(0, nPCs)]);
               downloadCSV("pca_scores", headers, rows);
-              toast.success("PC scores exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.pcScores") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>

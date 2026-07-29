@@ -37,11 +37,14 @@ export default function CVA() {
     try {
       const res = await runCVA(aligned, groups, permutations);
       setCVA(res);
-      toast.success("CVA complete", { description: `p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)} · ${res.mahalanobis_distances.length} pairwise distances` });
+      toast.success(t("msg.analysisDone", { a: t("nav.cva") }), {
+        description: `p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)} · `
+          + t("msg.nPairwiseDist", { n: res.mahalanobis_distances.length }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("cva", msg);
-      toast.error("CVA failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.cva") }), { description: msg });
     } finally {
       setLoading("cva", false);
     }
@@ -60,7 +63,7 @@ export default function CVA() {
               const headers = ["Group1", "Group2", "MahalanobisDistance"];
               const rows = cva.mahalanobis_distances.map((d) => [d.group1, d.group2, d.distance]);
               downloadCSV("cva_mahalanobis_distances", headers, rows);
-              toast.success("Mahalanobis distances exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.mahalanobis") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>

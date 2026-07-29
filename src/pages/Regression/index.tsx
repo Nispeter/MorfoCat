@@ -36,11 +36,11 @@ export default function Regression() {
     try {
       const res = await runRegression(aligned, independent, groups, pooled);
       setRegression(res);
-      toast.success("Regression complete", { description: `R² = ${res.r_squared.toFixed(4)}${res.p_value != null ? ` · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` : ""}` });
+      toast.success(t("msg.analysisDone", { a: t("nav.regression") }), { description: `R² = ${res.r_squared.toFixed(4)}${res.p_value != null ? ` · p = ${res.p_value < 0.001 ? "< 0.001" : res.p_value.toFixed(3)}` : ""}` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("regression", msg);
-      toast.error("Regression failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.regression") }), { description: msg });
     } finally {
       setLoading("regression", false);
     }
@@ -64,7 +64,7 @@ export default function Regression() {
               const headers = ["ID", "Predictor", "RegressionScore"];
               const rows = included.map((sp, i) => [sp.id, logCS[i] ?? i, rscores?.[i] ?? ""]);
               downloadCSV("regression_scores", headers, rows);
-              toast.success("Regression scores exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.regScores") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>

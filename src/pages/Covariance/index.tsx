@@ -35,11 +35,13 @@ export default function Covariance() {
     try {
       const res = await computeCovariance(aligned, groups, pooled && !!groups);
       setCovariance(res);
-      toast.success("Covariance matrix computed", { description: `${res.n_variables}×${res.n_variables} · ${res.type}` });
+      toast.success(t("msg.analysisDone", { a: t("nav.covariance") }), {
+        description: t("msg.matrixSize", { n: res.n_variables, a: res.type }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("covariance", msg);
-      toast.error("Covariance failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.covariance") }), { description: msg });
     } finally {
       setLoading("covariance", false);
     }
@@ -71,7 +73,7 @@ export default function Covariance() {
               const headers = ["", ...Array.from({ length: n }, (_, i) => `var_${i + 1}`)];
               const rows = covariance.covariance.map((row, i) => [`var_${i + 1}`, ...row]);
               downloadCSV("covariance_matrix", headers, rows);
-              toast.success("Covariance matrix exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.covMatrix") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>
@@ -192,11 +194,13 @@ function CompareGroupsCard({
     try {
       const res = await compareCovarianceMatrices(aligned, groups, permutations);
       setCovComparison(res);
-      toast.success("Comparison complete", { description: `${res.pairs.length} group pairs compared` });
+      toast.success(t("msg.analysisDone", { a: t("an.covCompare") }), {
+        description: t("msg.nPairsCompared", { n: res.pairs.length }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("covCompare", msg);
-      toast.error("Comparison failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.covCompare") }), { description: msg });
     } finally {
       setLoading("covCompare", false);
     }
@@ -219,7 +223,7 @@ function CompareGroupsCard({
                     p.random_skewers, p.p_random_skewers,
                   ])
                 );
-                toast.success("Comparison exported");
+                toast.success(t("msg.exportedThing", { a: t("exp.comparison") }));
               }}>
                 <Download size={12} /> CSV
               </Button>

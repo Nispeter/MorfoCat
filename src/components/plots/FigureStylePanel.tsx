@@ -144,7 +144,7 @@ export function FigureStylePanel({
             </select>
             <p className="text-muted-foreground">
               {splitEncoding
-                ? t("fig.splitActive").replace("{a}", activeClassifier ?? "").replace("{b}", symbolBy ?? "")
+                ? t("fig.splitActive", { a: activeClassifier ?? "", b: symbolBy ?? "" })
                 : t("fig.splitHint")}
             </p>
 

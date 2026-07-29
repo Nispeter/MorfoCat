@@ -38,11 +38,11 @@ export default function Modularity() {
     try {
       const res = await testModularity(aligned, hypothesis, permutations);
       setModularity(res);
-      toast.success("Modularity test complete", { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_rv < 0.001 ? "< 0.001" : res.p_value_rv.toFixed(3)}` });
+      toast.success(t("msg.analysisDone", { a: t("nav.modularity") }), { description: `RV = ${res.rv_coefficient.toFixed(4)} · p = ${res.p_value_rv < 0.001 ? "< 0.001" : res.p_value_rv.toFixed(3)}` });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("modularity", msg);
-      toast.error("Modularity test failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.modularity") }), { description: msg });
     } finally {
       setLoading("modularity", false);
     }
@@ -67,7 +67,7 @@ export default function Modularity() {
               const headers = ["RV_null"];
               const rows = modularity.null_rv.map((v) => [v]);
               downloadCSV("modularity_null_distribution", headers, rows);
-              toast.success("Null distribution exported");
+              toast.success(t("msg.exportedThing", { a: t("exp.nullDist") }));
             }}>
               <Download size={14} /> Export CSV
             </Button>

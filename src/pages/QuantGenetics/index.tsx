@@ -34,11 +34,13 @@ export default function QuantGenetics() {
     try {
       const res = await runGMatrix(aligned, sireIds, damIds);
       setGMatrix(res);
-      toast.success("G matrix estimated", { description: `${res.n_sires} sires · top eigenvalue = ${res.eigenvalues[0]?.toExponential(3)}` });
+      toast.success(t("msg.analysisDone", { a: t("an.gMatrix") }), {
+        description: t("msg.nSires", { n: res.n_sires, v: res.eigenvalues[0]?.toExponential(3) ?? "?" }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("gMatrix", msg);
-      toast.error("G matrix estimation failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.gMatrix") }), { description: msg });
     } finally {
       setLoading("gMatrix", false);
     }
@@ -53,11 +55,13 @@ export default function QuantGenetics() {
     try {
       const res = await runSelectionGradient(aligned, fitness);
       setSelectionGradient(res);
-      toast.success("Selection gradient computed", { description: `Mean fitness: ${res.mean_fitness.toFixed(4)}` });
+      toast.success(t("msg.analysisDone", { a: t("an.selGradient") }), {
+        description: t("msg.meanFitness", { v: res.mean_fitness.toFixed(4) }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("selection", msg);
-      toast.error("Selection gradient failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("an.selGradient") }), { description: msg });
     } finally {
       setLoading("selection", false);
     }

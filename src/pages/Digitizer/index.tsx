@@ -218,7 +218,7 @@ export default function Digitizer() {
         setImageDataUrl(dataUrl);
       })
       .catch((e) => {
-        toast.error("Cannot load image", { description: String(e) });
+        toast.error(t("digi.imageLoadFailed"), { description: String(e) });
         setImageDataUrl(null);
       })
       .finally(() => setLoadingImage(false));
@@ -303,12 +303,14 @@ export default function Digitizer() {
     if (!scaleDialog) return;
     const len = parseFloat(scaleLength);
     if (!isFinite(len) || len <= 0) {
-      toast.error("Enter a positive reference length.");
+      toast.error(t("digi.needLength"));
       return;
     }
     const scale = len / scaleDialog.pixelDist; // real units per pixel
     setScale(scale, scaleUnit.trim() || "unit");
-    toast.success("Scale set", { description: `${scale.toPrecision(4)} ${scaleUnit.trim() || "unit"}/px` });
+    toast.success(t("digi.scaleSet"), {
+      description: `${scale.toPrecision(4)} ${scaleUnit.trim() || "unit"}/px`,
+    });
     setScaleDialog(null);
     setScaleLength("");
     setScalePts([]);
@@ -320,7 +322,7 @@ export default function Digitizer() {
   // only ever grows the one in progress.
   const reportAdded = useCallback((added: number) => {
     if (added === 0) toast.info(t("digi.nothingNew"));
-    else toast.success(t("digi.addedSpecimens").replace("{n}", String(added)));
+    else toast.success(t("digi.addedSpecimens", { n: added }));
   }, [t]);
 
   const addImagePaths = useCallback((paths: string[]) => {
@@ -367,14 +369,12 @@ export default function Digitizer() {
       // Merging a file digitized at a different landmark count would leave the
       // session with specimens that can never be completed.
       if (opened.nLandmarks > 0 && opened.nLandmarks !== nLandmarks) {
-        toast.error(t("digi.countMismatch")
-          .replace("{a}", String(opened.nLandmarks))
-          .replace("{b}", String(nLandmarks)));
+        toast.error(t("digi.countMismatch", { a: opened.nLandmarks, b: nLandmarks }));
         return;
       }
       if (opened.missingImages.length > 0) {
         toast.warning(
-          t("digi.tpsMissingImages").replace("{n}", String(opened.missingImages.length)),
+          t("digi.tpsMissingImages", { n: opened.missingImages.length }),
           { description: t("digi.tpsSameFolder") }
         );
       }
@@ -448,16 +448,16 @@ export default function Digitizer() {
       }));
       const content = writeTPS(tpsSpecimens);
       await writeTextFile(savePath, content);
-      toast.success("TPS exported", { description: savePath });
+      toast.success(t("msg.exportedThing", { a: t("exp.tps") }), { description: savePath });
     } catch (e) {
-      toast.error("Export failed", { description: String(e) });
+      toast.error(t("msg.exportFailed"), { description: String(e) });
     }
   }, [specimens, nSemi, sourceFile]);
 
   // ── Load into DataManager ───────────────────────────────────────────────────
   const handleLoadAsDataset = useCallback(() => {
     if (!allComplete) {
-      toast.error("Not all specimens are fully digitized.");
+      toast.error(t("digi.notAllDone"));
       return;
     }
     clearAnalyses();
@@ -483,7 +483,7 @@ export default function Digitizer() {
       // Carried over so PCA figures can show the specimen photos.
       imageDir: specimens[0]?.imagePath ? dirname(specimens[0].imagePath) : null,
     });
-    toast.success("Dataset loaded from digitizer");
+    toast.success(t("digi.loadedAsDataset"));
     navNavigate("data");
   }, [allComplete, specimens, nLandmarks, sourceFile, setDataset, clearAnalyses, navNavigate]);
 
@@ -579,7 +579,7 @@ export default function Digitizer() {
           <div ref={containerRef} className="relative flex-1 overflow-hidden rounded-lg border bg-[#0f172a]">
             {loadingImage && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-400">
-                Loading image…
+                {t("digi.loadingImage")}
               </div>
             )}
             {!loadingImage && !imageDataUrl && current?.imagePath && (
@@ -590,7 +590,7 @@ export default function Digitizer() {
             )}
             {!current?.imagePath && (
               <div className="absolute inset-0 flex items-center justify-center text-sm text-slate-400">
-                No image for this specimen
+                {t("digi.noImageForSpecimen")}
               </div>
             )}
             <canvas
@@ -604,20 +604,20 @@ export default function Digitizer() {
               <div className="absolute bottom-3 left-3">
                 <Badge variant="outline" className="text-xs bg-cyan-950/70 text-cyan-100 border-cyan-400/30">
                   <Ruler size={11} className="mr-1" />
-                  {scalePts.length === 0 ? "Click the first reference point" : "Click the second reference point"}
+                  {scalePts.length === 0 ? t("digi.clickFirstRef") : t("digi.clickSecondRef")}
                 </Badge>
               </div>
             ) : !isComplete ? (
               <div className="absolute bottom-3 left-3 flex gap-2">
                 <Badge variant="outline" className="text-xs bg-black/60 text-white border-white/20">
-                  LM #{placed + 1} · {placedFixed < nFixed ? "click = fixed" : "click = semi"}
-                  {nSemi > 0 && placedSemi < nSemi ? " · shift = semi" : ""}
+                  LM #{placed + 1} · {placedFixed < nFixed ? t("digi.clickFixed") : t("digi.clickSemi")}
+                  {nSemi > 0 && placedSemi < nSemi ? ` · ${t("digi.shiftSemi")}` : ""}
                 </Badge>
               </div>
             ) : (
               <div className="absolute bottom-3 left-3">
                 <Badge className="bg-emerald-600 text-xs">
-                  <CheckCircle2 size={11} className="mr-1" /> All {nLandmarks} landmarks placed
+                  <CheckCircle2 size={11} className="mr-1" /> {t("digi.allPlaced", { n: nLandmarks })}
                 </Badge>
               </div>
             )}
@@ -699,7 +699,7 @@ export default function Digitizer() {
                     {current.scale.toPrecision(3)} {current.scaleUnit ?? "unit"}/px
                   </span>
                 ) : (
-                  <span className="text-muted-foreground/70">not set</span>
+                  <span className="text-muted-foreground/70">{t("digi.notSet")}</span>
                 )}
               </div>
             </CardContent>
@@ -723,7 +723,7 @@ export default function Digitizer() {
                         <span className="font-mono w-5">{i + 1}</span>
                         {lm && (
                           <Badge variant="outline" className={`text-[9px] px-1 py-0 ${lm.isSemi ? "border-amber-500/40 text-amber-500" : "border-emerald-500/40 text-emerald-500"}`}>
-                            {lm.isSemi ? "semi" : "fixed"}
+                            {lm.isSemi ? t("digi.semiShort") : t("digi.fixedShort")}
                           </Badge>
                         )}
                         {lm && <span className="ml-auto font-mono text-[10px] text-muted-foreground">{lm.x.toFixed(0)},{lm.y.toFixed(0)}</span>}
@@ -781,8 +781,7 @@ export default function Digitizer() {
           <DialogHeader>
             <DialogTitle>{t("digi.setScale")}</DialogTitle>
             <DialogDescription>
-              Enter the real length of the segment you just measured
-              {scaleDialog ? ` (${scaleDialog.pixelDist.toFixed(1)} px).` : "."}
+              {t("digi.scaleDialogDesc", { n: scaleDialog ? scaleDialog.pixelDist.toFixed(1) : "?" })}
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-end gap-3">
@@ -850,7 +849,7 @@ function TemplateDialog({
           <DialogTitle>{t("digi.templateTitle")}</DialogTitle>
           <DialogDescription>
             {template
-              ? t("digi.templateDesc").replace("{n}", String(template.specimens.length))
+              ? t("digi.templateDesc", { n: template.specimens.length })
               : ""}
           </DialogDescription>
         </DialogHeader>

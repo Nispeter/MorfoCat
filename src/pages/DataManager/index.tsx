@@ -31,12 +31,14 @@ import {
 } from "@/components/ui/dialog";
 import { Upload, Download, Trash2, Eye, EyeOff, Clock, X, Tags, Check, Wand2, Scissors, Sigma, Save, FolderOpen, Images } from "lucide-react";
 
-function formatRelTime(ts: number) {
+type T = ReturnType<typeof useT>;
+
+function formatRelTime(ts: number, t: T) {
   const s = Math.floor((Date.now() - ts) / 1000);
-  if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  if (s < 60) return t("time.justNow");
+  if (s < 3600) return t("time.minutes", { n: Math.floor(s / 60) });
+  if (s < 86400) return t("time.hours", { n: Math.floor(s / 3600) });
+  return t("time.days", { n: Math.floor(s / 86400) });
 }
 
 function detectGroup(image: string | null | undefined): string | undefined {
@@ -60,7 +62,7 @@ function detectFormat(content: string): "TPS" | "NTS" | "Morphologika" | null {
   return null;
 }
 
-function parseFile(name: string, content: string) {
+function parseFile(name: string, content: string, t: T) {
   const ext = name.split(".").pop()?.toLowerCase();
 
   // Content-based detection first — more reliable than extension alone
@@ -74,7 +76,7 @@ function parseFile(name: string, content: string) {
   if (ext === "nts") return { parsed: parseNTS(content), format: "NTS" };
   if (ext === "txt" || ext === "dat") return { parsed: parseMorphologika(content), format: "Morphologika" };
 
-  throw new Error(`Cannot detect file format. Expected TPS (LM= lines), NTS, or Morphologika ([individuals] header). Got: .${ext ?? "unknown"}`);
+  throw new Error(t("msg.unknownFormat", { a: ext ?? "unknown" }));
 }
 
 export default function DataManager() {
@@ -104,10 +106,10 @@ export default function DataManager() {
       setLoading(true);
       setError(null);
       try {
-        const { parsed, format } = parseFile(name, content);
+        const { parsed, format } = parseFile(name, content, t);
         if (parsed.n_landmarks === 0) {
           throw new Error(
-            "This file is a digitizing template — it lists images but has no landmark coordinates yet. Open it in the Landmark Digitizer to place them."
+            t("msg.templateNotData")
           );
         }
         const specimens: Specimen[] = parsed.specimens.map((sp, i) => ({
@@ -121,11 +123,13 @@ export default function DataManager() {
         clearAnalyses();
         setDataset({ specimens, n_landmarks: parsed.n_landmarks, dimensions: parsed.dimensions, filename: name });
         addRecentFile({ name, format, content });
-        toast.success(`Loaded ${name}`, { description: `${specimens.length} specimens · ${parsed.n_landmarks} landmarks` });
+        toast.success(t("msg.loaded", { a: name }), {
+          description: t("msg.specimensLandmarks", { n: specimens.length, m: parsed.n_landmarks }),
+        });
       } catch (e) {
         const msg = e instanceof Error ? e.message : String(e);
         setError(msg);
-        toast.error("Failed to load file", { description: msg });
+        toast.error(t("msg.loadFileFailed"), { description: msg });
       } finally {
         setLoading(false);
       }
@@ -145,7 +149,7 @@ export default function DataManager() {
   const appendFromFile = useCallback(
     async (name: string, content: string) => {
       try {
-        const { parsed } = parseFile(name, content);
+        const { parsed } = parseFile(name, content, t);
         const incoming: Specimen[] = parsed.specimens.map((sp, i) => ({
           id: resolveId(sp.id, sp.image, i),
           group: detectGroup(sp.image),
@@ -156,13 +160,15 @@ export default function DataManager() {
         }));
         const res = appendSpecimens(incoming);
         if ("error" in res) {
-          toast.error("Could not add specimens", { description: res.error });
+          toast.error(t("msg.addSpecimensFailed"), { description: res.error });
           return;
         }
         clearAnalyses();
-        toast.success(`Added ${res.added} specimen${res.added !== 1 ? "s" : ""}`, { description: `from ${name}` });
+        toast.success(t("digi.addedSpecimens", { n: res.added }), {
+          description: t("msg.fromFile", { a: name }),
+        });
       } catch (e) {
-        toast.error("Failed to read file", { description: e instanceof Error ? e.message : String(e) });
+        toast.error(t("msg.readFileFailed"), { description: e instanceof Error ? e.message : String(e) });
       }
     },
     [appendSpecimens, clearAnalyses]
@@ -186,7 +192,7 @@ export default function DataManager() {
     a.download = dataset.filename.replace(/\.[^.]+$/, "") + "_export.tps";
     a.click();
     URL.revokeObjectURL(url);
-    toast.success("Exported TPS file");
+    toast.success(t("msg.exportedThing", { a: t("exp.tps") }));
   };
 
   // Fill missing landmarks by warping the consensus of the complete specimens
@@ -194,13 +200,13 @@ export default function DataManager() {
   const handleEstimateMissing = useCallback(async () => {
     if (!dataset) return;
     if (dataset.dimensions !== 2) {
-      toast.error("Estimation is 2D only", { description: "3D datasets are not supported yet." });
+      toast.error(t("msg.est2DOnly"), { description: t("msg.est2DOnlyDesc") });
       return;
     }
     const all = dataset.specimens.map((sp) => sp.landmarks);
     const complete = all.filter((sp) => !sp.some(isMissingPoint));
     if (complete.length < 3) {
-      toast.error("Not enough complete specimens", { description: "At least 3 specimens without missing landmarks are required." });
+      toast.error(t("msg.estNeedComplete"), { description: t("msg.estNeedCompleteDesc") });
       return;
     }
     setEstimating(true);
@@ -208,13 +214,13 @@ export default function DataManager() {
       const { consensus } = await procrustesFit(complete);
       const res = estimateMissingLandmarks(all, consensus);
       setAllLandmarks(res.landmarks);
-      toast.success(`Estimated ${res.filled} landmark${res.filled !== 1 ? "s" : ""}`, {
+      toast.success(t("msg.estimated", { n: res.filled }), {
         description: res.skipped.length
-          ? `${res.skipped.length} specimen(s) had too few observed landmarks and were left as-is.`
-          : "Re-run Procrustes Fit to update the alignment.",
+          ? t("msg.estSkipped", { n: res.skipped.length })
+          : t("msg.rerunProcrustes"),
       });
     } catch (e) {
-      toast.error("Estimation failed", { description: e instanceof Error ? e.message : String(e) });
+      toast.error(t("msg.estFailed"), { description: e instanceof Error ? e.message : String(e) });
     } finally {
       setEstimating(false);
     }
@@ -249,9 +255,9 @@ export default function DataManager() {
       });
       // Indented so the file can be read, diffed and hand-edited.
       await writeTextFile(path, JSON.stringify(project, null, 2));
-      toast.success("Project saved", { description: path });
+      toast.success(t("msg.projectSaved"), { description: path });
     } catch (e) {
-      toast.error("Could not save project", { description: e instanceof Error ? e.message : String(e) });
+      toast.error(t("msg.projectSaveFailed"), { description: e instanceof Error ? e.message : String(e) });
     }
   }, []);
 
@@ -268,18 +274,20 @@ export default function DataManager() {
       // Always called, including with null: otherwise the previous project's
       // session would still be sitting in the digitizer.
       useDigitizerStore.getState().restore(project.digitizer);
-      toast.success("Project opened", {
-        description: `${project.dataset.specimens.length} specimens · ${project.dataset.n_landmarks} landmarks`,
+      toast.success(t("msg.projectOpened"), {
+        description: t("msg.specimensLandmarks", {
+          n: project.dataset.specimens.length, m: project.dataset.n_landmarks,
+        }),
       });
     } catch (e) {
-      toast.error("Could not open project", { description: e instanceof Error ? e.message : String(e) });
+      toast.error(t("msg.projectOpenFailed"), { description: e instanceof Error ? e.message : String(e) });
     }
   }, [clearAnalyses, loadProject]);
 
   const handleClear = () => {
     clear();
     clearAnalyses();
-    toast.info("Dataset cleared");
+    toast.info(t("msg.datasetCleared"));
   };
 
   // ── Digitizing entry points ─────────────────────────────────────────────────
@@ -324,7 +332,7 @@ export default function DataManager() {
         toast.warning(t("digi.tpsNoImages"), { description: t("digi.tpsNoImagesDesc") });
       } else if (opened.missingImages.length > 0) {
         toast.warning(
-          t("digi.tpsMissingImages").replace("{n}", String(opened.missingImages.length)),
+          t("digi.tpsMissingImages", { n: opened.missingImages.length }),
           { description: t("digi.tpsSameFolder") }
         );
       }
@@ -430,7 +438,7 @@ export default function DataManager() {
                     >
                       <span className="font-medium truncate">{rf.name}</span>
                       <Badge variant="outline" className="text-[10px] shrink-0">{rf.format}</Badge>
-                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">{formatRelTime(rf.timestamp)}</span>
+                      <span className="ml-auto shrink-0 text-xs text-muted-foreground">{formatRelTime(rf.timestamp, t)}</span>
                     </button>
                     <button
                       className="shrink-0 text-muted-foreground hover:text-foreground"
@@ -477,8 +485,9 @@ export default function DataManager() {
             <CardHeader className="pb-2 pt-4">
               <CardTitle className="flex items-center justify-between text-base">
                 <span>
-                  {dataset.specimens.length} specimens · {dataset.n_landmarks} landmarks ·{" "}
-                  {dataset.dimensions}D
+                  {t("msg.specimensLandmarks", {
+                    n: dataset.specimens.length, m: dataset.n_landmarks,
+                  })} · {dataset.dimensions}D
                 </span>
                 <Badge variant="secondary">{dataset.filename}</Badge>
               </CardTitle>
@@ -575,7 +584,7 @@ export default function DataManager() {
                       className="flex w-full items-center gap-2 rounded px-1 py-1 text-left text-xs hover:bg-muted/50 transition-colors"
                     >
                       <span className="truncate text-foreground/80">{rf.name}</span>
-                      <span className="ml-auto shrink-0 text-muted-foreground">{formatRelTime(rf.timestamp)}</span>
+                      <span className="ml-auto shrink-0 text-muted-foreground">{formatRelTime(rf.timestamp, t)}</span>
                     </button>
                   ))}
               </CollapsibleCard>
@@ -810,7 +819,7 @@ function IdSchemeEditor({
   if (width < 3) {
     return (
       <p className="rounded border border-amber-500/30 bg-amber-500/10 px-2 py-1.5 text-[11px] text-amber-700 dark:text-amber-400">
-        {t("data.idsTooPlain").replace("{id}", sample || "—")}
+        {t("data.idsTooPlain", { id: sample || "—" })}
       </p>
     );
   }
@@ -893,7 +902,7 @@ function IdSchemeEditor({
         </>
       ) : (
         <p className="text-[11px] text-muted-foreground">
-          {t("data.noParts").replace("{s}", separator)}
+          {t("data.noParts", { s: separator })}
         </p>
       )}
 
@@ -959,20 +968,20 @@ function TransformCard({
   const applySubset = () => {
     const res = onSubset(keep);
     if ("error" in res) {
-      toast.error("Cannot subset landmarks", { description: res.error });
+      toast.error(t("msg.subsetFailed"), { description: res.error });
       return;
     }
     setSubsetOpen(false);
-    toast.success(`Kept ${res.kept} landmarks`, { description: "Re-run Procrustes Fit to update the alignment." });
+    toast.success(t("msg.keptLandmarks", { n: res.kept }), { description: t("msg.rerunProcrustes") });
   };
 
   const applyAverage = () => {
     const res = onAverage(avgBy);
     if ("error" in res) {
-      toast.error("Cannot average", { description: res.error });
+      toast.error(t("msg.averageFailed"), { description: res.error });
       return;
     }
-    toast.success(`Averaged into ${res.groups} specimens`, { description: `One per "${avgBy}" value.` });
+    toast.success(t("msg.averaged", { n: res.groups }), { description: t("msg.averagedDesc", { a: avgBy }) });
   };
 
   return (

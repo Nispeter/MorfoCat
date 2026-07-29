@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { exportChart, type ChartFormat } from "@/lib/chartExport";
+import { useT } from "@/lib/i18n";
 import { Download, Loader2 } from "lucide-react";
 
 interface ChartFrameProps {
@@ -22,6 +23,7 @@ interface ChartFrameProps {
  * export control in the top-right corner.
  */
 export function ChartFrame({ title, filename, controls, className, exportScale = 3, children }: ChartFrameProps) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState<ChartFormat | null>(null);
 
@@ -29,9 +31,9 @@ export function ChartFrame({ title, filename, controls, className, exportScale =
     setBusy(format);
     try {
       await exportChart(ref.current, filename, format, exportScale);
-      toast.success(`Chart exported as ${format.toUpperCase()}`);
+      toast.success(t("msg.chartExported", { a: format.toUpperCase() }));
     } catch (e) {
-      toast.error("Export failed", { description: e instanceof Error ? e.message : String(e) });
+      toast.error(t("msg.exportFailed"), { description: e instanceof Error ? e.message : String(e) });
     } finally {
       setBusy(null);
     }

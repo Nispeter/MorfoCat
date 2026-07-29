@@ -93,9 +93,9 @@ export function NewSessionDialog({
         return;
       }
       const added = addPaths(found);
-      toast.success(t("imgimp.addedImages").replace("{n}", String(added)), {
+      toast.success(t("imgimp.addedImages", { n: added }), {
         description: added < found.length
-          ? t("imgimp.alreadyListed").replace("{n}", String(found.length - added))
+          ? t("imgimp.alreadyListed", { n: found.length - added })
           : basename(folder),
       });
     } catch (e) {

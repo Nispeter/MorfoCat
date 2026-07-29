@@ -42,7 +42,7 @@ export default function ProcrustesFit() {
   const run = async () => {
     if (!dataset) return;
     if (symmetry && symPairs.length === 0) {
-      toast.error("Add at least one symmetric landmark pair", {
+      toast.error(t("msg.needSymPair"), {
         description: "Object symmetry needs to know which landmarks mirror each other.",
       });
       return;
@@ -61,11 +61,13 @@ export default function ProcrustesFit() {
         ? alignPrincipalAxes(res.consensus, res.aligned)
         : { consensus: res.consensus, aligned: res.aligned };
       setAligned(alignedCoords, consensus, res.centroid_sizes, res.procrustes_distances);
-      toast.success("GPA complete", { description: `${included.length} specimens aligned` });
+      toast.success(t("msg.analysisDone", { a: t("nav.procrustes") }), {
+        description: t("msg.nSpecimensAligned", { n: included.length }),
+      });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       setError("procrustes", msg);
-      toast.error("GPA failed", { description: msg });
+      toast.error(t("msg.analysisFailed", { a: t("nav.procrustes") }), { description: msg });
     } finally {
       setLoading("procrustes", false);
     }
