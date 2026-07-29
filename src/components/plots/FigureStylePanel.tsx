@@ -5,7 +5,9 @@ import { NumberInput } from "@/components/ui/number-input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { usePlotStyleStore, type AxisMode, type RefSource } from "@/store/plotStyleStore";
-import { SYMBOL_KINDS, symbolPath, isStrokeOnly, type SymbolKind } from "@/lib/symbols";
+import {
+  SYMBOL_KINDS, POINT_BORDERS, symbolPath, isStrokeOnly, type SymbolKind,
+} from "@/lib/symbols";
 import { Palette, RotateCcw, RotateCw, FolderOpen, FlipHorizontal, FlipVertical, X } from "lucide-react";
 import { useT, type TranslationKey } from "@/lib/i18n";
 
@@ -32,6 +34,7 @@ export function FigureStylePanel({
   const {
     styles, setStyle, resetStyles,
     symbolBy, setSymbolBy, symbolStyles, setSymbolStyle,
+    pointBorder, setPointBorder,
     axisMode, setAxisMode, manualLimits, setManualLimits,
     invertX, invertY, setInvert,
     refShapesX, refShapesY, setRefShapes,
@@ -109,6 +112,22 @@ export function FigureStylePanel({
               </div>
             );
           })}
+
+          {/* One rim for every point, whatever colour or shape it carries. */}
+          <div className="flex items-center gap-1.5 border-t pt-2">
+            <span className="flex-1 text-xs text-muted-foreground">{t("fig.pointBorder")}</span>
+            {POINT_BORDERS.map((b) => (
+              <button
+                key={b}
+                onClick={() => setPointBorder(b)}
+                className={`h-7 rounded border px-2 text-xs transition-colors hover:bg-muted ${
+                  pointBorder === b ? "border-primary bg-primary/10 text-primary" : ""
+                }`}
+              >
+                {b === "none" ? t("fig.borderNone") : b === "black" ? t("fig.borderBlack") : t("fig.borderWhite")}
+              </button>
+            ))}
+          </div>
       </CollapsibleCard>
 
       {otherClassifiers.length > 0 && (

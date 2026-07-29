@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { defaultGroupColor, defaultGroupSymbol, type SymbolKind } from "@/lib/symbols";
+import {
+  defaultGroupColor, defaultGroupSymbol, type SymbolKind, type PointBorder,
+} from "@/lib/symbols";
 
 export interface GroupStyle {
   /** Name shown in the legend — defaults to the classifier value. */
@@ -47,6 +49,8 @@ interface PlotStyleState {
   symbolBy: string | null;
   /** Per-value symbols for `symbolBy`, kept separate so values can't collide. */
   symbolStyles: Record<string, SymbolGroupStyle>;
+  /** Rim drawn around every point, whether it is solid or open. */
+  pointBorder: PointBorder;
   axisMode: AxisMode;
   manualLimits: AxisLimits;
   /** Flip an axis so the plot matches a figure made elsewhere. The sign of a
@@ -90,6 +94,7 @@ interface PlotStyleState {
   setSymbolBy: (name: string | null) => void;
   ensureSymbolGroups: (values: string[]) => void;
   setSymbolStyle: (value: string, patch: Partial<SymbolGroupStyle>) => void;
+  setPointBorder: (border: PointBorder) => void;
   setAxisMode: (mode: AxisMode) => void;
   setInvert: (axis: "x" | "y", on: boolean) => void;
   setManualLimits: (patch: Partial<AxisLimits>) => void;
@@ -114,7 +119,7 @@ interface PlotStyleState {
 /** The figure's appearance, split out so a project file can carry it. */
 export type PlotStyleSnapshot = Pick<
   PlotStyleState,
-  | "styles" | "symbolBy" | "symbolStyles"
+  | "styles" | "symbolBy" | "symbolStyles" | "pointBorder"
   | "axisMode" | "manualLimits" | "invertX" | "invertY"
   | "refShapesX" | "refShapesY" | "refSource" | "refShowIds" | "refSize" | "refGap"
   | "refFlipX" | "refFlipY" | "refRotation" | "refPositionsX" | "refPositionsY"
@@ -123,7 +128,7 @@ export type PlotStyleSnapshot = Pick<
 >;
 
 const SNAPSHOT_KEYS = [
-  "styles", "symbolBy", "symbolStyles",
+  "styles", "symbolBy", "symbolStyles", "pointBorder",
   "axisMode", "manualLimits", "invertX", "invertY",
   "refShapesX", "refShapesY", "refSource", "refShowIds", "refSize", "refGap",
   "refFlipX", "refFlipY", "refRotation", "refPositionsX", "refPositionsY",
@@ -137,6 +142,7 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       styles: {},
       symbolBy: null,
       symbolStyles: {},
+      pointBorder: "black",
       axisMode: "auto",
       invertX: false,
       invertY: false,
@@ -187,6 +193,8 @@ export const usePlotStyleStore = create<PlotStyleState>()(
       resetStyles: () => set({ styles: {}, symbolStyles: {} }),
 
       setSymbolBy: (symbolBy) => set({ symbolBy }),
+
+      setPointBorder: (pointBorder) => set({ pointBorder }),
 
       ensureSymbolGroups: (values) => {
         const existing = get().symbolStyles;

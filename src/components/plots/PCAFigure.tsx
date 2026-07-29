@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { symbolPath, isStrokeOnly } from "@/lib/symbols";
+import { symbolPath, isStrokeOnly, borderColour, type SymbolKind } from "@/lib/symbols";
 import { usePlotStyleStore } from "@/store/plotStyleStore";
 import {
   figureDomain, referenceSpecimens, resolveRefPositions, orientShape, niceTicks,
@@ -32,6 +32,55 @@ interface PCAFigureProps {
 const AXIS_GUTTER = { top: 24, right: 24, bottom: 54, left: 54 };
 
 /**
+ * One plotted mark, shared by the scatter and the legend so the two never
+ * drift apart.
+ *
+ * A solid mark takes the border as its edge. An open one has no interior, so
+ * its edge already carries the group colour; there the border goes behind as a
+ * rim, which keeps the colour readable instead of painting over it.
+ */
+function Mark({
+  symbol, color, open, border, r = 5, transform, opacity, interactive, onEnter, onLeave,
+}: {
+  symbol: SymbolKind;
+  color: string;
+  open: boolean;
+  border: string | null;
+  r?: number;
+  transform?: string;
+  opacity?: number;
+  interactive?: boolean;
+  onEnter?: () => void;
+  onLeave?: () => void;
+}) {
+  const d = symbolPath(symbol, r);
+  return (
+    <g
+      transform={transform}
+      opacity={opacity}
+      style={interactive ? { cursor: "pointer" } : undefined}
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      {open && border && (
+        <path
+          d={d} fill="none" stroke={border} strokeWidth={r * 0.36 + 1.8}
+          strokeLinejoin="round" strokeLinecap="round"
+        />
+      )}
+      <path
+        d={d}
+        fill={open ? "none" : color}
+        stroke={open ? color : border ?? color}
+        strokeWidth={open ? r * 0.36 : border ? 1.1 : 0.8}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </g>
+  );
+}
+
+/**
  * Publication-style PCA scatter: group symbols and colours, shape references
  * running along both axes, a draggable legend, and hover read-out. The whole
  * figure is a single SVG so it exports as one high-resolution image.
@@ -42,7 +91,7 @@ export function PCAFigure({
   pcX, pcY, width = 900, height = 680,
 }: PCAFigureProps) {
   const {
-    styles, symbolBy, symbolStyles,
+    styles, symbolBy, symbolStyles, pointBorder,
     axisMode, manualLimits, invertX, invertY,
     refShapesX, refShapesY, refSource, refShowIds, refSize, refGap,
     refFlipX, refFlipY, refRotation, refPositionsX, refPositionsY,
@@ -50,6 +99,7 @@ export function PCAFigure({
   } = usePlotStyleStore();
 
   const orientation = { flipX: refFlipX, flipY: refFlipY, rotation: refRotation };
+  const border = borderColour(pointBorder);
 
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<number | null>(null);
@@ -294,17 +344,18 @@ export function PCAFigure({
       {scores.map((_, i) => {
         const { color, symbol, outline } = markFor(i);
         return (
-          <path
+          <Mark
             key={i}
-            d={symbolPath(symbol, hover === i ? 7 : 5)}
+            symbol={symbol}
+            color={color}
+            open={outline}
+            border={border}
+            r={hover === i ? 7 : 5}
             transform={`translate(${sx(xs[i])},${sy(ys[i])})`}
-            fill={outline ? "none" : color}
-            stroke={color}
-            strokeWidth={outline ? 1.8 : 0.8}
             opacity={hover == null || hover === i ? 0.95 : 0.45}
-            style={{ cursor: "pointer" }}
-            onMouseEnter={() => setHover(i)}
-            onMouseLeave={() => setHover(null)}
+            interactive
+            onEnter={() => setHover(i)}
+            onLeave={() => setHover(null)}
           />
         );
       })}
@@ -363,11 +414,11 @@ export function PCAFigure({
               const outline = !splitEncoding && (isStrokeOnly(st.symbol) || !st.filled);
               out.push(
                 <g key={`c-${g}`} transform={`translate(16,${16 + row * 18})`}>
-                  <path
-                    d={symbolPath(splitEncoding ? "circle" : st.symbol, 5)}
-                    fill={outline ? "none" : st.color}
-                    stroke={st.color}
-                    strokeWidth={outline ? 1.8 : 0.8}
+                  <Mark
+                    symbol={splitEncoding ? "circle" : st.symbol}
+                    color={st.color}
+                    open={outline}
+                    border={border}
                   />
                   <text x={14} y={4} fontSize={11} fill="hsl(var(--foreground))">{st.label}</text>
                 </g>
@@ -387,11 +438,11 @@ export function PCAFigure({
                 const outline = isStrokeOnly(st.symbol) || !st.filled;
                 out.push(
                   <g key={`s-${v}`} transform={`translate(16,${16 + row * 18})`}>
-                    <path
-                      d={symbolPath(st.symbol, 5)}
-                      fill={outline ? "none" : "hsl(var(--foreground))"}
-                      stroke="hsl(var(--foreground))"
-                      strokeWidth={outline ? 1.8 : 0.8}
+                    <Mark
+                      symbol={st.symbol}
+                      color="hsl(var(--foreground))"
+                      open={outline}
+                      border={border}
                     />
                     <text x={14} y={4} fontSize={11} fill="hsl(var(--foreground))">{st.label}</text>
                   </g>

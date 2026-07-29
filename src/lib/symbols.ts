@@ -44,6 +44,23 @@ export function isStrokeOnly(kind: SymbolKind): boolean {
   return kind === "cross" || kind === "plus";
 }
 
+/**
+ * Outline drawn around every point, independent of the group colour.
+ *
+ * Pale groups wash out against a white page and dark ones against a dark
+ * theme, so a fixed rim keeps the marks legible whatever palette is chosen —
+ * black on light backgrounds, white on dark ones.
+ */
+export const POINT_BORDERS = ["none", "black", "white"] as const;
+
+export type PointBorder = (typeof POINT_BORDERS)[number];
+
+export function borderColour(border: PointBorder): string | null {
+  if (border === "black") return "#000000";
+  if (border === "white") return "#ffffff";
+  return null;
+}
+
 /** Distinct hues that stay legible on both light and dark backgrounds. */
 export const GROUP_PALETTE = [
   "#3b82f6", "#ef4444", "#22c55e", "#f59e0b",
