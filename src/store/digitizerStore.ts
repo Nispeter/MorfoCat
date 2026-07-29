@@ -17,6 +17,17 @@ export interface DigitizerSpecimen {
   scaleUnit?: string;
 }
 
+/**
+ * A TPS that lists images but carries no coordinates yet. It cannot start a
+ * session on its own — the digitizer has to ask how many landmarks each
+ * specimen gets first — so it waits here while the user is sent to that page.
+ */
+export interface PendingTemplate {
+  specimens: DigitizerSpecimen[];
+  dir: string;
+  filePath: string;
+}
+
 interface DigitizerState {
   specimens: DigitizerSpecimen[];
   currentIdx: number;
@@ -24,6 +35,7 @@ interface DigitizerState {
   nSemi: number;
   tpsDir: string;
   sourceFile: string;
+  pendingTemplate: PendingTemplate | null;
 
   setSession: (
     specimens: DigitizerSpecimen[],
@@ -32,6 +44,9 @@ interface DigitizerState {
     tpsDir: string,
     sourceFile: string
   ) => void;
+  /** Add more specimens to the session already open, skipping repeats. */
+  appendSpecimens: (incoming: DigitizerSpecimen[]) => { added: number };
+  setPendingTemplate: (template: PendingTemplate | null) => void;
   addLandmark: (x: number, y: number, isSemi: boolean) => void;
   undoLandmark: () => void;
   clearSpecimen: () => void;
@@ -40,16 +55,29 @@ interface DigitizerState {
   reset: () => void;
 }
 
-export const useDigitizerStore = create<DigitizerState>((set) => ({
+export const useDigitizerStore = create<DigitizerState>((set, get) => ({
   specimens: [],
   currentIdx: 0,
   nLandmarks: 0,
   nSemi: 0,
   tpsDir: "",
   sourceFile: "",
+  pendingTemplate: null,
 
   setSession: (specimens, nLandmarks, nSemi, tpsDir, sourceFile) =>
     set({ specimens, nLandmarks, nSemi, tpsDir, sourceFile, currentIdx: 0 }),
+
+  appendSpecimens: (incoming) => {
+    const { specimens } = get();
+    // The image path is the identity here: the same photo added twice would
+    // otherwise become two specimens digitized independently.
+    const seen = new Set(specimens.map((sp) => sp.imagePath || sp.imageBase));
+    const fresh = incoming.filter((sp) => !seen.has(sp.imagePath || sp.imageBase));
+    if (fresh.length > 0) set({ specimens: [...specimens, ...fresh] });
+    return { added: fresh.length };
+  },
+
+  setPendingTemplate: (pendingTemplate) => set({ pendingTemplate }),
 
   addLandmark: (x, y, isSemi) =>
     set((s) => {
@@ -88,5 +116,9 @@ export const useDigitizerStore = create<DigitizerState>((set) => ({
   navigate: (idx) =>
     set((s) => ({ currentIdx: Math.max(0, Math.min(idx, s.specimens.length - 1)) })),
 
-  reset: () => set({ specimens: [], currentIdx: 0, nLandmarks: 0, nSemi: 0, tpsDir: "", sourceFile: "" }),
+  reset: () =>
+    set({
+      specimens: [], currentIdx: 0, nLandmarks: 0, nSemi: 0,
+      tpsDir: "", sourceFile: "", pendingTemplate: null,
+    }),
 }));
