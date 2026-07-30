@@ -101,20 +101,26 @@ export const useDatasetStore = create<DatasetState>((set, get) => ({
   midlineLms: [],
 
   setDataset: (ds) => {
-    // Seed a "group" classifier from any auto-detected group so existing
-    // grouping keeps working and shows up in the classifier UI.
-    const hasGroup = ds.specimens.some((sp) => sp.group);
-    const specimens = ds.specimens.map((sp) =>
-      sp.group ? { ...sp, classifiers: { group: sp.group, ...(sp.classifiers ?? {}) } } : sp
-    );
-    const classifierNames = hasGroup ? ["group"] : [];
+    // Categories the caller already worked out are kept. Overwriting them here
+    // discarded whatever was passed in, which is how a dataset handed over with
+    // its categories intact arrived without any.
+    const supplied = ds.classifierNames ?? [];
+    // Only a dataset arriving with no categories at all gets "group" seeded
+    // from the auto-detected grouping, so that keeps working for plain imports.
+    const seedGroup = supplied.length === 0 && ds.specimens.some((sp) => sp.group);
+    const specimens = seedGroup
+      ? ds.specimens.map((sp) =>
+          sp.group ? { ...sp, classifiers: { group: sp.group, ...(sp.classifiers ?? {}) } } : sp
+        )
+      : ds.specimens;
+    const classifierNames = seedGroup ? ["group"] : supplied;
     set({
       dataset: { ...ds, specimens, classifierNames },
       aligned: null,
       consensus: null,
       centroid_sizes: null,
       procrustes_distances: null,
-      activeClassifier: hasGroup ? "group" : null,
+      activeClassifier: classifierNames[0] ?? null,
       wireframe: [],
       symPairs: [],
       midlineLms: [],
