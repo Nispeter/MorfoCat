@@ -8,6 +8,7 @@ import { ChartFrame } from "@/components/plots/ChartFrame";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { matrixCorrelation, computeCovariance } from "@/lib/ipc";
@@ -126,7 +127,7 @@ export default function MatrixCorr() {
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="bin" tick={{ fontSize: 10 }} label={{ value: "r", position: "insideBottom", offset: -4, fontSize: 11 }} />
                   <YAxis tick={{ fontSize: 10 }} />
-                  <Tooltip />
+                  <Tooltip {...chartTooltip} />
                   <ReferenceLine x={matrixCorr.r.toFixed(2)} stroke="hsl(var(--destructive))" strokeWidth={2} label={{ value: `r = ${matrixCorr.r.toFixed(3)}`, fontSize: 10 }} />
                   <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.7} radius={[2, 2, 0, 0]} />
                 </BarChart>

@@ -16,6 +16,7 @@ import { useAnalysisStore } from "@/store/analysisStore";
 import { procrustesFit } from "@/lib/ipc";
 import { alignPrincipalAxes } from "@/lib/shape";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartTooltip, ResponsiveContainer } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 import { Play, Loader2, HelpCircle, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/export";
 
@@ -204,7 +205,7 @@ export default function ProcrustesFit() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="id" tick={false} />
                       <YAxis tick={{ fontSize: 10 }} />
-                      <RechartTooltip />
+                      <RechartTooltip {...chartTooltip} />
                       <Bar dataKey="d" name="Procr. dist." fill="hsl(var(--primary))" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>

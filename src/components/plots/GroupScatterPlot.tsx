@@ -1,4 +1,5 @@
 import { ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { scatterTooltip } from "@/components/plots/chartTooltip";
 
 const GROUP_COLORS = [
   "hsl(221,83%,53%)", "hsl(0,84%,60%)", "hsl(142,71%,45%)", "hsl(38,92%,50%)",
@@ -35,7 +36,7 @@ export function GroupScatterPlot({
         <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
         <XAxis dataKey="x" name={xLabel} tick={{ fontSize: 11 }} label={{ value: xLabel, position: "insideBottom", offset: -4, fontSize: 11 }} />
         <YAxis dataKey="y" name={yLabel} tick={{ fontSize: 11 }} label={{ value: yLabel, angle: -90, position: "insideLeft", fontSize: 11 }} />
-        <Tooltip cursor={{ strokeDasharray: "3 3" }} content={<CustomTooltip />} />
+        <Tooltip cursor={scatterTooltip.cursor} content={<CustomTooltip />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         {grouped.map((g) => (
           <Scatter key={g.name} name={g.name} data={g.data} fill={g.fill} opacity={0.8} />

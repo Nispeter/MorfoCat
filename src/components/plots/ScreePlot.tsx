@@ -2,6 +2,7 @@ import {
   ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend, ResponsiveContainer, ReferenceLine,
 } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 
 interface ScreePlotProps {
   pctVariance: number[];
@@ -25,7 +26,7 @@ export function ScreePlot({ pctVariance, cumulativePct, selectedPC, onSelectPC }
         <XAxis dataKey="pc" tick={{ fontSize: 11 }} />
         <YAxis yAxisId="left" unit="%" tick={{ fontSize: 11 }} domain={[0, "auto"]} />
         <YAxis yAxisId="right" orientation="right" unit="%" tick={{ fontSize: 11 }} domain={[0, 100]} />
-        <Tooltip formatter={(v: number, name: string) => [`${v}%`, name]} />
+        <Tooltip {...chartTooltip} formatter={(v: number, name: string) => [`${v}%`, name]} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         {selectedPC != null && (
           <ReferenceLine yAxisId="left" x={`PC${selectedPC + 1}`} stroke="hsl(var(--primary))" strokeWidth={2} />

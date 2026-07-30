@@ -14,6 +14,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, ReferenceLine,
   Tooltip as RechartTooltip, ResponsiveContainer,
 } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 import { Play, Loader2, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/export";
 
@@ -288,7 +289,7 @@ export default function Phylogenetics() {
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis dataKey="bin" tick={{ fontSize: 10 }} label={{ value: "K under random tip assignment", position: "insideBottom", offset: -6, fontSize: 11 }} />
                     <YAxis tick={{ fontSize: 10 }} />
-                    <RechartTooltip />
+                    <RechartTooltip {...chartTooltip} />
                     <ReferenceLine x={nearestBin} stroke="hsl(var(--destructive))" strokeWidth={2} label={{ value: "observed", fontSize: 10 }} />
                     <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.75} radius={[2, 2, 0, 0]} />
                   </BarChart>

@@ -12,6 +12,7 @@ import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { detectOutliers } from "@/lib/ipc";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer, Cell } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 import { RefreshCw, Loader2, ArrowLeftRight, Eye, Download } from "lucide-react";
 import { downloadCSV } from "@/lib/export";
 
@@ -157,7 +158,7 @@ export default function Outliers() {
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis dataKey="id" tick={false} label={{ value: "Specimens", position: "insideBottom", offset: -4, fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 10 }} label={{ value: "Z-score", angle: -90, position: "insideLeft", fontSize: 11 }} />
-                <Tooltip formatter={(v: number) => [v.toFixed(3), "Z-score"]} labelFormatter={(l) => `ID: ${l}`} />
+                <Tooltip {...chartTooltip} formatter={(v: number) => [v.toFixed(3), "Z-score"]} labelFormatter={(l) => `ID: ${l}`} />
                 <ReferenceLine y={threshold} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: `+${threshold}σ`, fontSize: 10 }} />
                 <ReferenceLine y={-threshold} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: `-${threshold}σ`, fontSize: 10 }} />
                 <Bar dataKey="z" radius={[2, 2, 0, 0]}>

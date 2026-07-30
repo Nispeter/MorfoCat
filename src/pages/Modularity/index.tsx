@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tooltip as UITooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer } from "recharts";
+import { chartTooltip } from "@/components/plots/chartTooltip";
 import { useDatasetStore } from "@/store/datasetStore";
 import { useAnalysisStore } from "@/store/analysisStore";
 import { testModularity } from "@/lib/ipc";
@@ -136,7 +137,7 @@ export default function Modularity() {
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="bin" tick={{ fontSize: 10 }} />
                       <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
+                      <Tooltip {...chartTooltip} />
                       <ReferenceLine x={modularity.rv_coefficient.toFixed(2)} stroke="hsl(var(--destructive))" strokeWidth={2} />
                       <Bar dataKey="count" fill="hsl(var(--primary))" opacity={0.7} radius={[2, 2, 0, 0]} />
                     </BarChart>
