@@ -56,11 +56,22 @@ export function refPositionOptions(lo: number, hi: number): number[] {
 }
 
 function ticksWithStep(lo: number, hi: number, step: number): number[] {
+  // Counted from an index and rounded to the step's own precision, rather than
+  // accumulated with `v += step`.
+  //
+  // Accumulating drifts: the last tick of a 0.02 step comes out as
+  // 0.08000000000000002, which then reads as *outside* an axis ending at 0.08.
+  // Anything comparing a tick against the axis bounds — the filter that keeps
+  // reference drawings on the canvas, the menu of exact reference positions —
+  // silently lost that outermost value.
+  const eps = step * 1e-6;
+  const first = Math.ceil((lo - eps) / step);
+  const last = Math.floor((hi + eps) / step);
+  const decimals = Math.max(0, Math.ceil(-Math.log10(step)) + 1);
   const out: number[] = [];
-  // Nudge the bound before comparing so floating-point drift does not drop the
-  // last tick when it lands exactly on the end of the axis.
-  for (let v = Math.ceil(lo / step) * step; v <= hi + step * 1e-6; v += step) {
-    out.push(Math.abs(v) < step * 1e-6 ? 0 : v);
+  for (let k = first; k <= last; k++) {
+    const v = Number((k * step).toFixed(decimals));
+    out.push(v === 0 ? 0 : v); // collapses -0
   }
   return out;
 }
