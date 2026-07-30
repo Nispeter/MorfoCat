@@ -122,3 +122,7 @@ exportan a CSV y los gráficos a PNG o SVG.
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric
 > morphometrics. *Molecular Ecology Resources* 11: 353–357.
+
+---
+
+*Morpho* de morfometría, *Cat* de categorización — y de gato.

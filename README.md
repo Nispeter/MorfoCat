@@ -118,3 +118,7 @@ Citing MorphoCat? Cite MorphoJ too:
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric
 > morphometrics. *Molecular Ecology Resources* 11: 353–357.
+
+---
+
+*Morpho* for morphometrics, *Cat* for categorization. And for the cat.
