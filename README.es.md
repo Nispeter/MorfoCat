@@ -16,12 +16,14 @@ Descarga desde [Releases](https://github.com/Nispeter/MorphoCat/releases) y ábr
 | --- | --- |
 | Windows | `MorphoCat_<versión>_x64-setup.exe` |
 | Windows (despliegue IT) | `MorphoCat_<versión>_x64_en-US.msi` |
-| macOS | `MorphoCat_<versión>.dmg` |
 | Debian / Ubuntu | `MorphoCat_<versión>_amd64.deb` |
 | Otros Linux | `MorphoCat_<versión>.AppImage` |
 
 Si Windows dice *"Windows protegió su PC"*: **Más información → Ejecutar de todas
-formas**. En macOS, clic derecho → **Abrir**, sólo la primera vez.
+formas**.
+
+Todavía no hay versión para macOS. Funciona, pero hay que
+[compilarla desde el código](docs/DEVELOPING.md).
 
 Español e inglés — se cambia en **Configuración**.
 

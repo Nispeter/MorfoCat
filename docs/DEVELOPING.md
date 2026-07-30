@@ -98,9 +98,15 @@ Windows, `dmg/` and `macos/` on macOS, `deb/` and `appimage/` on Linux.
 ## Releasing
 
 Pushing a tag that starts with `v` runs `.github/workflows/build.yml`, which
-builds on `windows-latest`, `macos-latest` (universal binary) and `ubuntu-22.04`,
-signs the Windows installers if signing is configured, and opens a **draft**
-GitHub Release with everything attached.
+builds on `windows-latest` and `ubuntu-22.04`, signs the Windows installers if
+signing is configured, and opens a **draft** GitHub Release with everything
+attached.
+
+**macOS is not built in CI.** A universal binary needs the Python sidecar
+compiled for both architectures at once, and PyInstaller only targets the
+interpreter it runs on. Building one leg per architecture does work, but the
+Intel runners queue for hours. Mac users build locally with `npm run
+package:unix`, which produces a `.dmg` for whatever architecture they are on.
 
 ```bash
 git tag -a v0.1.0 -m "MorphoCat v0.1.0"

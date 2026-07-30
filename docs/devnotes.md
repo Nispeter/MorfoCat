@@ -15,11 +15,12 @@
   siendo manual — se guarda en el proyecto
 - interactividad (valores al pasar el mouse) en PLS, modularidad y correlación
   de matrices
-- macOS ya no se compila universal: PyInstaller sólo puede generar el sidecar
-  para el intérprete en el que corre, así que un binario universal necesitaría
-  las dos arquitecturas a la vez. Ahora hay un leg por arquitectura
-  (macos-latest = Apple Silicon, macos-13 = Intel) y salen dos .dmg. Si GitHub
-  retira el runner macos-13 en el futuro, se pierde el build de Intel
+- macOS salió del CI. El universal necesita el sidecar para las dos
+  arquitecturas a la vez y PyInstaller sólo compila para el intérprete en el que
+  corre; un leg por arquitectura sí funciona, pero los runners Intel (macos-13)
+  quedaron casi 4 h en cola. Si algún día hace falta el .dmg: volver a agregar
+  sólo macos-latest (Apple Silicon, sin --target), que no tiene ese problema, y
+  asumir que los Mac Intel compilan desde el código
 - firma gratuita (SignPath Foundation) — listo de este lado: licencia MIT,
   docs/CODE_SIGNING_POLICY.md y el workflow que firma. El requisito de "release
   previo" NO está cubierto todavía: el tag v0.1.0 existe pero su build falló en

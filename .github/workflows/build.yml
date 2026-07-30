@@ -10,14 +10,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Every leg builds for its own runner's architecture. A universal macOS
-        # binary would need the Python sidecar built for both architectures at
-        # once, and PyInstaller can only target the interpreter it is running
-        # on — so Apple Silicon and Intel get a build each instead.
+        # No macOS. A universal binary would need the Python sidecar built for
+        # both architectures at once, which PyInstaller cannot do — it only
+        # targets the interpreter it runs on. Building one leg per architecture
+        # works, but the Intel runners queue for hours, and a release that waits
+        # on them is worse than one that does not ship for macOS. Anyone on a Mac
+        # can still build from source; see docs/DEVELOPING.md.
         include:
           - platform: ubuntu-22.04
-          - platform: macos-latest      # Apple Silicon
-          - platform: macos-13          # Intel
           - platform: windows-latest
 
     runs-on: ${{ matrix.platform }}
@@ -81,7 +81,7 @@ jobs:
         run: |
           mkdir -p artifacts
           find src-tauri/target -path "*/release/bundle/*" \
-            \( -name "*.msi" -o -name "*-setup.exe" -o -name "*.dmg" \
+            \( -name "*.msi" -o -name "*-setup.exe" \
                -o -name "*.deb" -o -name "*.AppImage" \) \
             -exec cp {} artifacts/ \;
           ls -la artifacts
