@@ -1,13 +1,27 @@
 import { fitTPS } from "./tps";
 
 /**
- * Missing landmarks. TPS/NTS files conventionally flag them with a sentinel
- * coordinate — -999 (also written 9999 or -9999) — and some tools leave them
- * as NaN. Everything else counts as observed.
+ * Values TPS/NTS files use to mark a landmark as not recorded.
+ *
+ * These are exact conventions, not magnitudes. Testing `Math.abs(v) >= 999`
+ * instead flags any genuinely large coordinate — and landmarks digitized from
+ * photographs are in image pixels, where 999 is an ordinary value near the
+ * middle of the frame. That marked most of a real dataset as missing.
+ */
+const SENTINELS = [-999, 999, -9999, 9999];
+
+/**
+ * Missing landmarks. Conventionally flagged with a sentinel coordinate, and
+ * some tools leave them as NaN. Everything else counts as observed.
+ *
+ * A point counts as missing only when *every* coordinate is a sentinel: files
+ * write the whole point as (-999, -999), while a single axis landing on one of
+ * those values is a real measurement.
  */
 export function isMissingPoint(pt: number[] | undefined | null): boolean {
   if (!pt || pt.length === 0) return true;
-  return pt.some((v) => !isFinite(v) || Math.abs(v) >= 999);
+  if (pt.some((v) => !isFinite(v))) return true;
+  return pt.every((v) => SENTINELS.includes(v));
 }
 
 /** Indices of specimens that have at least one missing landmark. */
