@@ -1,16 +1,18 @@
 # MorphoCat
 
-Morfometría geométrica en tu computadora: digitaliza landmarks, alinéalos,
-ejecuta los análisis y exporta figuras para publicar. Sin instalar Python ni R.
-Funciona sin conexión.
+MorphoCat es un programa de escritorio para morfometría geométrica. Colocas
+landmarks sobre fotografías, alineas los especímenes, ejecutas los análisis y
+exportas figuras para publicar. No hace falta instalar nada más, y funciona sin
+conexión a internet.
 
-Libre, de código abierto, y una reimplementación de MorphoJ.
+Es software libre, y una reimplementación de MorphoJ.
 
 [English](README.md)
 
 ## Instalación
 
-Descarga desde [Releases](https://github.com/Nispeter/MorphoCat/releases) y ábrelo.
+Descarga el archivo que corresponda a tu sistema desde
+[Releases](https://github.com/Nispeter/MorphoCat/releases) y ábrelo.
 
 | Sistema | Archivo |
 | --- | --- |
@@ -19,35 +21,39 @@ Descarga desde [Releases](https://github.com/Nispeter/MorphoCat/releases) y ábr
 | Debian / Ubuntu | `MorphoCat_<versión>_amd64.deb` |
 | Otros Linux | `MorphoCat_<versión>.AppImage` |
 
-Si Windows dice *"Windows protegió su PC"*: **Más información → Ejecutar de todas
-formas**.
+La primera vez que lo abras, Windows puede decir "Windows protegió su PC". Haz
+clic en **Más información** y luego en **Ejecutar de todas formas**.
 
-Todavía no hay versión para macOS. Funciona, pero hay que
-[compilarla desde el código](docs/DEVELOPING.md).
+Todavía no hay versión para macOS. El programa sí funciona ahí, pero tienes que
+[compilarlo desde el código](docs/DEVELOPING.md).
 
-Español e inglés — se cambia en **Configuración**.
+La interfaz está en español e inglés. El idioma se cambia en **Configuración**.
 
 ## Uso
 
 Todo empieza en el **Gestor de Datos**.
 
-¿Quieres probarlo primero? [`data/mosca_test.tps`](data/mosca_test.tps) es un
-conjunto real de 24 alas de mosca — arrástralo y salta al paso 3.
-[`data/mosca_test.morphocat.json`](data/mosca_test.morphocat.json) son los mismos
-datos como proyecto terminado, con categorías y estilo de figura.
+Para probar el programa antes de digitalizar nada tuyo, usa
+[`data/mosca_test.tps`](data/mosca_test.tps), un conjunto de 24 alas de mosca.
+Arrástralo y salta al paso 3. Los mismos datos están guardados también como
+proyecto terminado en
+[`data/mosca_test.morphocat.json`](data/mosca_test.morphocat.json), con sus
+categorías y su estilo de figura.
 
 ### 1. Carga tus landmarks
 
-¿Ya tienes un `.tps`, `.nts` o Morphologika `.txt`? Arrástralo a la zona de carga.
+Si ya tienes un archivo `.tps`, `.nts` o Morphologika `.txt`, arrástralo sobre
+la zona de carga.
 
-¿Empiezas desde fotografías? **Elegir Imágenes** o **Añadir Carpeta**, luego
-indica cuántos landmarks lleva cada espécimen y dónde guardar el `.tps`.
+Para empezar desde fotografías, usa **Elegir Imágenes** o **Añadir Carpeta**.
+Después indicas cuántos landmarks lleva cada espécimen y dónde guardar el
+archivo `.tps`.
 
 ![Elegir imágenes y la cantidad de landmarks de una sesión nueva](docs/mf0.PNG)
 
-> Guarda el `.tps` en la misma carpeta que las fotos. Los archivos TPS guardan el
-> *nombre* de la imagen, no la ruta: si se separan, la aplicación no las
-> encuentra.
+> Guarda el archivo `.tps` en la misma carpeta que las fotos. Un archivo TPS
+> guarda el nombre de cada imagen, no la ruta hacia ella, así que el programa no
+> puede encontrar tus fotos una vez que los dos se separan.
 
 ### 2. Digitaliza
 
@@ -57,72 +63,77 @@ indica cuántos landmarks lleva cada espécimen y dónde guardar el `.tps`.
 | Colocar un semilandmark | **Shift** + clic |
 | Deshacer | **Ctrl+Z** |
 | Espécimen siguiente / anterior | **→** / **←** |
-| Escala real | **Fijar escala** → marca dos puntos → escribe la distancia |
+| Escala real | **Fijar escala**, marca dos puntos, escribe la distancia |
 | Más fotos después | **Añadir especímenes** |
 
 ![Colocando landmarks sobre un ala, con el progreso a la derecha](docs/mf1.PNG)
 
-Cuando estén todos: **Cargar como conjunto de datos**.
+Cuando todos los especímenes estén completos, haz clic en **Cargar como conjunto
+de datos**.
 
 ### 3. Convierte los IDs en categorías
 
-Abre **Categorías**. Arrastra sobre los caracteres que van juntos y ponles
-nombre: `26-13MA020230` se vuelve sitio, nivel, lo que hayas codificado. Para IDs
-con separador como `ficu_F_031`, cambia a **Por separador** y haz clic en una
-parte. Luego **Aplicar**.
+Abre **Categorías**. Arrastra sobre los caracteres que van juntos y ponles un
+nombre, de modo que `26-13MA020230` se vuelva sitio, nivel, o lo que hayas
+codificado ahí. Si tus IDs usan un separador, como `ficu_F_031`, cambia a **Por
+separador** y haz clic en la parte que quieras. Luego haz clic en **Aplicar**.
 
 ![Recortando especie, familia y número de los IDs](docs/mf2.PNG)
 
 ### 4. Alinea
 
-**Ajuste de Procrustes → Ejecutar.** Elimina posición, tamaño y rotación. Todos
-los demás análisis lo necesitan hecho.
+Ve a **Ajuste de Procrustes** y haz clic en **Ejecutar**. Esto elimina las
+diferencias de posición, tamaño y rotación, de modo que sólo quede la forma. Los
+demás análisis lo necesitan hecho primero.
 
 ### 5. Busca errores
 
-**Detección de Atípicos** ordena los especímenes por distancia a la forma media.
-Un atípico lejano suele ser un error de digitalización: haz clic para revisarlo.
-Si hay números de landmark intercambiados, se corrigen ahí para todo el conjunto.
+**Detección de Atípicos** ordena los especímenes por su distancia a la forma
+media. Un espécimen que se aleja mucho suele ser un error de digitalización y no
+un hallazgo, así que haz clic para revisar sus landmarks. Si se intercambiaron
+dos números de landmark, puedes corregir el orden ahí, y la corrección se aplica
+a todo el conjunto.
 
 ### 6. Analiza
 
-Normalmente el **ACP** primero. Su pestaña **Figura** arma el gráfico para
-publicar: color por una categoría, símbolos por otra, dibujos de forma sobre los
-ejes, leyenda movible, exportación en PNG o SVG.
+La mayoría de los estudios empieza por el **ACP**. Su pestaña **Figura** arma el
+gráfico que vas a publicar. Puedes colorear los puntos según una categoría y
+elegir sus símbolos según otra, colocar dibujos de forma a lo largo de los ejes,
+mover la leyenda y exportar en PNG o SVG.
 
 ![La figura del ACP: puntos coloreados por especie y wireframes en los ejes](docs/mf3.PNG)
 
-También en la barra lateral: matrices de covarianza, correlación de matrices, PLS
-de dos bloques, regresión y alometría, modularidad, AVC, ADL con validación
-cruzada, métodos filogenéticos comparativos y genética cuantitativa.
+En la barra lateral está el resto: matrices de covarianza, correlación de
+matrices, PLS de dos bloques, regresión y alometría, modularidad, AVC, ADL con
+validación cruzada, métodos filogenéticos comparativos y genética cuantitativa.
 
 ### 7. Guarda
 
-**Guardar proyecto** escribe un solo `.morphocat.json` con datos, categorías,
-alineación, estilo de figura y la sesión de digitalización. Las tablas se
-exportan a CSV y los gráficos a PNG o SVG.
+**Guardar proyecto** escribe un solo archivo `.morphocat.json` con tus datos, tus
+categorías, la alineación, el estilo de la figura y la sesión de digitalización.
+Cada tabla se exporta además por separado a CSV, y cada gráfico a PNG o SVG.
 
 ## Notas
 
-- No sube ni registra nada. No hace ninguna conexión de red.
-- Importa: TPS, NTS, Morphologika. Exporta: TPS, CSV.
-- 3D funciona para importar y los análisis centrales; la estimación de landmarks
-  faltantes es 2D.
-- Los antivirus dan falsos positivos por cómo se empaqueta el motor de cálculo.
-  La página de Releases es la única fuente oficial.
+- El programa no sube nada y no hace ninguna conexión de red.
+- Importa archivos TPS, NTS y Morphologika, y exporta TPS y CSV.
+- Los datos 3D funcionan para importar y para los análisis principales. La
+  estimación de landmarks faltantes es sólo 2D.
+- Algunos antivirus dan un falso positivo, por la forma en que se empaqueta el
+  motor de cálculo. La página de Releases es la única fuente oficial.
 
 ## Más
 
-[Compilar desde el código](docs/DEVELOPING.md) ·
-[Firma de código](docs/CODE_SIGNING_POLICY.md) ·
-[Referencias](REFERENCES.md) ·
-[Licencia MIT](LICENSE)
+- [Compilar desde el código](docs/DEVELOPING.md)
+- [Firma de código](docs/CODE_SIGNING_POLICY.md)
+- [Referencias](REFERENCES.md)
+- [Licencia MIT](LICENSE)
 
-¿Citas MorphoCat? Cita también MorphoJ:
+Si MorphoCat contribuyó a una investigación publicada, cita también MorphoJ:
 
 > Klingenberg, C. P. 2011. MorphoJ: an integrated software package for geometric
 > morphometrics. *Molecular Ecology Resources* 11: 353–357.
 
 ---
 
-*Morpho* de morfometría, *Cat* de categorización — y de gato.
+*Morpho* de morfometría, *Cat* de categorización, y de gato.
