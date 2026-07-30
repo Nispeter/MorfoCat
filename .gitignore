@@ -48,3 +48,27 @@ desktop.ini
 *.morphocat
 CLAUDE.md
 .claude/
+
+# ── Logs ─────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# ── Caches de herramientas ───────────────────────────────────────────────────
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# ── Tauri ────────────────────────────────────────────────────────────────────
+src-tauri/WixTools/
+
+# ── Temporales de edición ────────────────────────────────────────────────────
+*.swp
+*~
+*.bak
+*.orig
+*.rej
+
+# ── Windows ──────────────────────────────────────────────────────────────────
+ehthumbs.db
+$RECYCLE.BIN/
