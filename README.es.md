@@ -31,12 +31,19 @@ Español e inglés — se cambia en **Configuración**.
 
 Todo empieza en el **Gestor de Datos**.
 
+¿Quieres probarlo primero? [`data/mosca_test.tps`](data/mosca_test.tps) es un
+conjunto real de 24 alas de mosca — arrástralo y salta al paso 3.
+[`data/mosca_test.morphocat.json`](data/mosca_test.morphocat.json) son los mismos
+datos como proyecto terminado, con categorías y estilo de figura.
+
 ### 1. Carga tus landmarks
 
 ¿Ya tienes un `.tps`, `.nts` o Morphologika `.txt`? Arrástralo a la zona de carga.
 
 ¿Empiezas desde fotografías? **Elegir Imágenes** o **Añadir Carpeta**, luego
 indica cuántos landmarks lleva cada espécimen y dónde guardar el `.tps`.
+
+![Elegir imágenes y la cantidad de landmarks de una sesión nueva](docs/mf0.PNG)
 
 > Guarda el `.tps` en la misma carpeta que las fotos. Los archivos TPS guardan el
 > *nombre* de la imagen, no la ruta: si se separan, la aplicación no las
@@ -53,6 +60,8 @@ indica cuántos landmarks lleva cada espécimen y dónde guardar el `.tps`.
 | Escala real | **Fijar escala** → marca dos puntos → escribe la distancia |
 | Más fotos después | **Añadir especímenes** |
 
+![Colocando landmarks sobre un ala, con el progreso a la derecha](docs/mf1.PNG)
+
 Cuando estén todos: **Cargar como conjunto de datos**.
 
 ### 3. Convierte los IDs en categorías
@@ -61,6 +70,8 @@ Abre **Categorías**. Arrastra sobre los caracteres que van juntos y ponles
 nombre: `26-13MA020230` se vuelve sitio, nivel, lo que hayas codificado. Para IDs
 con separador como `ficu_F_031`, cambia a **Por separador** y haz clic en una
 parte. Luego **Aplicar**.
+
+![Recortando especie, familia y número de los IDs](docs/mf2.PNG)
 
 ### 4. Alinea
 
@@ -78,6 +89,8 @@ Si hay números de landmark intercambiados, se corrigen ahí para todo el conjun
 Normalmente el **ACP** primero. Su pestaña **Figura** arma el gráfico para
 publicar: color por una categoría, símbolos por otra, dibujos de forma sobre los
 ejes, leyenda movible, exportación en PNG o SVG.
+
+![La figura del ACP: puntos coloreados por especie y wireframes en los ejes](docs/mf3.PNG)
 
 También en la barra lateral: matrices de covarianza, correlación de matrices, PLS
 de dos bloques, regresión y alometría, modularidad, AVC, ADL con validación
